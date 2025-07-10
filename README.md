@@ -2,7 +2,7 @@
 
 ![Votely Logo](votely-landing/public/social-sharing.png)
 
-# CivicNet (Votely) 🗳️
+# Votely 🗳️
 
 Modern civic engagement platform helping young people discover their political values and take meaningful local action.
 
@@ -11,37 +11,39 @@ Modern civic engagement platform helping young people discover their political v
 
 </div>
 
-## What CivicNet Does
+## What Votely Does
 
-CivicNet bridges the gap between political awareness and local action. Instead of endless debates about national politics, we help users understand their core values and channel them into concrete civic engagement in their communities.
+Votely bridges the gap between political awareness and local action. Instead of endless debates about national politics, we help users understand their core values and channel them into concrete civic engagement in their communities.
 
-![Landing Page](design-assets/landing/votely-landing-1.png)
+![Landing Page Hero](design-assets/hero.png)
 
 *Clean, approachable landing page designed to welcome first-time civic participants*
 
-<div align="center">
+![Political Quiz Interface](design-assets/quiz-hero.png)
 
-![Political Quiz Interface](design-assets/survey/quadrant.png)
+*Interactive political quiz helping users discover their values*
 
-*Interactive political compass placing users on economic and social axes*
+![Political Compass Results](design-assets/quadrant.png)
 
-</div>
+*Personalized political compass placing users on economic and social axes*
 
 ## Why This Platform Exists
 
+![Value Propositions](design-assets/valueprops.png)
+
 **The Problem:** Young people feel disconnected from politics, seeing it as distant, divisive, or irrelevant to their daily lives. Traditional civic engagement feels intimidating and abstract.
 
-**Our Solution:** CivicNet makes politics personal and actionable. Our 2-minute quiz helps users understand their values, then connects them with specific local opportunities that match their beliefs and interests.
+**Our Solution:** Votely makes politics personal and actionable. Our 2-minute quiz helps users understand their values, then connects them with specific local opportunities that match their beliefs and interests.
 
 **Impact Goals:** Transform political apathy into civic participation by making local democracy accessible, engaging, and results-oriented for a new generation.
 
-## How CivicNet Works
+## How Votely Works
 
 <div align="center">
 
-![Learn](votely-landing/public/Page%201%20-%20Learn.svg) 
-![Act](votely-landing/public/Page%202%20-%20Act.svg) 
-![Map](votely-landing/public/Page%203%20-%20Map.svg)
+<img src="votely-landing/public/Page%201%20-%20Learn.svg" width="250" alt="Learn your values" style="display: inline-block; margin: 10px;">
+<img src="votely-landing/public/Page%202%20-%20Act.svg" width="250" alt="Act on your beliefs" style="display: inline-block; margin: 10px;">
+<img src="votely-landing/public/Page%203%20-%20Map.svg" width="250" alt="Map your impact" style="display: inline-block; margin: 10px;">
 
 **Learn** your values → **Act** on your beliefs → **Map** your impact
 
@@ -100,7 +102,7 @@ CivicNet bridges the gap between political awareness and local action. Instead o
 ## Project Structure
 
 ```
-CivicNet/
+Votely/
 ├── votely-landing/          # Marketing site (React + Vite)
 │   ├── src/components/      # Reusable UI components
 │   ├── src/pages/          # Route components and legal pages
@@ -126,8 +128,8 @@ CivicNet/
 
 1. **Clone and Navigate**
    ```bash
-   git clone https://github.com/juleslemee/CivicNet.git
-   cd CivicNet/votely-landing
+   git clone https://github.com/juleslemee/Votely.git
+   cd Votely/votely-landing
    ```
 
 2. **Install Dependencies**

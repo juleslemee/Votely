@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-background: theme('colors.background.DEFAULT');
+    --color-foreground: theme('colors.foreground.DEFAULT');
+    --color-primary: theme('colors.primary.DEFAULT');
+    --color-primary-dark: theme('colors.secondary.DEFAULT');
+  }
+
+  body {
+    @apply bg-background text-foreground font-noto;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-ubuntu;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: theme('colors.background.dark');
+    --color-foreground: theme('colors.foreground.dark');
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-r from-primary to-secondary;
+  }
+}

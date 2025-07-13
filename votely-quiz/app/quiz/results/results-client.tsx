@@ -215,9 +215,6 @@ export default function ResultsClient() {
     return isNaN(num) ? 0.5 : num; // Default to neutral if parsing fails
   });
   
-  console.log('Quiz type:', quizType);
-  console.log('Raw answers:', answers);
-  
   const { economic, social } = calculateScores(answers, quizType);
   // Convert to -10..10 scale for Vision alignment
   const x = toVisionScale(economic);

@@ -109,9 +109,59 @@ export function PoliticalCompassSvg({ point, animateDot }: PoliticalCompassSvgPr
     >
       {/* Draw grid squares */}
       {squares}
-      {/* Axes only, no axis labels */}
+      {/* Axes with labels */}
       <line x1={toSvg(0)} y1={toSvg(-10)} x2={toSvg(0)} y2={toSvg(10)} stroke={gridLine} strokeWidth={1.5} />
       <line x1={toSvg(-10)} y1={toSvg(0)} x2={toSvg(10)} y2={toSvg(0)} stroke={gridLine} strokeWidth={1.5} />
+      
+      {/* Axis labels */}
+      <text
+        x={center}
+        y={toSvg(-10) + 15}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={12}
+        fontWeight="500"
+        fill={eerieBlack}
+        style={{ pointerEvents: 'none' }}
+      >
+        Authoritarian
+      </text>
+      <text
+        x={center}
+        y={toSvg(10) - 15}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={12}
+        fontWeight="500"
+        fill={eerieBlack}
+        style={{ pointerEvents: 'none' }}
+      >
+        Libertarian
+      </text>
+      <text
+        x={toSvg(-10) + 15}
+        y={center}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={12}
+        fontWeight="500"
+        fill={eerieBlack}
+        style={{ pointerEvents: 'none', transform: `rotate(-90deg)`, transformOrigin: `${toSvg(-10) + 15}px ${center}px` }}
+      >
+        Economic Left
+      </text>
+      <text
+        x={toSvg(10) - 15}
+        y={center}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={12}
+        fontWeight="500"
+        fill={eerieBlack}
+        style={{ pointerEvents: 'none', transform: `rotate(90deg)`, transformOrigin: `${toSvg(10) - 15}px ${center}px` }}
+      >
+        Economic Right
+      </text>
       {/* Draw center diamond (above grid lines) */}
       <polygon
         points={diamond.map((p) => p.join(",")).join(" ")}

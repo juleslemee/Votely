@@ -28,7 +28,7 @@ function formatLabel(label: string, x: number): React.ReactNode {
 
 export function PoliticalCompassSvg({ point, animateDot }: PoliticalCompassSvgProps) {
   // Add margin so the point is never cut off
-  const margin = 18; // px, enough for the point's radius and stroke
+  const margin = 35; // px, increased to accommodate axis labels outside
   const size = 400;
   const graphSize = size - margin * 2;
   const center = size / 2;
@@ -43,7 +43,7 @@ export function PoliticalCompassSvg({ point, animateDot }: PoliticalCompassSvgPr
   // Brand eerie black (use Tailwind text-foreground or #1C2321)
   const eerieBlack = '#1C2321';
   const antiFlashWhite = '#EEF1EF';
-  const gridLine = '#B07DD5'; // Brand lavender
+  const gridLine = 'rgba(0, 0, 0, 0.5)'; // Black with 50% transparency
 
   // Zone grid: 4x4 squares, center diamond
   const squares = [];
@@ -107,16 +107,22 @@ export function PoliticalCompassSvg({ point, animateDot }: PoliticalCompassSvgPr
       className="w-full h-auto"
       aria-label="Political Compass"
     >
+      {/* Background colors for quadrants */}
+      <rect x={toSvg(-10)} y={toSvg(-10)} width={scale * 10} height={scale * 10} fill="#f9bcbb" />
+      <rect x={toSvg(0)} y={toSvg(-10)} width={scale * 10} height={scale * 10} fill="#92dbf9" />
+      <rect x={toSvg(-10)} y={toSvg(0)} width={scale * 10} height={scale * 10} fill="#c8e4bb" />
+      <rect x={toSvg(0)} y={toSvg(0)} width={scale * 10} height={scale * 10} fill="#f5f5a7" />
+      
       {/* Draw grid squares */}
       {squares}
       {/* Axes with labels */}
       <line x1={toSvg(0)} y1={toSvg(-10)} x2={toSvg(0)} y2={toSvg(10)} stroke={gridLine} strokeWidth={1.5} />
       <line x1={toSvg(-10)} y1={toSvg(0)} x2={toSvg(10)} y2={toSvg(0)} stroke={gridLine} strokeWidth={1.5} />
       
-      {/* Axis labels */}
+      {/* Axis labels - positioned outside the grid */}
       <text
         x={center}
-        y={toSvg(-10) + 15}
+        y={toSvg(-10) - 20}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={12}
@@ -128,7 +134,7 @@ export function PoliticalCompassSvg({ point, animateDot }: PoliticalCompassSvgPr
       </text>
       <text
         x={center}
-        y={toSvg(10) - 15}
+        y={toSvg(10) + 20}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={12}
@@ -139,26 +145,26 @@ export function PoliticalCompassSvg({ point, animateDot }: PoliticalCompassSvgPr
         Libertarian
       </text>
       <text
-        x={toSvg(-10) + 15}
+        x={toSvg(-10) - 20}
         y={center}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={12}
         fontWeight="500"
         fill={eerieBlack}
-        style={{ pointerEvents: 'none', transform: `rotate(-90deg)`, transformOrigin: `${toSvg(-10) + 15}px ${center}px` }}
+        style={{ pointerEvents: 'none', transform: `rotate(-90deg)`, transformOrigin: `${toSvg(-10) - 20}px ${center}px` }}
       >
         Economic Left
       </text>
       <text
-        x={toSvg(10) - 15}
+        x={toSvg(10) + 20}
         y={center}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={12}
         fontWeight="500"
         fill={eerieBlack}
-        style={{ pointerEvents: 'none', transform: `rotate(90deg)`, transformOrigin: `${toSvg(10) - 15}px ${center}px` }}
+        style={{ pointerEvents: 'none', transform: `rotate(90deg)`, transformOrigin: `${toSvg(10) + 20}px ${center}px` }}
       >
         Economic Right
       </text>

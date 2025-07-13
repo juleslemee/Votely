@@ -14,7 +14,7 @@ import {
 } from './types';
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
 import React, { useRef, useState, useEffect } from 'react';
-import { saveQuizResult, updateQuizResultEmail } from '@/lib/quiz';
+import { saveQuizResult } from '@/lib/quiz';
 
 // SVGs to preload for next steps
 const NEXT_STEPS_SVGS = [
@@ -92,20 +92,24 @@ function calculateScores(answers: number[], quizType: string = 'short') {
 }
 
 function handleShare() {
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('shared', 'true');
+  const shareUrl = currentUrl.toString();
+  
   const shareData = {
     title: 'My Political Alignment Results',
     text: 'Check out my political alignment results on Votely!',
-    url: window.location.href,
+    url: shareUrl,
   };
 
   if (navigator.share) {
     navigator.share(shareData).catch(() => {});
   } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(shareUrl);
     alert('Link copied to clipboard!');
   } else {
     // Fallback for very old browsers
-    window.prompt('Copy this link:', window.location.href);
+    window.prompt('Copy this link:', shareUrl);
   }
 }
 
@@ -194,6 +198,7 @@ export default function ResultsClient() {
   const searchParams = useSearchParams();
   const answersParam = searchParams.get('answers');
   const quizType = searchParams.get('type') || 'short';
+  const isShared = searchParams.get('shared') === 'true';
   const graphRef = useRef<HTMLDivElement>(null);
   const [showMotionDot, setShowMotionDot] = useState(true);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
@@ -221,9 +226,9 @@ export default function ResultsClient() {
   const y = toVisionScale(social);
   const alignment = findVisionAlignment(x, y);
 
-  // Save the quiz result
+  // Save the quiz result (skip if this is a shared result)
   useEffect(() => {
-    if (hasSaved.current) return;
+    if (hasSaved.current || isShared) return;
     hasSaved.current = true;
     
     saveQuizResult({
@@ -237,18 +242,8 @@ export default function ResultsClient() {
     })
       .then(id => setDocId(id))
       .catch(console.error);
-  }, [answers, economic, social, alignment]);
+  }, [answers, economic, social, alignment, isShared]);
 
-  const handleEmailSubmit = async (email: string) => {
-    if (!docId) return;
-    try {
-      await updateQuizResultEmail(docId, email);
-      // Show success message or update UI
-    } catch (error) {
-      console.error('Failed to update email:', error);
-      // Show error message
-    }
-  };
 
   // Calculate dot position (convert -10..10 to 0..100 for CSS/SVG)
   const dotX = ((x + 10) / 20) * 100;
@@ -292,6 +287,11 @@ export default function ResultsClient() {
       {/* Main content */}
       <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         <div className="text-center space-y-4">
+          {isShared && (
+            <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              👤 Viewing shared results
+            </div>
+          )}
           <h1 className="text-4xl font-bold text-foreground">Your Political Alignment</h1>
           <div className="inline-block bg-background rounded-2xl shadow-lg p-6 space-y-2">
             <h2 className="text-3xl md:text-4xl font-extrabold flex items-center justify-center gap-2">
@@ -358,18 +358,23 @@ export default function ResultsClient() {
           >
             Share With Friends
           </button>
-          <button 
-            className="w-full p-3 md:p-6 text-base md:text-xl text-white bg-[#B07DD5] rounded-2xl hover:bg-[#8E5DB0] transition-colors col-span-1"
-            onClick={() => {
-              if (docId) {
-                router.push(`/quiz/next?resultId=${docId}`);
-              } else {
-                router.push('/quiz/next');
-              }
-            }}
-          >
-            Take the next step
-          </button>
+          <div className="relative col-span-1">
+            {/* Background layer for depth effect */}
+            <div className="absolute inset-0 bg-[#6200B3] rounded-2xl transform translate-x-1 translate-y-1"></div>
+            {/* Main button */}
+            <button 
+              className="relative w-full p-3 md:p-6 text-base md:text-xl font-semibold text-white bg-[#6200B3] rounded-2xl hover:bg-[#4B006E] active:transform active:translate-x-0.5 active:translate-y-0.5 transition-all duration-150 shadow-lg"
+              onClick={() => {
+                if (docId) {
+                  router.push(`/quiz/next?resultId=${docId}`);
+                } else {
+                  router.push('/quiz/next');
+                }
+              }}
+            >
+              Next Steps
+            </button>
+          </div>
         </div>
       </div>
     </div>

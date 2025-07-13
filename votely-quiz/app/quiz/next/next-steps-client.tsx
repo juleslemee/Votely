@@ -2,10 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
-import { db } from '../../../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
 import { useSearchParams } from 'next/navigation';
-import { updateQuizResultEmail } from '@/lib/quiz';
+import { saveEmailToWaitlist } from '@/lib/quiz';
 
 const carouselScreenshots = [
   { src: '/Page 1 - Learn.svg', alt: 'Learn civics screenshot' },
@@ -19,8 +17,6 @@ function NextStepsContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [autoSlide, setAutoSlide] = useState(true);
-  const searchParams = useSearchParams();
-  const quizResultId = searchParams.get('resultId');
 
   // Auto-slide every 4s unless user has interacted
   useEffect(() => {
@@ -45,21 +41,8 @@ function NextStepsContent() {
     if (!email || isSubmitting) return;
     try {
       setIsSubmitting(true);
-      // Add to waitlist
-      await addDoc(collection(db, 'waitlist'), {
-        email,
-        timestamp: new Date(),
-        source: 'quiz_completion'
-      });
-      // Update quiz result email if we have a resultId
-      if (quizResultId) {
-        try {
-          await updateQuizResultEmail(quizResultId, email);
-        } catch (error) {
-          console.error('Error updating quiz result email:', error);
-          // Continue even if this fails - we still want to show success for waitlist
-        }
-      }
+      // Add to waitlist (emails are no longer associated with quiz results)
+      await saveEmailToWaitlist(email);
       setIsSuccess(true);
     } catch (error) {
       console.error('Error saving email:', error);
@@ -80,11 +63,11 @@ function NextStepsContent() {
               <Image src="/logo.svg" alt="Votely Logo" fill className="object-contain" priority />
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-4xl font-bold text-white font-ubuntu break-words mt-2 w-full max-w-2xl mx-auto drop-shadow-lg">
-              Take Your Next Steps With Us
+              Ready to Take Action?
             </h2>
             <div className="w-full flex justify-center mt-2 md:mt-4">
               <p className="text-center text-lg sm:text-xl md:text-2xl text-white/90 break-words max-w-xl">
-                See local events, make your voice heard,<br />and meet your representatives.
+                Join people like you getting alerts for local events,<br />candidate forums, and ways to make impact.<br /><br /><br />Sign up to here about app's upcoming release:
               </p>
             </div>
           </div>
@@ -111,8 +94,11 @@ function NextStepsContent() {
                       : 'bg-[#6200B3] hover:bg-[#6200B3]/80'} 
                     transition-colors`}
                 >
-                  {isSubmitting ? 'Joining...' : 'Get My Civic Action Plan'}
+                  {isSubmitting ? 'Joining...' : 'Commit To Civic Action'}
                 </button>
+                <p className="text-white/70 text-sm text-center px-2">
+                  🔒 For your privacy, your email won't be linked to your quiz results
+                </p>
               </form>
             ) : (
               <div className="bg-white/10 p-6 rounded-xl text-white text-center">

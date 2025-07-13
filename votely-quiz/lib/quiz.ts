@@ -11,7 +11,6 @@ export type QuizResult = {
     alignmentDescription: string;
   };
   timestamp: Timestamp;
-  email?: string | null;
   userId?: string | null;
 };
 
@@ -37,12 +36,19 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
   }
 }
 
-export async function updateQuizResultEmail(docId: string, email: string) {
+export async function saveEmailToWaitlist(email: string) {
   try {
-    const docRef = doc(db, 'quizResponses', docId);
-    await updateDoc(docRef, { email });
+    const docRef = await addDoc(
+      collection(db, 'waitlist'),
+      {
+        email,
+        timestamp: serverTimestamp(),
+        source: 'quiz_completion'
+      }
+    );
+    return docRef.id;
   } catch (error) {
-    console.error('Error updating quiz result email:', error);
+    console.error('Error saving email to waitlist:', error);
     throw error;
   }
 } 

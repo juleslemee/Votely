@@ -20,18 +20,59 @@ export interface QuestionConfig {
 }
 
 export const QUESTION_CONFIG: QuestionConfig[] = [
-  { id: 1, axis: 'economic', agreeDirection: 'left' }, // Billionaire tax
-  { id: 2, axis: 'economic', agreeDirection: 'left' }, // Climate action
-  { id: 3, axis: 'social', agreeDirection: 'libertarian' }, // Police funding
-  { id: 4, axis: 'economic', agreeDirection: 'left' }, // Student debt
-  { id: 5, axis: 'economic', agreeDirection: 'left' }, // Healthcare
-  { id: 6, axis: 'social', agreeDirection: 'libertarian' }, // History education
-  { id: 7, axis: 'social', agreeDirection: 'authoritarian' }, // Social media
-  { id: 8, axis: 'social', agreeDirection: 'authoritarian' }, // Gun control
-  { id: 9, axis: 'economic', agreeDirection: 'left' }, // Minimum wage
-  { id: 10, axis: 'social', agreeDirection: 'libertarian' }, // DEI
-  { id: 11, axis: 'social', agreeDirection: 'libertarian' }, // Global cooperation
-  { id: 12, axis: 'social', agreeDirection: 'libertarian' }, // Personal choices
+  // ECONOMIC QUESTIONS (25 total) - IDs 1-25
+  { id: 1, axis: 'economic', agreeDirection: 'left' }, // High tax rates
+  { id: 2, axis: 'economic', agreeDirection: 'left' }, // Renewable energy investment
+  { id: 3, axis: 'economic', agreeDirection: 'left' }, // Union rights
+  { id: 4, axis: 'economic', agreeDirection: 'left' }, // Minimum wage increase
+  { id: 5, axis: 'economic', agreeDirection: 'left' }, // Government healthcare
+  { id: 6, axis: 'economic', agreeDirection: 'left' }, // Student loan forgiveness
+  { id: 7, axis: 'economic', agreeDirection: 'left' }, // Corporate breakup
+  { id: 8, axis: 'economic', agreeDirection: 'left' }, // Universal basic income
+  { id: 9, axis: 'economic', agreeDirection: 'left' }, // Campaign contribution restrictions
+  { id: 10, axis: 'economic', agreeDirection: 'right' }, // Private property ownership
+  { id: 11, axis: 'economic', agreeDirection: 'right' }, // Free trade benefits
+  { id: 12, axis: 'economic', agreeDirection: 'left' }, // Price regulation
+  { id: 13, axis: 'economic', agreeDirection: 'right' }, // Individual effort inequality
+  { id: 14, axis: 'economic', agreeDirection: 'left' }, // Infrastructure over tax cuts
+  { id: 15, axis: 'economic', agreeDirection: 'left' }, // Financial oversight
+  { id: 16, axis: 'economic', agreeDirection: 'left' }, // Small business tax advantages
+  { id: 17, axis: 'economic', agreeDirection: 'left' }, // Guaranteed employment
+  { id: 18, axis: 'economic', agreeDirection: 'left' }, // International cooperation
+  { id: 19, axis: 'economic', agreeDirection: 'left' }, // Inheritance taxes
+  { id: 20, axis: 'economic', agreeDirection: 'right' }, // Market competition
+  { id: 21, axis: 'economic', agreeDirection: 'left' }, // Renewable subsidies
+  { id: 22, axis: 'economic', agreeDirection: 'left' }, // Cryptocurrency regulation
+  { id: 23, axis: 'economic', agreeDirection: 'left' }, // Public transportation funding
+  { id: 24, axis: 'economic', agreeDirection: 'right' }, // Growth over environment
+  { id: 25, axis: 'economic', agreeDirection: 'right' }, // Safety nets reduce motivation
+
+  // SOCIAL QUESTIONS (25 total) - IDs 26-50
+  { id: 26, axis: 'social', agreeDirection: 'authoritarian' }, // Government surveillance
+  { id: 27, axis: 'social', agreeDirection: 'authoritarian' }, // Content removal
+  { id: 28, axis: 'social', agreeDirection: 'libertarian' }, // Reduce police funding
+  { id: 29, axis: 'social', agreeDirection: 'authoritarian' }, // Gun control
+  { id: 30, axis: 'social', agreeDirection: 'libertarian' }, // Historical injustices education
+  { id: 31, axis: 'social', agreeDirection: 'libertarian' }, // Personal body choices
+  { id: 32, axis: 'social', agreeDirection: 'authoritarian' }, // Diversity hiring
+  { id: 33, axis: 'social', agreeDirection: 'authoritarian' }, // Security over privacy
+  { id: 34, axis: 'social', agreeDirection: 'libertarian' }, // Religious exemptions
+  { id: 35, axis: 'social', agreeDirection: 'authoritarian' }, // Economic-based immigration
+  { id: 36, axis: 'social', agreeDirection: 'authoritarian' }, // Traditional family structures
+  { id: 37, axis: 'social', agreeDirection: 'authoritarian' }, // Hate speech prohibition
+  { id: 38, axis: 'social', agreeDirection: 'authoritarian' }, // Cultural assimilation
+  { id: 39, axis: 'social', agreeDirection: 'libertarian' }, // Government moral neutrality
+  { id: 40, axis: 'social', agreeDirection: 'authoritarian' }, // Standardized moral education
+  { id: 41, axis: 'social', agreeDirection: 'libertarian' }, // Peaceful protest rights
+  { id: 42, axis: 'social', agreeDirection: 'libertarian' }, // Cultural heritage connections
+  { id: 43, axis: 'social', agreeDirection: 'authoritarian' }, // Surveillance for safety
+  { id: 44, axis: 'social', agreeDirection: 'libertarian' }, // Local community authority
+  { id: 45, axis: 'social', agreeDirection: 'libertarian' }, // International over national
+  { id: 46, axis: 'social', agreeDirection: 'authoritarian' }, // Scientific consensus in policy
+  { id: 47, axis: 'social', agreeDirection: 'libertarian' }, // Individual merit priority
+  { id: 48, axis: 'social', agreeDirection: 'authoritarian' }, // Social hierarchy necessity
+  { id: 49, axis: 'social', agreeDirection: 'libertarian' }, // Drug use as health issue
+  { id: 50, axis: 'social', agreeDirection: 'authoritarian' }, // Stability over change
 ];
 
 // Scoring constants

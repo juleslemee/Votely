@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 
 interface Star {
   top: number;
@@ -67,6 +70,7 @@ for (let i = 0; i < NUM_STARS; i++) {
 }
 
 export default function Home() {
+  const [showQuizOptions, setShowQuizOptions] = useState(false);
   return (
     <div className="flex flex-col items-center justify-center min-h-screen relative bg-background overflow-hidden">
       {/* Random, Non-overlapping Star Pattern */}
@@ -102,11 +106,40 @@ export default function Home() {
           </h1>
           {/* Button stack */}
           <div className="flex flex-col gap-4 w-full max-w-xs md:max-w-md">
-            <Link href="/quiz">
-              <button className="w-full py-4 text-xl md:text-2xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition">
+            {!showQuizOptions ? (
+              <button 
+                onClick={() => setShowQuizOptions(true)}
+                className="w-full py-4 text-xl md:text-2xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition"
+              >
                 Start Quiz
               </button>
-            </Link>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="text-center text-foreground/75 mb-2">
+                  Choose your quiz length:
+                </div>
+                <div className="flex gap-3">
+                  <Link href="/quiz?type=short" className="flex-1">
+                    <button className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-500 text-white hover:bg-purple-600 transition">
+                      Shortform<br />
+                      <span className="text-sm opacity-90">(10 Questions)</span>
+                    </button>
+                  </Link>
+                  <Link href="/quiz?type=long" className="flex-1">
+                    <button className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition">
+                      Longform<br />
+                      <span className="text-sm opacity-90">(50 Questions)</span>
+                    </button>
+                  </Link>
+                </div>
+                <button 
+                  onClick={() => setShowQuizOptions(false)}
+                  className="text-sm text-foreground/60 hover:text-foreground/80 transition mt-2"
+                >
+                  Back
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

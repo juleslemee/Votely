@@ -35,25 +35,60 @@ function ImagePreloader() {
   return null;
 }
 
-function calculateScores(answers: number[]) {
+function calculateScores(answers: number[], quizType: string = 'short') {
   let economicScore = 0;
   let socialScore = 0;
+  let economicQuestions = 0;
+  let socialQuestions = 0;
 
-  QUESTION_CONFIG.forEach((config, index) => {
-    const answer = answers[index];
-    const score = ANSWER_SCORES[answer as keyof typeof ANSWER_SCORES];
+  // Convert continuous values (0-1) to score values (-2 to +2)
+  const convertToScore = (value: number): number => {
+    return (value - 0.5) * 4; // Maps 0->-2, 0.5->0, 1->2
+  };
+
+  // Map question indices to actual question IDs based on quiz type
+  const getQuestionIds = (quizType: string): number[] => {
+    if (quizType === 'long') {
+      // Long quiz uses all questions 1-50
+      return Array.from({ length: 50 }, (_, i) => i + 1);
+    } else {
+      // Short quiz uses specific question IDs: [1, 5, 4, 11, 20, 26, 29, 31, 37, 41]
+      return [1, 5, 4, 11, 20, 26, 29, 31, 37, 41];
+    }
+  };
+
+  const questionIds = getQuestionIds(quizType);
+
+  questionIds.forEach((questionId, index) => {
+    if (index >= answers.length) return; // Skip if we don't have an answer
+    
+    const continuousValue = answers[index];
+    if (isNaN(continuousValue)) return; // Skip NaN values
+    
+    const score = convertToScore(continuousValue);
+    
+    // Find the config for this question ID
+    const config = QUESTION_CONFIG.find(c => c.id === questionId);
+    if (!config) return; // Skip if config not found
 
     if (config.axis === 'economic') {
       economicScore += config.agreeDirection === 'left' ? -score : score;
+      economicQuestions++;
     } else {
       socialScore += config.agreeDirection === 'authoritarian' ? score : -score;
+      socialQuestions++;
     }
   });
 
-  return {
-    economic: normalizeScore(economicScore, MAX_ECONOMIC_SCORE),
-    social: normalizeScore(socialScore, MAX_SOCIAL_SCORE)
-  };
+  // Calculate max possible scores based on number of questions answered
+  const maxEconomicScore = economicQuestions * 2;
+  const maxSocialScore = socialQuestions * 2;
+
+  // Prevent division by zero
+  const economic = maxEconomicScore > 0 ? normalizeScore(economicScore, maxEconomicScore) : 0;
+  const social = maxSocialScore > 0 ? normalizeScore(socialScore, maxSocialScore) : 0;
+
+  return { economic, social };
 }
 
 function handleShare() {
@@ -158,6 +193,7 @@ export default function ResultsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const answersParam = searchParams.get('answers');
+  const quizType = searchParams.get('type') || 'short';
   const graphRef = useRef<HTMLDivElement>(null);
   const [showMotionDot, setShowMotionDot] = useState(true);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
@@ -174,8 +210,15 @@ export default function ResultsClient() {
     return <div>No results found. Please take the quiz first.</div>;
   }
 
-  const answers = answersParam.split(',').map(Number);
-  const { economic, social } = calculateScores(answers);
+  const answers = answersParam.split(',').map(val => {
+    const num = parseFloat(val);
+    return isNaN(num) ? 0.5 : num; // Default to neutral if parsing fails
+  });
+  
+  console.log('Quiz type:', quizType);
+  console.log('Raw answers:', answers);
+  
+  const { economic, social } = calculateScores(answers, quizType);
   // Convert to -10..10 scale for Vision alignment
   const x = toVisionScale(economic);
   const y = toVisionScale(social);

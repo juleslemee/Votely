@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { saveEmailToWaitlist } from '@/lib/quiz';
+import { Rocket, Target, Users, Lightbulb, Heart, Shield, Lock } from 'lucide-react';
 
 const carouselScreenshots = [
   { src: '/Page 1 - Learn.png', alt: 'Learn civics screenshot' },
@@ -78,65 +79,76 @@ function NextStepsContent() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#B07DD5] bg-gradient-to-b from-[#B07DD5] to-[#6200B3] px-4 md:px-8 py-4 md:py-8 overflow-x-hidden max-w-screen-sm md:max-w-full mx-auto">
-      <div className="w-full max-w-full flex flex-col md:flex-row gap-4 md:gap-8 items-center justify-center min-h-screen">
-        {/* Left column: logo/title, subtitle, form */}
-        <div className="flex flex-col h-full justify-center items-center text-center w-full md:w-3/5 max-w-xl md:max-w-2xl md:min-h-[80vh] gap-y-0 md:gap-y-12">
-          {/* Top: Logo + Title + Subtitle */}
-          <div className="flex flex-col items-center text-center w-full">
-            <div className="w-16 h-16 md:w-20 md:h-20 relative flex-shrink-0 mx-auto">
-              <Image src="/logo.svg" alt="Votely Logo" fill className="object-contain" priority />
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-4xl font-bold text-white font-ubuntu break-words mt-2 w-full max-w-2xl mx-auto drop-shadow-lg">
-              Ready to Take Action?
-            </h2>
-            <div className="w-full flex justify-center mt-2 md:mt-4">
-              <p className="text-center text-lg sm:text-xl md:text-2xl text-white/90 break-words max-w-xl">
-                Join people like you getting alerts for local events, candidate forums, and ways to make impact.<br/><br/><br/>Sign up to here about app's upcoming release:
-              </p>
+    <div className="w-full min-h-screen bg-[#B07DD5] bg-gradient-to-b from-[#B07DD5] to-[#6200B3] px-4 md:px-8 py-4 md:py-8 overflow-x-hidden">
+      <div className="w-full max-w-6xl mx-auto flex flex-col md:flex-row gap-8 md:gap-12 items-center justify-center min-h-screen">
+        {/* Left column: Simplified content */}
+        <div className="flex flex-col justify-center w-full md:w-1/2 max-w-xl space-y-4 md:space-y-5">
+          {/* Pre-launch Badge */}
+          <div className="flex items-center gap-2">
+            <div className="bg-white/20 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium backdrop-blur-sm border border-white/30 animate-pulse">
+              <Rocket className="w-4 h-4" />
+              Pre-Launch • Building Now
             </div>
           </div>
-          {/* Small fixed gap below subtitle */}
-          <div className="mt-4 md:mt-4" />
-          {/* Bottom: Form section */}
-          <div className="space-y-6 w-full max-w-md mx-auto md:mx-0">
-            {!isSuccess ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  className="w-full p-4 text-xl rounded-xl bg-white/95 placeholder-[#B07DD5] text-[#6200B3] text-center"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`w-full p-4 text-2xl font-bold text-white rounded-xl shadow-lg 
-                    ${isSubmitting 
-                      ? 'bg-[#6200B3]/50' 
-                      : 'bg-[#6200B3] hover:bg-[#6200B3]/80'} 
-                    transition-colors`}
-                >
-                  {isSubmitting ? 'Joining...' : 'Commit To Civic Action'}
-                </button>
-                <p className="text-white/70 text-sm text-center px-2">
-                  🔒 For your privacy, your email won't be linked to your quiz results
-                </p>
-              </form>
-            ) : (
-              <div className="bg-white/10 p-6 rounded-xl text-white text-center">
-                <h3 className="text-xl font-semibold mb-2">You're on the list!</h3>
-                <p>We'll notify you when Votely launches in your area.</p>
+
+          {/* Main Headline */}
+          <div className="space-y-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white font-ubuntu leading-tight">
+              Help Us Build the Future of Civic Engagement
+            </h1>
+            <p className="text-lg md:text-xl text-white/90">
+              We're creating something that could fundamentally change how people connect with their local government. Join our founding community and help shape a tool that could transform democracy.
+            </p>
+          </div>
+
+          {/* The Vision */}
+          <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
+            <h3 className="text-white font-semibold text-lg mb-3">The Vision</h3>
+            <p className="text-white/90 text-sm leading-relaxed">
+              Image if we could make civic action as easy as scrolling social media. We're building this reality; a world where participation begets fairness and unity.
+            </p>
+          </div>
+
+          {/* What We're Building Together */}
+          <div className="space-y-4">
+            <h3 className="text-white font-semibold text-lg">What We're Building Together:</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Target className="w-5 h-5 text-white/80 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-white mb-1">Hyper-Local Civic Intelligence</p>
+                  <p className="text-white/70 text-sm">Smart alerts for town halls, elections, and opportunities to make a difference in your specific area</p>
+                </div>
               </div>
-            )}
+              <div className="flex items-start gap-3">
+                <Users className="w-5 h-5 text-white/80 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-white mb-1">Community Action Network</p>
+                  <p className="text-white/70 text-sm">Connect with neighbors who share your values and coordinate local impact</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 text-white/80 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-white mb-1">Democratic Innovation</p>
+                  <p className="text-white/70 text-sm">New tools and approaches to make civic participation accessible and effective</p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Why this matters now */}
+          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">
+            <p className="text-white/90 text-sm">
+              <span className="font-semibold">Why this matters now:</span> Local politics affects your daily life more than federal politics, yet most people don't know when their city council meets or how to get involved. We can change that.
+            </p>
+          </div>
+
+
+
         </div>
-        {/* Right column: carousel */}
-        {/* Divider for desktop */}
-        <div className="hidden md:block h-[60vh] w-px bg-white/20 mx-6 rounded-full" />
-        <div className="flex flex-col items-center w-full md:w-2/5 max-w-md md:max-w-lg mx-auto md:mx-0 gap-2 md:gap-4 justify-center h-full md:min-h-[80vh]">
+        {/* Right column: App mockups */}
+        <div className="flex flex-col items-center w-full md:w-1/2 max-w-xs md:max-w-sm space-y-4">
           {/* Mobile arrows and dots above the image */}
           <div className="flex md:hidden w-full items-center justify-center gap-2 px-4 mb-2">
             <button
@@ -168,7 +180,7 @@ function NextStepsContent() {
               </svg>
             </button>
           </div>
-          <div className="w-full aspect-[9/19] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto relative max-h-[80vh]">
+          <div className="w-full aspect-[9/19] max-w-[200px] sm:max-w-[240px] md:max-w-[280px] mx-auto relative max-h-[60vh]">
             {/* Render all images but only show the active one */}
             {carouselScreenshots.map((screenshot, idx) => (
               <Image
@@ -182,11 +194,10 @@ function NextStepsContent() {
                 priority
               />
             ))}
-            {/* Desktop arrows: absolute, vertically centered, no dots */}
+            {/* Desktop arrows: positioned further from mockup */}
             <button
               aria-label="Previous"
-              className="hidden md:flex bg-white/80 hover:bg-white text-[#6200B3] rounded-full p-2 shadow transition items-center justify-center pointer-events-auto absolute left-0 top-1/2 -translate-y-1/2 z-10"
-              style={{ transform: 'translateY(-50%)' }}
+              className="hidden md:flex bg-white/80 hover:bg-white text-[#6200B3] rounded-full p-2 shadow transition items-center justify-center pointer-events-auto absolute -left-12 top-1/2 -translate-y-1/2 z-10"
               onClick={() => handleArrow(-1)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -195,8 +206,7 @@ function NextStepsContent() {
             </button>
             <button
               aria-label="Next"
-              className="hidden md:flex bg-white/80 hover:bg-white text-[#6200B3] rounded-full p-2 shadow transition items-center justify-center pointer-events-auto absolute right-0 top-1/2 -translate-y-1/2 z-10"
-              style={{ transform: 'translateY(-50%)' }}
+              className="hidden md:flex bg-white/80 hover:bg-white text-[#6200B3] rounded-full p-2 shadow transition items-center justify-center pointer-events-auto absolute -right-12 top-1/2 -translate-y-1/2 z-10"
               onClick={() => handleArrow(1)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -204,6 +214,70 @@ function NextStepsContent() {
               </svg>
             </button>
           </div>
+
+          {/* CTA Section moved below mockups */}
+          <div className="w-full space-y-4 max-w-md">
+            {!isSuccess ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Join Our Email Community"
+                  className="w-full p-4 text-lg rounded-xl bg-white/95 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full p-5 text-xl font-bold text-[#6200B3] bg-white rounded-xl shadow-xl 
+                    ${isSubmitting 
+                      ? 'opacity-50' 
+                      : 'hover:bg-white/90 hover:scale-105 hover:shadow-2xl'} 
+                    transition-all duration-200 transform`}
+                >
+                  {isSubmitting ? 'Joining the Movement...' : 'Count Me In'}
+                </button>
+              </form>
+            ) : (
+              <div className="bg-white/10 p-6 rounded-xl text-white text-center backdrop-blur-sm border border-white/20">
+                <h3 className="text-xl font-semibold mb-2">Welcome to the Movement!</h3>
+                <p>Check your email for updates on our progress and how you can help shape the future of civic engagement.</p>
+              </div>
+            )}
+
+            {/* Founding Supporter Benefits */}
+            {!isSuccess && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-white text-center text-sm">As a founding supporter, you'll get:</h4>
+                <div className="space-y-2 text-white/90 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-white/80" />
+                    <span>Behind-the-scenes updates on our progress</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-white/80" />
+                    <span>Input on features and direction</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Rocket className="w-4 h-4 text-white/80" />
+                    <span>First access when we launch</span>
+                  </div>
+                </div>
+                
+                {/* Trust signals */}
+                <div className="flex items-center justify-center gap-4 text-white/70 text-xs pt-2 border-t border-white/20">
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Your email won't be linked to your quiz results
+                  </span>
+                  <span>•</span>
+                  <span> 1-2 updates/year, no spam, unsubscribe anytime</span>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

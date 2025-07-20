@@ -6,9 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { saveEmailToWaitlist } from '@/lib/quiz';
 
 const carouselScreenshots = [
-  { src: '/Page 1 - Learn.svg', alt: 'Learn civics screenshot' },
-  { src: '/Page 2 - Act.svg', alt: 'Act on issues screenshot' },
-  { src: '/Page 3 - Map.svg', alt: 'Map of local action screenshot' },
+  { src: '/Page 1 - Learn.png', alt: 'Learn civics screenshot' },
+  { src: '/Page 2 - Act.png', alt: 'Act on issues screenshot' },
+  { src: '/Page 3 - Map.png', alt: 'Map of local action screenshot' },
 ];
 
 function NextStepsContent() {
@@ -17,6 +17,31 @@ function NextStepsContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [autoSlide, setAutoSlide] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Preload all carousel images
+  useEffect(() => {
+    const preloadImages = async () => {
+      const promises = carouselScreenshots.map((screenshot) => {
+        return new Promise((resolve, reject) => {
+          const img = new window.Image();
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = screenshot.src;
+        });
+      });
+      
+      try {
+        await Promise.all(promises);
+        setImagesLoaded(true);
+      } catch (error) {
+        console.error('Error preloading images:', error);
+        setImagesLoaded(true); // Still allow interaction even if preload fails
+      }
+    };
+    
+    preloadImages();
+  }, []);
 
   // Auto-slide every 4s unless user has interacted
   useEffect(() => {
@@ -144,13 +169,19 @@ function NextStepsContent() {
             </button>
           </div>
           <div className="w-full aspect-[9/19] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto relative max-h-[80vh]">
-            <Image
-              src={carouselScreenshots[carouselIdx].src}
-              alt={carouselScreenshots[carouselIdx].alt}
-              fill
-              className="object-contain"
-              priority
-            />
+            {/* Render all images but only show the active one */}
+            {carouselScreenshots.map((screenshot, idx) => (
+              <Image
+                key={idx}
+                src={screenshot.src}
+                alt={screenshot.alt}
+                fill
+                className={`object-contain transition-opacity duration-300 ${
+                  idx === carouselIdx ? 'opacity-100' : 'opacity-0'
+                }`}
+                priority
+              />
+            ))}
             {/* Desktop arrows: absolute, vertically centered, no dots */}
             <button
               aria-label="Previous"

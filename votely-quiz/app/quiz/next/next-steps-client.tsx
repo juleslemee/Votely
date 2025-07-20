@@ -67,7 +67,7 @@ function NextStepsContent() {
             </h2>
             <div className="w-full flex justify-center mt-2 md:mt-4">
               <p className="text-center text-lg sm:text-xl md:text-2xl text-white/90 break-words max-w-xl">
-                Join people like you getting alerts for local events,<br />candidate forums, and ways to make impact.<br /><br /><br />Sign up to here about app's upcoming release:
+                Join people like you getting alerts for local events, candidate forums, and ways to make impact.<br/><br/><br/>Sign up to here about app's upcoming release:
               </p>
             </div>
           </div>

@@ -54,11 +54,11 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="border-t border-gray-200 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-gray-200 mt-12 pt-6 flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-4">
           <p className="text-gray-500 text-sm">
             &copy; {new Date().getFullYear()} Votely. All rights reserved.
           </p>
-          <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:gap-2">
+          <div className="flex flex-wrap items-center justify-start md:justify-center gap-1 text-left md:text-center">
             <span>Made with</span>
             <span role="img" aria-label="love" className="text-lg">💜</span>
             <span>in Brooklyn by <a href="juleslemee.com" target="_blank" rel="noopener noreferrer" className="text-votely-lavender hover:text-votely-grape transition-colors">Jules Lemée</a></span>

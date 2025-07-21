@@ -226,6 +226,22 @@ export default function QuizPageClient() {
             </button>
           )}
         </div>
+        
+        <div className="flex justify-center items-center mt-8 pt-4 border-t border-gray-200/30">
+          <a 
+            href="https://votely.juleslemee.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors group"
+          >
+            <img 
+              src="/logo.svg" 
+              alt="Votely Logo" 
+              className="w-6 h-6 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-sm font-medium">Votely</span>
+          </a>
+        </div>
       </div>
     </div>
   );

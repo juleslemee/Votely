@@ -97,9 +97,14 @@ export default function Home() {
         {/* Main content */}
         <div className="relative z-10 flex flex-col items-center w-full p-8">
           {/* Logo */}
-          <div className="w-32 h-32 md:w-44 md:h-44 mb-8 relative">
+          <a 
+            href="https://votely.juleslemee.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-32 h-32 md:w-44 md:h-44 mb-8 relative block hover:scale-105 transition-transform"
+          >
             <Image src="/logo.svg" alt="Votely Logo" fill className="object-contain" priority />
-          </div>
+          </a>
           {/* Title */}
           <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-center">
             Welcome to Votely

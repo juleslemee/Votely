@@ -45,7 +45,7 @@ const Waitlist = () => {
             Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-votely-lavender to-blue-300">First Wave</span>
           </h2>
           <p className="text-lg md:text-xl mb-8 text-gray-300">
-          We're building Votely for students and young people who want to take action — without 
+          We're building Votely for students and young people who want to take action without 
           the noise. Join the waitlist to be first in line.
           </p>
           

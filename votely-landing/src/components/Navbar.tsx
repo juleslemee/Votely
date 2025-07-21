@@ -47,9 +47,12 @@ const Navbar = () => {
           <a href="#how-it-works" className="text-votely-black hover:text-votely-grape transition-colors font-noto">
             How It Works
           </a>
-          <a href="https://quiz.getvotely.com" target="_blank" rel="noopener noreferrer" className="text-votely-black hover:text-votely-grape transition-colors font-noto">
-          Start Quiz
-          </a>
+          <Button 
+            className="bg-votely-lavender hover:bg-votely-lavender/80 text-white font-noto"
+            onClick={() => window.location.href = 'https://votelyquiz.juleslemee.com'}
+          >
+            Start Quiz
+          </Button>
           <Button 
             className="bg-votely-grape hover:bg-votely-lavender text-white transition-colors"
             onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
@@ -81,15 +84,15 @@ const Navbar = () => {
           >
             How It Works
           </a>
-          <a 
-            href="https://quiz.getvotely.com" 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-votely-black hover:text-votely-grape transition-colors py-2 font-noto"
-            onClick={() => setIsMenuOpen(false)}
+          <Button 
+            className="bg-votely-lavender hover:bg-votely-lavender/80 text-white w-full font-noto"
+            onClick={() => {
+              window.location.href = 'https://votelyquiz.juleslemee.com';
+              setIsMenuOpen(false);
+            }}
           >
             Start Quiz
-          </a>
+          </Button>
           <Button 
             className="bg-votely-grape hover:bg-votely-lavender text-white w-full transition-colors mt-2 font-noto"
             onClick={() => {

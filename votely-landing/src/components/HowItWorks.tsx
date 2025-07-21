@@ -9,21 +9,21 @@ const HowItWorks = () => {
   const steps = [
     {
       title: "Stay Informed Without Doomscrolling",
-      description: "We show you just a few key civic updates based on the issues you care about — in plain language, no overload.",
+      description: "We show you just a few key civic updates based on the issues you care about, all in plain language with no overload.",
       image: "swipe-step",
       details: "We highlight just a few local updates that actually matter to you based on the issues you selected during onboarding. It's bite-sized; no drama, no noise."
     },
     {
       title: "See Who's Representing You",
-      description: "Get a clear view of who holds power locally — and when the next election could shift it.",
+      description: "Get a clear view of who holds power locally and when the next election could shift it.",
       image: "analyze-step",
-      details: "We break down who's in charge in your area, from city council to Congress — with party, position, and what they actually control. No searching through PDFs required."
+      details: "We break down who's in charge in your area, from city council to Congress, with party, position, and what they actually control. No searching through PDFs required."
     },
     {
       title: "Take Action That Actually Matters",
       description: "From emailing your rep to RSVPing for a town hall, it only takes one tap to get involved.",
       image: "discover-step",
-      details: "We give you small, meaningful actions based on your political values — like emailing your rep or RSVPing to a town hall. No friction, no guesswork, just one tap to get involved."
+      details: "We give you small, meaningful actions based on your political values, like emailing your rep or RSVPing to a town hall. No friction, no guesswork, just one tap to get involved."
     }
   ];
 
@@ -31,9 +31,9 @@ const HowItWorks = () => {
   useEffect(() => {
     const preloadImages = async () => {
       const imagePaths = [
-        "/Page 1 - Learn.svg",
-        "/Page 2 - Act.svg",
-        "/Page 3 - Map.svg"
+        "/Page 1 - Learn.png",
+        "/Page 2 - Act.png",
+        "/Page 3 - Map.png"
       ];
       
       for (const path of imagePaths) {
@@ -57,10 +57,10 @@ const HowItWorks = () => {
     <div key="learn" className="flex flex-col items-center justify-center h-full w-full">
       <div className="max-w-[300px] w-full mx-auto">
         <img 
-          src="/Page 1 - Learn.svg" 
+          src="/Page 1 - Learn.png" 
           alt="Learn step mockup" 
           className={`w-full h-full object-contain transition-opacity duration-300 ${
-            loadedImages["/Page 1 - Learn.svg"] ? "opacity-100" : "opacity-0"
+            loadedImages["/Page 1 - Learn.png"] ? "opacity-100" : "opacity-0"
           }`}
           loading="lazy"
         />
@@ -71,10 +71,10 @@ const HowItWorks = () => {
     <div key="act" className="flex flex-col items-center justify-center h-full w-full">
       <div className="max-w-[300px] w-full mx-auto">
         <img 
-          src="/Page 2 - Act.svg" 
+          src="/Page 2 - Act.png" 
           alt="Act step mockup" 
           className={`w-full h-full object-contain transition-opacity duration-300 ${
-            loadedImages["/Page 2 - Act.svg"] ? "opacity-100" : "opacity-0"
+            loadedImages["/Page 2 - Act.png"] ? "opacity-100" : "opacity-0"
           }`}
           loading="lazy"
         />
@@ -85,10 +85,10 @@ const HowItWorks = () => {
     <div key="map" className="flex flex-col items-center justify-center h-full w-full">
       <div className="max-w-[300px] w-full mx-auto">
         <img 
-          src="/Page 3 - Map.svg" 
+          src="/Page 3 - Map.png" 
           alt="Map step mockup" 
           className={`w-full h-full object-contain transition-opacity duration-300 ${
-            loadedImages["/Page 3 - Map.svg"] ? "opacity-100" : "opacity-0"
+            loadedImages["/Page 3 - Map.png"] ? "opacity-100" : "opacity-0"
           }`}
           loading="lazy"
         />

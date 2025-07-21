@@ -21,7 +21,7 @@ const Hero = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
               Discover your political identity. <br />
               <span className="block h-3"></span>
-              Act on what matters — <span className="gradient-text">locally.</span>
+              Act on what matters <span className="gradient-text">locally.</span>
             </h1>
             
             <p className="text-lg md:text-xl text-gray-700 mb-8 max-w-2xl">
@@ -31,7 +31,7 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <Button 
                 className="votely-button"
-                onClick={() => window.location.href = 'https://quiz.getvotely.com'}
+                onClick={() => window.location.href = 'https://votelyquiz.juleslemee.com'}
               >
                 👉 Take the Quiz
               </Button>

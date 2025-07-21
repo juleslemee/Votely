@@ -32,7 +32,7 @@ const Footer = () => {
                     <a href="/#how-it-works" className="text-gray-600 hover:text-votely-grape transition-colors">Our Solution</a>
                   </li>
                   <li>
-                    <a href="https://quiz.getvotely.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-votely-grape transition-colors">Start Quiz</a>
+                    <a href="https://votelyquiz.juleslemee.com" target="_blank" rel="noopener noreferrer" className="text-votely-lavender hover:text-votely-grape transition-colors">Start Quiz</a>
                   </li>
                 </ul>
               </div>

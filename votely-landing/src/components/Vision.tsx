@@ -84,7 +84,7 @@ const alignments: Alignment[] = [
   },
   {
     label: "Cooperative Dreamer",
-    description: "Believes true freedom is collective — without bosses or centralized states.",
+    description: "Believes true freedom is collective, without bosses or centralized states.",
     realIdeologies: "Libertarian Socialism",
     usExamples: "Grassroots socialism, Occupy Wall Street radicals",
     xRange: [-10, -5],
@@ -251,11 +251,11 @@ const Vision = () => {
       <div className="container-custom">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            We'll help you take action —<span className="gradient-text"> one step at a time.</span>
+            We'll help you take action<span className="gradient-text"> one step at a time.</span>
           </h2>
           <p className="text-lg text-gray-700 max-w-2xl mx-auto">
             <a
-              href="https://quiz.getvotely.com"
+              href="https://votelyquiz.juleslemee.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-votely-grape hover:text-votely-lavender underline underline-offset-4 font-medium"
@@ -263,7 +263,7 @@ const Vision = () => {
               Start with our quiz
             </a> {' '}
             to find where you stand politically. Then, we'll show you small,
-            high-impact actions that align with your values — all in your city, on your terms.
+            high-impact actions that align with your values, all in your city, on your terms.
           </p>
         </div>
 
@@ -309,16 +309,31 @@ const Vision = () => {
                 {/* Mouse/touch tracking point */}
                 <div
                   className={`absolute w-4 h-4 bg-votely-grape rounded-full z-10 
-                    transform-gpu will-change-transform
-                    ${isMouseDown ? 'scale-125' : hasInteracted ? '' : 'opacity-50'}
+                    transform-gpu will-change-transform cursor-grab
+                    ${isMouseDown ? 'scale-125' : hasInteracted ? '' : 'opacity-80 animate-pulse'}
                   `}
                   style={{
                     left: `${mousePosition.x}%`,
                     top: `${mousePosition.y}%`,
                     transform: 'translate(-50%, -50%)',
                     transition: 'opacity 0.2s ease-out, transform 0.15s ease-out',
+                    boxShadow: hasInteracted ? 'none' : '0 0 0 8px rgba(176, 125, 213, 0.2)',
                   }}
                 />
+                
+                {/* Hint text when not interacted */}
+                {!hasInteracted && (
+                  <div 
+                    className="absolute bg-votely-grape text-white px-3 py-1 rounded-lg text-xs font-medium animate-bounce z-20 pointer-events-none"
+                    style={{
+                      left: `${mousePosition.x}%`,
+                      top: `${mousePosition.y - 8}%`,
+                      transform: 'translate(-50%, -100%)',
+                    }}
+                  >
+                    Try dragging me!
+                  </div>
+                )}
               </div>
             </div>
             
@@ -362,9 +377,9 @@ const Vision = () => {
                       <line x1="12" y1="8" x2="12.01" y2="8"></line>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Click and Drag to Explore</h3>
+                  <h3 className="text-xl font-semibold mb-2">Drag to Explore Political Ideologies</h3>
                   <p className="text-gray-600">
-                    Click and hold anywhere on the quadrant, then drag to explore different political alignments and their descriptions.
+                    Click and drag the purple dot to explore different political alignments. Discover where your beliefs might fit in the political landscape.
                   </p>
                 </div>
               )}

@@ -39,3 +39,4 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOTELY_SURVEY }}'
           channelId: live
           projectId: votely-survey
+          entryPoint: votely-landing

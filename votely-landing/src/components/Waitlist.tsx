@@ -13,23 +13,33 @@ const Waitlist = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!email || isSubmitting) return;
+    
     setIsSubmitting(true);
     
     try {
       const result = await addToWaitlist(email);
       
-      if (result.success) {
+      if (result && result.success) {
         setIsSubmitted(true);
         setEmail("");
         toast.success("You've been added to the waitlist!", {
           description: "We'll notify you when Votely launches.",
         });
       } else {
-        throw new Error('Failed to add to waitlist');
+        const errorMessage = result?.error === 'Email already on waitlist' 
+          ? "You're already on the waitlist!" 
+          : result?.error === 'Firebase not initialized'
+          ? "Service temporarily unavailable. Please try again later."
+          : "Please check your connection and try again.";
+        
+        toast.error("Failed to join waitlist", {
+          description: errorMessage,
+        });
       }
     } catch (error) {
       toast.error("Something went wrong", {
-        description: "Please try again later.",
+        description: "Please check your connection and try again.",
       });
       console.error('Error:', error);
     } finally {
@@ -45,8 +55,8 @@ const Waitlist = () => {
             Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-votely-lavender via-votely-lavender to-votely-grape">First Wave</span>
           </h2>
           <p className="text-lg md:text-xl mb-8 text-gray-300">
-          We're building Votely for young people in American who want to take back power.
-          By signing up for the waitlist, you're 'casting a vote' for our existence.
+          We're building Votely for young people in America who want a voice.
+          By signing up with your email, you're 'casting a vote' for our existence.
           </p>
           
           {isSubmitted ? (

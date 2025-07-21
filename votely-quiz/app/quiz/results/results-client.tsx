@@ -14,7 +14,7 @@ import {
 } from './types';
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
 import React, { useRef, useState, useEffect } from 'react';
-import { saveQuizResult } from '@/lib/quiz';
+import { saveQuizResult, getAlignmentPercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection } from '@/lib/quiz';
 
 // SVGs to preload for next steps
 const NEXT_STEPS_SVGS = [
@@ -244,6 +244,39 @@ export default function ResultsClient() {
       .catch(console.error);
   }, [answers, economic, social, alignment, isShared]);
 
+  // Load analytics data
+  useEffect(() => {
+    const loadAnalyticsData = async () => {
+      console.log('Starting analytics data load...');
+      
+      // First test the basic Firebase connection
+      const isConnected = await testFirebaseConnection();
+      if (!isConnected) {
+        console.error('Firebase connection test failed, aborting analytics load');
+        return;
+      }
+
+      // Load all analytics data in parallel
+      const [percentage, totalCount, groupMatches, surprisingMatches] = await Promise.all([
+        getAlignmentPercentage(alignment.label),
+        getTotalQuizCount(),
+        getPoliticalGroupMatches(economic, social),
+        getSurprisingAlignments(economic, social)
+      ]);
+
+      console.log('Analytics data loaded:', { percentage, totalCount, groupMatches, surprisingMatches });
+
+      setResultPercentage(percentage);
+      setTotalQuizCount(totalCount);
+      setPoliticalGroups(groupMatches);
+      setSurprisingAlignments(surprisingMatches);
+    };
+
+    loadAnalyticsData().catch(error => {
+      console.error('Error loading analytics data:', error);
+    });
+  }, [alignment.label, economic, social]);
+
 
   // Calculate dot position (convert -10..10 to 0..100 for CSS/SVG)
   const dotX = ((x + 10) / 20) * 100;
@@ -265,6 +298,12 @@ export default function ResultsClient() {
     return () => clearTimeout(timeout);
   }, [showMotionDot]);
 
+  // State for dynamic data
+  const [resultPercentage, setResultPercentage] = useState<number | null>(null);
+  const [totalQuizCount, setTotalQuizCount] = useState<number | null>(null);
+  const [politicalGroups, setPoliticalGroups] = useState<Array<{name: string, description: string, match: number}>>([]);
+  const [surprisingAlignments, setSurprisingAlignments] = useState<Array<{group: string, commonGround: string}>>([]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 relative overflow-hidden">
       {/* Star background */}
@@ -284,99 +323,195 @@ export default function ResultsClient() {
           </svg>
         ))}
       </div>
+      
       {/* Main content */}
-      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
-        <div className="text-center space-y-4">
+      <div className="max-w-6xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
           {isShared && (
             <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
               👤 Viewing shared results
             </div>
           )}
+          <div className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <span>🎯</span> Quiz Complete!
+          </div>
           <h1 className="text-4xl font-bold text-foreground">Your Political Alignment</h1>
-          <div className="inline-block bg-background rounded-2xl shadow-lg p-6 space-y-2">
-            <h2 className="text-3xl md:text-4xl font-extrabold flex items-center justify-center gap-2">
-              <span>{alignmentEmojis[alignment.label]}</span>
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{alignment.label}</span>
-            </h2>
-            <p className="text-foreground/60 max-w-2xl mx-auto text-center">
-              {alignment.description}
-            </p>
-            <div className="mt-4 flex flex-col items-center text-sm text-foreground/80">
-              <div className="mb-1 text-center"><span className="font-semibold">Real Ideologies:</span> {alignment.realIdeologies}</div>
-              <div className="text-center"><span className="font-semibold">Recent Examples:</span> {alignment.usExamples}</div>
-            </div>
-          </div>
+          <p className="text-foreground/60 mt-2">
+            <span className="inline-flex items-center gap-1">
+              <span>👥</span> You're 1 of {totalQuizCount !== null ? totalQuizCount.toLocaleString() : 'Loading...'} quiz takers
+            </span>
+          </p>
         </div>
 
-        <div ref={graphRef} className="relative aspect-square max-w-2xl mx-auto rounded-2xl shadow-lg p-16 bg-background backdrop-blur-md">
-          {/* Only show the static dot after animation */}
-          <PoliticalCompassSvg point={!showMotionDot ? { x, y } : undefined} />
-          {showMotionDot && graphSize.width > 0 && graphSize.height > 0 && (
-            <div
-              className="motion-dot absolute w-6 h-6 rounded-full z-10"
-              style={{
-                background: '#6B21A8', // grape color
-                border: '3px solid #4B006E',
-                boxShadow: '0 0 0 4px #C4B5FD44',
-                left: 0,
-                top: 0,
-                transform: 'translate(-50%, -50%)',
-              }}
-            />
-          )}
-        </div>
-        <style jsx global>{`
-          .motion-dot {
-            offset-path: path('${motionPath}');
-            offset-distance: 0%;
-            animation: move-dot 1.2s cubic-bezier(0.4, 0.6, 0.2, 1) forwards;
-          }
-          @keyframes move-dot {
-            to {
-              offset-distance: 80%;
-            }
-          }
-        `}</style>
+        {/* 2x2 Grid Layout with custom proportions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Political Compass + Founding Supporter */}
+          <div className="flex flex-col gap-6">
+            {/* Political Compass */}
+            <div ref={graphRef} className="bg-background rounded-2xl shadow-lg p-8 relative aspect-square">
+              <PoliticalCompassSvg point={!showMotionDot ? { x, y } : undefined} />
+              {showMotionDot && graphSize.width > 0 && graphSize.height > 0 && (
+                <div
+                  className="motion-dot absolute w-6 h-6 rounded-full z-10"
+                  style={{
+                    background: '#6B21A8',
+                    border: '3px solid #4B006E',
+                    boxShadow: '0 0 0 4px #C4B5FD44',
+                    left: 0,
+                    top: 0,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                />
+              )}
+            </div>
 
-        {/* Score details and action buttons in a responsive grid */}
-        <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto mt-6">
-          <div className="bg-white rounded-xl shadow p-4 text-center flex flex-col justify-center items-center text-xs md:text-base">
-            <div className="text-xs md:text-sm text-gray-600 mb-1">Economic Score</div>
-            <div className="text-lg md:text-2xl font-semibold text-purple-600">
-              {economic < 0 ? 'Left' : 'Right'} ({economic.toFixed(1)}%)
+            {/* Become a Founding Supporter */}
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg p-8 text-white">
+              <h3 className="text-2xl font-bold mb-4">Become a Founding Supporter</h3>
+              <p className="mb-6 text-white/90">
+                Be the first to know when we launch our political insights app. Get exclusive early access and help shape the future of political discourse.
+              </p>
+              
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-start gap-2">
+                  <span className="text-xl">•</span>
+                  <span>Early access to new features</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-xl">•</span>
+                  <span>Exclusive political insights & analysis</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-xl">•</span>
+                  <span>Shape the app's development</span>
+                </li>
+              </ul>
+              
+              <div className="space-y-3">
+                <button 
+                  className="w-full bg-white text-purple-600 font-semibold py-3 px-6 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                  onClick={() => {
+                    if (docId) {
+                      router.push(`/quiz/next?resultId=${docId}`);
+                    } else {
+                      router.push('/quiz/next');
+                    }
+                  }}
+                >
+                  <span>✉️</span> Join as Founding Supporter
+                </button>
+                
+                <button 
+                  className="w-full bg-white/20 backdrop-blur text-white font-medium py-3 px-6 rounded-xl hover:bg-white/30 transition-colors flex items-center justify-center gap-2"
+                  onClick={handleShare}
+                >
+                  <span>🔗</span> Share Your Results
+                </button>
+              </div>
+              
+              <p className="text-center text-white/60 text-sm mt-6">
+                <span>⭐</span> Join {totalQuizCount !== null ? totalQuizCount.toLocaleString() : 'Loading...'}+ political enthusiasts
+              </p>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow p-4 text-center flex flex-col justify-center items-center text-xs md:text-base">
-            <div className="text-xs md:text-sm text-gray-600 mb-1">Social Score</div>
-            <div className="text-lg md:text-2xl font-semibold text-purple-600">
-              {social > 0 ? 'Authoritarian' : 'Libertarian'} ({social.toFixed(1)}%)
+
+          {/* Right Column - User Results + You Align With */}
+          <div className="flex flex-col gap-6 h-full">
+            {/* User Results (takes more vertical space) */}
+            <div className="bg-background rounded-2xl shadow-lg p-8 pb-12" style={{ flex: '0 0 auto' }}>
+              <h2 className="text-3xl font-bold text-purple-600 mb-2">{alignment.label}</h2>
+              <p className="text-sm text-foreground/60 mb-4">{resultPercentage !== null ? `${resultPercentage}% of quiz takers get this result` : 'Loading percentage...'}</p>
+              <p className="text-foreground/80 mb-8">{alignment.description}</p>
+              
+              {/* Score Bars */}
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium text-purple-600">Economic Score</span>
+                    <span className="text-sm text-foreground/60">{economic < 0 ? 'Left' : 'Right'} ({Math.abs(economic).toFixed(1)}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(Math.abs(economic) + 100) / 2}%` }}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium text-purple-600">Social Score</span>
+                    <span className="text-sm text-foreground/60">{social > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(social).toFixed(1)}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(Math.abs(social) + 100) / 2}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <button 
-            className="w-full p-3 md:p-6 text-base md:text-xl text-white bg-purple-600 rounded-2xl hover:bg-purple-700 transition-colors col-span-1"
-            onClick={handleShare}
-          >
-            Share With Friends
-          </button>
-          <div className="relative col-span-1">
-            {/* Background layer for depth effect */}
-            <div className="absolute inset-0 bg-[#6200B3] rounded-2xl transform translate-x-1 translate-y-1"></div>
-            {/* Main button */}
-            <button 
-              className="relative w-full p-3 md:p-6 text-base md:text-xl font-semibold text-white bg-[#6200B3] rounded-2xl hover:bg-[#4B006E] active:transform active:translate-x-0.5 active:translate-y-0.5 transition-all duration-150 shadow-lg"
-              onClick={() => {
-                if (docId) {
-                  router.push(`/quiz/next?resultId=${docId}`);
-                } else {
-                  router.push('/quiz/next');
-                }
-              }}
-            >
-              Next Steps
-            </button>
+
+            {/* You Align With (smaller card that fills remaining space) */}
+            <div className="bg-background rounded-2xl shadow-lg p-8 min-h-0 overflow-auto">
+              <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+                <span>👥</span> You Align With
+              </h3>
+              <p className="text-foreground/60 mb-6">Based on your responses, here are the political groups that share similar views:</p>
+              
+              <div className="space-y-4 mb-8">
+                {politicalGroups.map((group, index) => (
+                  <div key={index}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-semibold text-foreground">{group.name}</h4>
+                        <p className="text-sm text-foreground/60">{group.description}</p>
+                      </div>
+                      <span className="text-sm font-medium text-purple-600 ml-4">{group.match}% match</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${group.match}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* What Might Surprise You */}
+              <div className="border-t pt-6">
+                <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <span>💭</span> What Might Surprise You
+                </h4>
+                <div className="space-y-3">
+                  {surprisingAlignments.map((item, index) => (
+                    <div key={index} className="bg-gray-50 rounded-lg p-3">
+                      <h5 className="font-medium text-sm text-purple-600 mb-1">{item.group}</h5>
+                      <p className="text-xs text-foreground/70">{item.commonGround}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      
+      <style jsx global>{`
+        .motion-dot {
+          offset-path: path('${motionPath}');
+          offset-distance: 0%;
+          animation: move-dot 1.2s cubic-bezier(0.4, 0.6, 0.2, 1) forwards;
+        }
+        @keyframes move-dot {
+          to {
+            offset-distance: 80%;
+          }
+        }
+      `}</style>
     </div>
   );
 } 

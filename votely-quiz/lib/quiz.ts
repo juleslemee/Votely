@@ -177,4 +177,14 @@ export async function getSurprisingAlignments(userEconomic: number, userSocial: 
     .map(({ group, commonGround }) => ({ group, commonGround }));
   
   return surprisingAlignments;
+}
+
+export async function getWaitlistCount(): Promise<number> {
+  try {
+    const snapshot = await getDocs(collection(db, 'waitlist'));
+    return snapshot.size;
+  } catch (error) {
+    console.error('Error getting waitlist count:', error);
+    return 0;
+  }
 } 

@@ -14,7 +14,7 @@ import {
 } from './types';
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
 import React, { useRef, useState, useEffect } from 'react';
-import { saveQuizResult, getAlignmentPercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection } from '@/lib/quiz';
+import { saveQuizResult, getAlignmentPercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
 
 // SVGs to preload for next steps
 const NEXT_STEPS_SVGS = [
@@ -193,6 +193,21 @@ const alignmentEmojis: Record<string, string> = {
   'Pragmatic Moderate': '⚪',
 };
 
+function getOrdinalSuffix(n: number): string {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) {
+    return 'st';
+  }
+  if (j === 2 && k !== 12) {
+    return 'nd';
+  }
+  if (j === 3 && k !== 13) {
+    return 'rd';
+  }
+  return 'th';
+}
+
 export default function ResultsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -257,11 +272,12 @@ export default function ResultsClient() {
       }
 
       // Load all analytics data in parallel
-      const [percentage, totalCount, groupMatches, surprisingMatches] = await Promise.all([
+      const [percentage, totalCount, groupMatches, surprisingMatches, waitlist] = await Promise.all([
         getAlignmentPercentage(alignment.label),
         getTotalQuizCount(),
         getPoliticalGroupMatches(economic, social),
-        getSurprisingAlignments(economic, social)
+        getSurprisingAlignments(economic, social),
+        getWaitlistCount()
       ]);
 
       console.log('Analytics data loaded:', { percentage, totalCount, groupMatches, surprisingMatches });
@@ -270,6 +286,7 @@ export default function ResultsClient() {
       setTotalQuizCount(totalCount);
       setPoliticalGroups(groupMatches);
       setSurprisingAlignments(surprisingMatches);
+      setWaitlistCount(waitlist);
     };
 
     loadAnalyticsData().catch(error => {
@@ -303,6 +320,7 @@ export default function ResultsClient() {
   const [totalQuizCount, setTotalQuizCount] = useState<number | null>(null);
   const [politicalGroups, setPoliticalGroups] = useState<Array<{name: string, description: string, match: number}>>([]);
   const [surprisingAlignments, setSurprisingAlignments] = useState<Array<{group: string, commonGround: string}>>([]);
+  const [waitlistCount, setWaitlistCount] = useState<number>(0);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 relative overflow-hidden">
@@ -329,7 +347,7 @@ export default function ResultsClient() {
         {/* Header */}
         <div className="text-center mb-8">
           {isShared && (
-            <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-medium mb-4 mr-2">
               👤 Viewing shared results
             </div>
           )}
@@ -345,11 +363,11 @@ export default function ResultsClient() {
         </div>
 
         {/* 2x2 Grid Layout with custom proportions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6">
           {/* Left Column - Political Compass + Founding Supporter */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 contents lg:flex lg:flex-col">
             {/* Political Compass */}
-            <div ref={graphRef} className="bg-background rounded-2xl shadow-lg p-8 relative aspect-square">
+            <div ref={graphRef} className="bg-background rounded-2xl shadow-lg p-8 relative aspect-square order-1 lg:order-none">
               <PoliticalCompassSvg point={!showMotionDot ? { x, y } : undefined} />
               {showMotionDot && graphSize.width > 0 && graphSize.height > 0 && (
                 <div
@@ -367,20 +385,20 @@ export default function ResultsClient() {
             </div>
 
             {/* Become a Founding Supporter */}
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg p-8 text-white">
-              <h3 className="text-2xl font-bold mb-4">Become a Founding Supporter</h3>
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg p-8 text-white flex-1 flex flex-col order-4 lg:order-none">
+              <h3 className="text-2xl font-bold mb-4">Be the {waitlistCount + 1}{getOrdinalSuffix(waitlistCount + 1)} to join our email list</h3>
               <p className="mb-6 text-white/90">
-                Be the first to know when we launch our political insights app. Get exclusive early access and help shape the future of political discourse.
+                Stop scrolling, start doing. Get early access to the app that shows you exactly how to influence local elections and policy decisions that actually affect your life.
               </p>
               
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3 mb-8 flex-1">
                 <li className="flex items-start gap-2">
                   <span className="text-xl">•</span>
                   <span>Early access to new features</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-xl">•</span>
-                  <span>Exclusive political insights & analysis</span>
+                  <span>Show the founder you actually want the app</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-xl">•</span>
@@ -410,16 +428,16 @@ export default function ResultsClient() {
                 </button>
               </div>
               
-              <p className="text-center text-white/60 text-sm mt-6">
-                <span>⭐</span> Join {totalQuizCount !== null ? totalQuizCount.toLocaleString() : 'Loading...'}+ political enthusiasts
+              <p className="text-center text-white/60 text-sm mt-auto pt-6">
+                <span>⭐</span> Join {waitlistCount > 0 ? waitlistCount.toLocaleString() : ''} political enthusiasts
               </p>
             </div>
           </div>
 
           {/* Right Column - User Results + You Align With */}
-          <div className="flex flex-col gap-6 h-full">
+          <div className="flex flex-col gap-6 h-full contents lg:flex lg:flex-col">
             {/* User Results (takes more vertical space) */}
-            <div className="bg-background rounded-2xl shadow-lg p-8 pb-12" style={{ flex: '0 0 auto' }}>
+            <div className="bg-background rounded-2xl shadow-lg p-8 pb-12 order-2 lg:order-none" style={{ flex: '0 0 auto' }}>
               <h2 className="text-3xl font-bold text-purple-600 mb-2">{alignment.label}</h2>
               <p className="text-sm text-foreground/60 mb-4">{resultPercentage !== null ? `${resultPercentage}% of quiz takers get this result` : 'Loading percentage...'}</p>
               <p className="text-foreground/80 mb-8">{alignment.description}</p>
@@ -431,11 +449,19 @@ export default function ResultsClient() {
                     <span className="text-sm font-medium text-purple-600">Economic Score</span>
                     <span className="text-sm text-foreground/60">{economic < 0 ? 'Left' : 'Right'} ({Math.abs(economic).toFixed(1)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div 
-                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
-                      style={{ width: `${(Math.abs(economic) + 100) / 2}%` }}
-                    />
+                  <div className="relative">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
+                      <div 
+                        className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${Math.abs(economic) / 2}%`,
+                          marginLeft: economic < 0 ? `${50 - Math.abs(economic) / 2}%` : '50%'
+                        }}
+                      />
+                    </div>
+                    {/* Center line */}
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0.5 h-2.5 bg-gray-400"></div>
+                    <span className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">Center</span>
                   </div>
                 </div>
                 
@@ -444,18 +470,26 @@ export default function ResultsClient() {
                     <span className="text-sm font-medium text-purple-600">Social Score</span>
                     <span className="text-sm text-foreground/60">{social > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(social).toFixed(1)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div 
-                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
-                      style={{ width: `${(Math.abs(social) + 100) / 2}%` }}
-                    />
+                  <div className="relative">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
+                      <div 
+                        className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${Math.abs(social) / 2}%`,
+                          marginLeft: social < 0 ? `${50 - Math.abs(social) / 2}%` : '50%'
+                        }}
+                      />
+                    </div>
+                    {/* Center line */}
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0.5 h-2.5 bg-gray-400"></div>
+                    <span className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">Center</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* You Align With (smaller card that fills remaining space) */}
-            <div className="bg-background rounded-2xl shadow-lg p-8 min-h-0 overflow-auto">
+            <div className="bg-background rounded-2xl shadow-lg p-8 min-h-0 overflow-auto order-3 lg:order-none">
               <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
                 <span>👥</span> You Align With
               </h3>
@@ -469,7 +503,10 @@ export default function ResultsClient() {
                         <h4 className="font-semibold text-foreground">{group.name}</h4>
                         <p className="text-sm text-foreground/60">{group.description}</p>
                       </div>
-                      <span className="text-sm font-medium text-purple-600 ml-4">{group.match}% match</span>
+                      <span className="text-sm font-medium text-purple-600 ml-4 whitespace-nowrap flex flex-col items-end">
+                        <span>{group.match}%</span>
+                        <span>match</span>
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 

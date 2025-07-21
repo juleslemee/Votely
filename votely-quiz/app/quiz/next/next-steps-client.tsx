@@ -82,9 +82,10 @@ function NextStepsContent() {
     <div className="w-full min-h-screen bg-[#B07DD5] bg-gradient-to-b from-[#B07DD5] to-[#6200B3] px-4 md:px-8 py-4 md:py-8 overflow-x-hidden">
       <div className="w-full max-w-6xl mx-auto flex flex-col md:flex-row gap-8 md:gap-12 items-center justify-center min-h-screen">
         {/* Left column: Simplified content */}
-        <div className="flex flex-col justify-center w-full md:w-1/2 max-w-xl space-y-4 md:space-y-5">
-          {/* Pre-launch Badge */}
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col justify-center w-full md:w-1/2 max-w-xl">
+          <div className="flex flex-col space-y-4 md:space-y-8 lg:space-y-10">
+            {/* Pre-launch Badge */}
+            <div className="flex items-center gap-2">
             <div className="bg-white/20 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium backdrop-blur-sm border border-white/30 animate-pulse">
               <Rocket className="w-4 h-4" />
               Pre-Launch • Building Now
@@ -137,15 +138,13 @@ function NextStepsContent() {
             </div>
           </div>
 
-          {/* Why this matters now */}
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">
-            <p className="text-white/90 text-sm">
-              <span className="font-semibold">Why this matters now:</span> Local politics affects your daily life more than federal politics, yet most people don't know when their city council meets or how to get involved. We can change that.
-            </p>
+            {/* Why this matters now */}
+            <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">
+              <p className="text-white/90 text-sm">
+                <span className="font-semibold">Why this matters now:</span> Local politics affects your daily life more than federal politics, yet most people don't know when their city council meets or how to get involved. We can change that.
+              </p>
+            </div>
           </div>
-
-
-
         </div>
         {/* Right column: App mockups */}
         <div className="flex flex-col items-center w-full md:w-1/2 max-w-xs md:max-w-sm space-y-4">

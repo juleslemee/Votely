@@ -14,15 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Debug directory contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Directory contents:"
-          ls -la
-          echo "Firebase.json contents:"
-          cat firebase.json
-      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:

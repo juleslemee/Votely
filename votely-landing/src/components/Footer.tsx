@@ -61,7 +61,7 @@ const Footer = () => {
           <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:gap-2">
             <span>Made with</span>
             <span role="img" aria-label="love" className="text-lg">💜</span>
-            <span>in Brooklyn</span>
+            <span>in Brooklyn by <a href="juleslemee.com" target="_blank" rel="noopener noreferrer" className="text-votely-lavender hover:text-votely-grape transition-colors">Jules Lemée</a></span>
           </div>
         </div>
       </div>

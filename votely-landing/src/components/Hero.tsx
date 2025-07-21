@@ -1,4 +1,3 @@
-import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
@@ -28,31 +27,19 @@ const Hero = () => {
               Take our 2-minute quiz to find your political quadrant, then get actions you can take in your city based on your values.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <div className="flex flex-col gap-4 justify-center md:justify-start items-center md:items-start">
               <Button 
-                className="votely-button"
+                className="bg-gradient-to-r from-votely-grape to-votely-lavender text-white font-medium text-xl font-ubuntu py-4 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-auto"
                 onClick={() => window.location.href = 'https://votelyquiz.juleslemee.com'}
               >
-                👉 Take the Quiz
+                Find Out Your Political Leaning
               </Button>
-            </div>
-            <div className="mt-4 text-center md:text-left">
-              <button 
+              <Button 
+                className="bg-white/10 backdrop-blur-sm text-votely-grape text-xl font-ubuntu py-4 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-auto border border-white/20"
                 onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                className="text-votely-grape hover:text-votely-lavender underline underline-offset-4 font-medium"
               >
-                Or just sign up to hear when Votely launches
-              </button>
-            </div>
-            
-            <div className="mt-8 hidden md:block">
-              <button 
-                className="flex items-center gap-2 text-votely-grape hover:text-votely-lavender transition-colors mx-auto md:mx-0"
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                <span>Scroll to explore</span>
-                <ArrowDown size={16} className="animate-bounce" />
-              </button>
+                Get Informed of a Full Release
+              </Button>
             </div>
           </div>
           

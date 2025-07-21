@@ -42,23 +42,12 @@ const Waitlist = () => {
       <div className="container-custom">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-votely-lavender to-blue-300">First Wave</span>
+            Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-votely-lavender via-votely-lavender to-votely-grape">First Wave</span>
           </h2>
           <p className="text-lg md:text-xl mb-8 text-gray-300">
-          We're building Votely for students and young people who want to take action without 
-          the noise. Join the waitlist to be first in line.
+          We're building Votely for young people in American who want to take back power.
+          By signing up for the waitlist, you're 'casting a vote' for our existence.
           </p>
-          
-          <div className="mb-8">
-            <div className="flex items-center justify-center gap-2 text-votely-lavender mb-2">
-              <Check size={20} />
-              <span className="font-medium">Always Free</span>
-            </div>
-            <p className="text-gray-400">
-              Votely is and always will be completely free to use. 
-              Democracy should be accessible to everyone.
-            </p>
-          </div>
           
           {isSubmitted ? (
             <div className="bg-votely-grape/20 rounded-lg p-8 border border-votely-lavender/30">
@@ -85,7 +74,7 @@ const Waitlist = () => {
                 className="bg-votely-lavender hover:bg-votely-grape text-white"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Get Early Access"}
+                {isSubmitting ? "Submitting..." : "Get Informed"}
               </Button>
             </form>
           )}

@@ -110,6 +110,13 @@ const HowItWorks = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Visualization */}
+          <div className="h-[600px] flex items-center justify-center">
+            <div className="w-full animate-card-slide">
+              {stepComponents[activeStep]}
+            </div>
+          </div>
+          
           {/* Steps */}
           <div>
             <div className="space-y-6">
@@ -158,13 +165,6 @@ const HowItWorks = () => {
                 Show Next Step
                 <ChevronRight size={16} />
               </Button>
-            </div>
-          </div>
-          
-          {/* Visualization */}
-          <div className="h-[600px] flex items-center justify-center">
-            <div className="w-full animate-card-slide">
-              {stepComponents[activeStep]}
             </div>
           </div>
         </div>

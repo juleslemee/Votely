@@ -42,10 +42,10 @@ const Navbar = () => {
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-votely-black hover:text-votely-grape transition-colors font-noto">
-            Features
+            The Problem
           </a>
           <a href="#how-it-works" className="text-votely-black hover:text-votely-grape transition-colors font-noto">
-            How It Works
+            Our Solution
           </a>
           <Button 
             className="bg-votely-lavender hover:bg-votely-lavender/80 text-white font-noto"
@@ -75,14 +75,14 @@ const Navbar = () => {
             className="text-votely-black hover:text-votely-grape transition-colors py-2 font-noto"
             onClick={() => setIsMenuOpen(false)}
           >
-            Features
+            The Problem
           </a>
           <a 
             href="#how-it-works" 
             className="text-votely-black hover:text-votely-grape transition-colors py-2 font-noto"
             onClick={() => setIsMenuOpen(false)}
           >
-            How It Works
+            Our Solution
           </a>
           <Button 
             className="bg-votely-lavender hover:bg-votely-lavender/80 text-white w-full font-noto"

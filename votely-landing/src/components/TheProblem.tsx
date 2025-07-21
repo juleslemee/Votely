@@ -1,5 +1,5 @@
 
-import { Newspaper, Landmark, HeartCrack, Star } from "lucide-react";
+import { Newspaper, Landmark, HeartCrack } from "lucide-react";
 
 const problems = [
   {
@@ -17,11 +17,6 @@ const problems = [
     description: "Even if you care, it's not obvious what to do. Small actions like emailing your rep or RSVPing to a meeting aren't things anyone's shown you how to do.",
     icon: <HeartCrack className="text-votely-grape" />,
   },
-  {
-    title: "Civic action doesn't feel like part of your identity",
-    description: "You want to live your values, but politics feels distant, and no one around you seems to be engaging in ways that feel authentic or energizing.",
-    icon: <Star className="text-votely-grape" />,
-  },
 ];
 
 const TheProblem = () => {
@@ -36,7 +31,7 @@ const TheProblem = () => {
             You care about the issues but feel powerless to make a difference.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {problems.map((problem, index) => (
             <div 
               key={index}

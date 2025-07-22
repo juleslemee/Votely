@@ -20,8 +20,8 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
     // Ensure we have an anonymous user
     if (!auth.currentUser) {
       console.log('No current user, signing in anonymously...');
-      await signInAnonymously(auth);
-      console.log('Anonymous sign-in successful, uid:', auth.currentUser?.uid);
+      const userCredential = await signInAnonymously(auth);
+      console.log('Anonymous sign-in successful, uid:', userCredential.user.uid);
     } else {
       console.log('Already signed in, uid:', auth.currentUser.uid);
     }

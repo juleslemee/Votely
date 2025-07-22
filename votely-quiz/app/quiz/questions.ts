@@ -224,7 +224,7 @@ export const allQuestions: Question[] = [
   },
   {
     id: 43,
-    question: "Government surveillance programs help protect citizens from criminal activity.",
+    question: "Government should have access to all digital communications to ensure public safety.",
     axis: 'social'
   },
   {
@@ -273,7 +273,7 @@ export const shortQuestions: Question[] = [
   allQuestions[19], // Market competition
   allQuestions[25], // Surveillance
   allQuestions[28], // Gun control
-  allQuestions[30], // Personal choices
+  allQuestions[42], // Government access to digital communications (more extreme auth)
   allQuestions[36], // Hate speech
   allQuestions[40]  // Peaceful protest
 ];

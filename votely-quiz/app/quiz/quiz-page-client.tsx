@@ -26,7 +26,7 @@ export default function QuizPageClient() {
   
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [screen, setScreen] = useState(0);
-  const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean } | null>(null);
+  const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean; startValue?: number } | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -48,12 +48,14 @@ export default function QuizPageClient() {
   };
 
   const handleSliderMouseDown = (questionId: number, event: React.MouseEvent<HTMLDivElement>) => {
-    setDragState({ questionId, isDragging: true });
+    const currentValue = answers[questionId] ?? 0.5;
+    setDragState({ questionId, isDragging: true, startValue: currentValue });
     handleSliderInteraction(questionId, event);
   };
 
   const handleSliderTouchStart = (questionId: number, event: React.TouchEvent<HTMLDivElement>) => {
-    setDragState({ questionId, isDragging: true });
+    const currentValue = answers[questionId] ?? 0.5;
+    setDragState({ questionId, isDragging: true, startValue: currentValue });
     handleSliderInteraction(questionId, event);
   };
 
@@ -64,8 +66,12 @@ export default function QuizPageClient() {
         if (sliderElement) {
           const rect = sliderElement.getBoundingClientRect();
           const relativeX = event.clientX - rect.left;
-          const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-          handleAnswerSelect(dragState.questionId, percentage);
+          const percentage = relativeX / rect.width;
+          
+          // Only update if we're within reasonable bounds - prevents jumping when dragging outside
+          if (percentage >= 0 && percentage <= 1) {
+            handleAnswerSelect(dragState.questionId, percentage);
+          }
         }
       }
     };
@@ -80,8 +86,12 @@ export default function QuizPageClient() {
         if (sliderElement) {
           const rect = sliderElement.getBoundingClientRect();
           const relativeX = event.touches[0].clientX - rect.left;
-          const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-          handleAnswerSelect(dragState.questionId, percentage);
+          const percentage = relativeX / rect.width;
+          
+          // Only update if we're within reasonable bounds - prevents jumping when dragging outside
+          if (percentage >= 0 && percentage <= 1) {
+            handleAnswerSelect(dragState.questionId, percentage);
+          }
         }
       }
     };
@@ -185,7 +195,7 @@ export default function QuizPageClient() {
                         <div
                           className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing transition-transform hover:scale-110"
                           style={{
-                            left: `${(answers[question.id] || 0.5) * 100}%`,
+                            left: `${(answers[question.id] ?? 0.5) * 100}%`,
                             transform: 'translateX(-50%) translateY(-50%)'
                           }}
                         />

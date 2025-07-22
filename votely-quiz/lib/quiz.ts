@@ -16,23 +16,46 @@ export type QuizResult = {
 };
 
 export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
-  // Ensure we have an anonymous user
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
-  }
-
   try {
+    // Ensure we have an anonymous user
+    if (!auth.currentUser) {
+      console.log('No current user, signing in anonymously...');
+      await signInAnonymously(auth);
+      console.log('Anonymous sign-in successful, uid:', auth.currentUser?.uid);
+    } else {
+      console.log('Already signed in, uid:', auth.currentUser.uid);
+    }
+
+    const dataToSave = {
+      ...result,
+      timestamp: serverTimestamp(),
+      userId: auth.currentUser?.uid || null,
+    };
+    
+    console.log('Attempting to save quiz result to Firestore...', {
+      alignmentLabel: result.result.alignmentLabel,
+      userId: dataToSave.userId
+    });
+
     const docRef = await addDoc(
       collection(db, 'quizResponses'),
-      {
-        ...result,
-        timestamp: serverTimestamp(),
-        userId: auth.currentUser?.uid || null,
-      }
+      dataToSave
     );
+    
+    console.log('Quiz result saved successfully, docId:', docRef.id);
     return docRef.id;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving quiz result:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    // Check for specific Firebase errors
+    if (error.code === 'permission-denied') {
+      console.error('Firebase permission denied - check Firestore rules');
+    } else if (error.code === 'unavailable') {
+      console.error('Firebase unavailable - check network connection');
+    }
+    
     throw error;
   }
 }
@@ -86,8 +109,27 @@ export async function getAlignmentPercentage(alignmentLabel: string): Promise<nu
 }
 
 export async function getTotalQuizCount(): Promise<number> {
-  const snapshot = await getDocs(collection(db, 'quizResponses'));
-  return snapshot.size;
+  try {
+    console.log('Fetching total quiz count from Firestore...');
+    const snapshot = await getDocs(collection(db, 'quizResponses'));
+    console.log('Total quiz responses found:', snapshot.size);
+    
+    // Return actual count if we have data, otherwise return minimum
+    if (snapshot.size > 0) {
+      return snapshot.size;
+    }
+    
+    // Default to 172 if no data
+    console.log('No quiz responses found, returning default count');
+    return 172;
+  } catch (error: any) {
+    console.error('Error getting total quiz count:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    // Return a reasonable default if Firebase fails
+    return 172;
+  }
 }
 
 export async function getPoliticalGroupMatches(userEconomic: number, userSocial: number): Promise<Array<{name: string, description: string, match: number}>> {

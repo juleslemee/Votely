@@ -255,8 +255,14 @@ export default function ResultsClient() {
         alignmentDescription: alignment.description,
       },
     })
-      .then(id => setDocId(id))
-      .catch(console.error);
+      .then(id => {
+        console.log('Quiz result saved successfully with ID:', id);
+        setDocId(id);
+      })
+      .catch(error => {
+        console.error('Failed to save quiz result:', error);
+        console.error('Error details:', error.message, error.code);
+      });
   }, [answers, economic, social, alignment, isShared]);
 
   // Load analytics data
@@ -357,7 +363,7 @@ export default function ResultsClient() {
           <h1 className="text-4xl font-bold text-foreground">Your Political Alignment</h1>
           <p className="text-foreground/60 mt-2">
             <span className="inline-flex items-center gap-1">
-              <span>👥</span> You're 1 of {totalQuizCount !== null ? totalQuizCount.toLocaleString() : 'Loading...'} quiz takers
+              <span>👥</span> You're {totalQuizCount !== null && totalQuizCount > 0 ? `1 of ${totalQuizCount.toLocaleString()}` : 'joining'} quiz takers
             </span>
           </p>
         </div>
@@ -461,7 +467,7 @@ export default function ResultsClient() {
                     </div>
                     {/* Center line */}
                     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0.5 h-2.5 bg-gray-400"></div>
-                    <span className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">Center</span>
+                    <span className="absolute top-full left-1/2 transform -translate-x-1/2 text-xs text-gray-500 mt-1">Center</span>
                   </div>
                 </div>
                 
@@ -482,7 +488,7 @@ export default function ResultsClient() {
                     </div>
                     {/* Center line */}
                     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0.5 h-2.5 bg-gray-400"></div>
-                    <span className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">Center</span>
+                    <span className="absolute top-full left-1/2 transform -translate-x-1/2 text-xs text-gray-500 mt-1">Center</span>
                   </div>
                 </div>
               </div>
@@ -498,12 +504,12 @@ export default function ResultsClient() {
               <div className="space-y-4 mb-8">
                 {politicalGroups.map((group, index) => (
                   <div key={index}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
+                    <div className="flex justify-between items-start mb-2 gap-3">
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-foreground">{group.name}</h4>
                         <p className="text-sm text-foreground/60">{group.description}</p>
                       </div>
-                      <span className="text-sm font-medium text-purple-600 ml-4 whitespace-nowrap flex flex-col items-end">
+                      <span className="text-sm font-medium text-purple-600 whitespace-nowrap flex flex-col items-end flex-shrink-0">
                         <span>{group.match}%</span>
                         <span>match</span>
                       </span>

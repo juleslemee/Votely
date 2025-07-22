@@ -27,14 +27,17 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
     }
 
     const dataToSave = {
-      ...result,
+      answers: result.answers,
+      result: result.result,
       timestamp: serverTimestamp(),
       userId: auth.currentUser?.uid || null,
     };
     
     console.log('Attempting to save quiz result to Firestore...', {
+      dataStructure: Object.keys(dataToSave),
       alignmentLabel: result.result.alignmentLabel,
-      userId: dataToSave.userId
+      userId: dataToSave.userId,
+      answersLength: result.answers.length
     });
 
     const docRef = await addDoc(
@@ -54,6 +57,8 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
       console.error('Firebase permission denied - check Firestore rules');
     } else if (error.code === 'unavailable') {
       console.error('Firebase unavailable - check network connection');
+    } else if (error.code === 'auth/api-key-expired') {
+      console.error('Firebase API key expired - please renew the API key in Firebase Console');
     }
     
     throw error;

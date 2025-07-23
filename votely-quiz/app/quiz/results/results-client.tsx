@@ -56,8 +56,8 @@ function calculateScores(answers: number[], quizType: string = 'short') {
       // Long quiz uses all questions 1-50
       return Array.from({ length: 50 }, (_, i) => i + 1);
     } else {
-      // Short quiz uses specific question IDs: [1, 5, 4, 11, 20, 26, 29, 31, 37, 41]
-      return [1, 5, 4, 11, 20, 26, 29, 31, 37, 41];
+      // Short quiz uses specific question IDs: [4, 17, 41, 9, 26, 6, 18, 34, 14, 45]
+      return [4, 17, 41, 9, 26, 6, 18, 34, 14, 45];
     }
   };
 

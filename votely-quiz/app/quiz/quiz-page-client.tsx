@@ -40,6 +40,7 @@ export default function QuizPageClient() {
   };
 
   const handleSliderInteraction = (questionId: number, event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    event.preventDefault(); // Prevent default touch behavior on mobile
     const rect = event.currentTarget.getBoundingClientRect();
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
     const relativeX = clientX - rect.left;
@@ -118,6 +119,10 @@ export default function QuizPageClient() {
   const handleNext = () => {
     if (screen < TOTAL_SCREENS - 1) {
       setScreen(screen + 1);
+      // Force scroll to top with a slight delay for mobile browsers
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
     }
   };
 
@@ -136,7 +141,7 @@ export default function QuizPageClient() {
   const currentQuestions = questions.slice(startIdx, endIdx);
 
   const numAnswered = Object.keys(answers).length;
-  const isScreenComplete = currentQuestions.every(q => answers[q.id]);
+  const isScreenComplete = currentQuestions.every(q => answers[q.id] !== undefined);
   const isComplete = numAnswered === questions.length;
   const progress = (numAnswered / questions.length) * 100;
 

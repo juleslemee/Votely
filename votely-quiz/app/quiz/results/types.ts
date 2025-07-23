@@ -15,8 +15,8 @@ export interface QuadrantInfo {
 // Question scoring configuration
 export interface QuestionConfig {
   id: number;
-  axis: 'economic' | 'social';
-  agreeDirection: 'left' | 'right' | 'libertarian' | 'authoritarian';
+  axis: 'economic' | 'social' | 'progressive';
+  agreeDirection: 'left' | 'right' | 'libertarian' | 'authoritarian' | 'progressive' | 'conservative';
 }
 
 export const QUESTION_CONFIG: QuestionConfig[] = [
@@ -42,7 +42,7 @@ export const QUESTION_CONFIG: QuestionConfig[] = [
   { id: 19, axis: 'economic', agreeDirection: 'left' }, // Inheritance taxes
   { id: 20, axis: 'economic', agreeDirection: 'right' }, // Market competition
   { id: 21, axis: 'economic', agreeDirection: 'left' }, // Renewable subsidies
-  { id: 22, axis: 'economic', agreeDirection: 'left' }, // Cryptocurrency regulation
+  { id: 22, axis: 'progressive', agreeDirection: 'progressive' }, // Cryptocurrency regulation
   { id: 23, axis: 'economic', agreeDirection: 'left' }, // Public transportation funding
   { id: 24, axis: 'economic', agreeDirection: 'right' }, // Growth over environment
   { id: 25, axis: 'economic', agreeDirection: 'right' }, // Safety nets reduce motivation
@@ -52,27 +52,27 @@ export const QUESTION_CONFIG: QuestionConfig[] = [
   { id: 27, axis: 'social', agreeDirection: 'authoritarian' }, // Content removal
   { id: 28, axis: 'social', agreeDirection: 'libertarian' }, // Reduce police funding
   { id: 29, axis: 'social', agreeDirection: 'authoritarian' }, // Gun control
-  { id: 30, axis: 'social', agreeDirection: 'libertarian' }, // Historical injustices education
+  { id: 30, axis: 'progressive', agreeDirection: 'progressive' }, // Historical injustices education
   { id: 31, axis: 'social', agreeDirection: 'libertarian' }, // Personal body choices
-  { id: 32, axis: 'social', agreeDirection: 'authoritarian' }, // Diversity hiring
+  { id: 32, axis: 'progressive', agreeDirection: 'progressive' }, // Diversity hiring
   { id: 33, axis: 'social', agreeDirection: 'authoritarian' }, // Security over privacy
   { id: 34, axis: 'social', agreeDirection: 'libertarian' }, // Religious exemptions
   { id: 35, axis: 'social', agreeDirection: 'authoritarian' }, // Economic-based immigration
-  { id: 36, axis: 'social', agreeDirection: 'authoritarian' }, // Traditional family structures
+  { id: 36, axis: 'progressive', agreeDirection: 'conservative' }, // Traditional family structures
   { id: 37, axis: 'social', agreeDirection: 'authoritarian' }, // Hate speech prohibition
-  { id: 38, axis: 'social', agreeDirection: 'authoritarian' }, // Cultural assimilation
+  { id: 38, axis: 'progressive', agreeDirection: 'conservative' }, // Cultural assimilation
   { id: 39, axis: 'social', agreeDirection: 'libertarian' }, // Government moral neutrality
-  { id: 40, axis: 'social', agreeDirection: 'authoritarian' }, // Standardized moral education
+  { id: 40, axis: 'progressive', agreeDirection: 'conservative' }, // Standardized moral education
   { id: 41, axis: 'social', agreeDirection: 'libertarian' }, // Peaceful protest rights
-  { id: 42, axis: 'social', agreeDirection: 'libertarian' }, // Cultural heritage connections
+  { id: 42, axis: 'progressive', agreeDirection: 'conservative' }, // Cultural heritage connections
   { id: 43, axis: 'social', agreeDirection: 'authoritarian' }, // Surveillance for safety
   { id: 44, axis: 'social', agreeDirection: 'libertarian' }, // Local community authority
-  { id: 45, axis: 'social', agreeDirection: 'libertarian' }, // International over national
+  { id: 45, axis: 'progressive', agreeDirection: 'progressive' }, // International over national
   { id: 46, axis: 'social', agreeDirection: 'authoritarian' }, // Scientific consensus in policy
   { id: 47, axis: 'social', agreeDirection: 'libertarian' }, // Individual merit priority
   { id: 48, axis: 'social', agreeDirection: 'authoritarian' }, // Social hierarchy necessity
-  { id: 49, axis: 'social', agreeDirection: 'libertarian' }, // Drug use as health issue
-  { id: 50, axis: 'social', agreeDirection: 'authoritarian' }, // Stability over change
+  { id: 49, axis: 'progressive', agreeDirection: 'progressive' }, // Drug use as health issue
+  { id: 50, axis: 'progressive', agreeDirection: 'conservative' }, // Stability over change
 ];
 
 // Scoring constants

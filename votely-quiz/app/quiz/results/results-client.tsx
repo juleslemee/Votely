@@ -13,7 +13,9 @@ import {
   findVisionAlignment
 } from './types';
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
+const ResultCube = lazy(() => import('../../../components/ResultCube'));
+const ResultCubeFallback = lazy(() => import('../../../components/ResultCubeFallback'));
 import { saveQuizResult, getAlignmentPercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
 
 // SVGs to preload for next steps
@@ -38,8 +40,10 @@ function ImagePreloader() {
 function calculateScores(answers: number[], quizType: string = 'short') {
   let economicScore = 0;
   let socialScore = 0;
+  let progressiveScore = 0;
   let economicQuestions = 0;
   let socialQuestions = 0;
+  let progressiveQuestions = 0;
 
   // Convert continuous values (0-1) to score values (-2 to +2)
   const convertToScore = (value: number): number => {
@@ -74,21 +78,26 @@ function calculateScores(answers: number[], quizType: string = 'short') {
     if (config.axis === 'economic') {
       economicScore += config.agreeDirection === 'left' ? -score : score;
       economicQuestions++;
-    } else {
+    } else if (config.axis === 'social') {
       socialScore += config.agreeDirection === 'authoritarian' ? score : -score;
       socialQuestions++;
+    } else if (config.axis === 'progressive') {
+      progressiveScore += config.agreeDirection === 'progressive' ? -score : score;
+      progressiveQuestions++;
     }
   });
 
   // Calculate max possible scores based on number of questions answered
   const maxEconomicScore = economicQuestions * 2;
   const maxSocialScore = socialQuestions * 2;
+  const maxProgressiveScore = progressiveQuestions * 2;
 
   // Prevent division by zero
   const economic = maxEconomicScore > 0 ? normalizeScore(economicScore, maxEconomicScore) : 0;
   const social = maxSocialScore > 0 ? normalizeScore(socialScore, maxSocialScore) : 0;
+  const progressive = maxProgressiveScore > 0 ? normalizeScore(progressiveScore, maxProgressiveScore) : 0;
 
-  return { economic, social };
+  return { economic, social, progressive };
 }
 
 function handleShare() {
@@ -215,10 +224,10 @@ export default function ResultsClient() {
   const quizType = searchParams.get('type') || 'short';
   const isShared = searchParams.get('shared') === 'true';
   const graphRef = useRef<HTMLDivElement>(null);
-  const [showMotionDot, setShowMotionDot] = useState(true);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
   const [docId, setDocId] = useState<string | null>(null);
   const hasSaved = useRef(false);
+  const [view3D, setView3D] = useState(true);
 
   useEffect(() => {
     if (!graphRef.current) return;
@@ -235,7 +244,7 @@ export default function ResultsClient() {
     return isNaN(num) ? 0.5 : num; // Default to neutral if parsing fails
   });
   
-  const { economic, social } = calculateScores(answers, quizType);
+  const { economic, social, progressive } = calculateScores(answers, quizType);
   // Convert to -10..10 scale for Vision alignment
   const x = toVisionScale(economic);
   const y = toVisionScale(social);
@@ -301,25 +310,7 @@ export default function ResultsClient() {
   }, [alignment.label, economic, social]);
 
 
-  // Calculate dot position (convert -10..10 to 0..100 for CSS/SVG)
-  const dotX = ((x + 10) / 20) * 100;
-  const dotY = ((10 - y) / 20) * 100;
 
-  // Calculate pixel positions for motion path
-  const startX = graphSize.width / 2;
-  const startY = graphSize.height / 2;
-  const endX = (dotX / 100) * graphSize.width;
-  const endY = (dotY / 100) * graphSize.height;
-  const overshootX = endX + (endX - startX) * -0.10; // 5% past the target
-  const overshootY = endY + (endY - startY) * -0.10;
-  const motionPath = `M ${startX} ${startY} Q ${overshootX} ${overshootY}, ${endX} ${endY}`;
-
-  // Hide the motion dot after animation
-  useEffect(() => {
-    if (!showMotionDot) return;
-    const timeout = setTimeout(() => setShowMotionDot(false), 1300); // animation duration + buffer
-    return () => clearTimeout(timeout);
-  }, [showMotionDot]);
 
   // State for dynamic data
   const [resultPercentage, setResultPercentage] = useState<number | null>(null);
@@ -373,20 +364,51 @@ export default function ResultsClient() {
           {/* Left Column - Political Compass + Founding Supporter */}
           <div className="flex flex-col gap-6 contents lg:flex lg:flex-col">
             {/* Political Compass */}
-            <div ref={graphRef} className="bg-background rounded-2xl shadow-lg p-8 relative aspect-square order-1 lg:order-none">
-              <PoliticalCompassSvg point={!showMotionDot ? { x, y } : undefined} />
-              {showMotionDot && graphSize.width > 0 && graphSize.height > 0 && (
-                <div
-                  className="motion-dot absolute w-6 h-6 rounded-full z-10"
-                  style={{
-                    background: '#6B21A8',
-                    border: '3px solid #4B006E',
-                    boxShadow: '0 0 0 4px #C4B5FD44',
-                    left: 0,
-                    top: 0,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                />
+            <div ref={graphRef} className="bg-background rounded-2xl shadow-lg p-8 relative order-1 lg:order-none">
+              {/* View Toggle and Instructions */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm text-gray-600">
+                  {view3D ? 'Click and drag to rotate the 3D cube' : 'Your political position on the traditional compass'}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600">2D</span>
+                  <button
+                    onClick={() => setView3D(!view3D)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                      view3D ? 'bg-purple-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        view3D ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className="text-sm text-gray-600">3D</span>
+                </div>
+              </div>
+
+              {view3D ? (
+                <Suspense fallback={<div className="h-[400px] flex items-center justify-center">Loading 3D visualization...</div>}>
+                  {typeof window !== 'undefined' && 'WebGLRenderingContext' in window ? (
+                    <ResultCube
+                      x={economic}
+                      y={social}
+                      z={progressive}
+                      ideologyLabel={alignment.label}
+                      onInteraction={(type) => console.log('Interaction:', type)}
+                    />
+                  ) : (
+                    <ResultCubeFallback
+                      x={economic}
+                      y={social}
+                      z={progressive}
+                      ideologyLabel={alignment.label}
+                    />
+                  )}
+                </Suspense>
+              ) : (
+                <PoliticalCompassSvg point={{ x, y }} />
               )}
             </div>
 
@@ -491,6 +513,27 @@ export default function ResultsClient() {
                     <span className="absolute top-full left-1/2 transform -translate-x-1/2 text-xs text-gray-500 mt-1">Center</span>
                   </div>
                 </div>
+                
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium text-purple-600">Progressive-Conservative Score</span>
+                    <span className="text-sm text-foreground/60">{progressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(progressive).toFixed(1)}%)</span>
+                  </div>
+                  <div className="relative">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
+                      <div 
+                        className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${Math.abs(progressive) / 2}%`,
+                          marginLeft: progressive < 0 ? `${50 - Math.abs(progressive) / 2}%` : '50%'
+                        }}
+                      />
+                    </div>
+                    {/* Center line */}
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0.5 h-2.5 bg-gray-400"></div>
+                    <span className="absolute top-full left-1/2 transform -translate-x-1/2 text-xs text-gray-500 mt-1">Center</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -543,18 +586,6 @@ export default function ResultsClient() {
         </div>
       </div>
       
-      <style jsx global>{`
-        .motion-dot {
-          offset-path: path('${motionPath}');
-          offset-distance: 0%;
-          animation: move-dot 1.2s cubic-bezier(0.4, 0.6, 0.2, 1) forwards;
-        }
-        @keyframes move-dot {
-          to {
-            offset-distance: 80%;
-          }
-        }
-      `}</style>
     </div>
   );
 } 

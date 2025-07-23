@@ -78,10 +78,10 @@ function calculateScores(answers: number[], quizType: string = 'short') {
     if (config.axis === 'economic') {
       economicScore += config.agreeDirection === 'left' ? -score : score;
       economicQuestions++;
-    } else if (config.axis === 'social') {
+    } else if (config.axis === 'authority') {
       socialScore += config.agreeDirection === 'authoritarian' ? score : -score;
       socialQuestions++;
-    } else if (config.axis === 'progressive') {
+    } else if (config.axis === 'cultural') {
       progressiveScore += config.agreeDirection === 'progressive' ? -score : score;
       progressiveQuestions++;
     }
@@ -495,7 +495,7 @@ export default function ResultsClient() {
                 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Social Score</span>
+                    <span className="text-sm font-medium text-purple-600">Authority Score</span>
                     <span className="text-sm text-foreground/60">{social > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(social).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
@@ -516,7 +516,7 @@ export default function ResultsClient() {
                 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Progressive-Conservative Score</span>
+                    <span className="text-sm font-medium text-purple-600">Cultural Score</span>
                     <span className="text-sm text-foreground/60">{progressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(progressive).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">

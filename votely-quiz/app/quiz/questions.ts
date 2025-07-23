@@ -1,4 +1,4 @@
-type PoliticalAxis = 'economic' | 'social';
+type PoliticalAxis = 'economic' | 'authority' | 'cultural';
 
 export interface Question {
   id: number;
@@ -6,277 +6,332 @@ export interface Question {
   axis: PoliticalAxis;
 }
 
-// 50 neutral political questions balanced between economic and social axes
-// Questions are designed to be unbiased while covering the full political spectrum
+// 50 balanced political questions across economic, authority, and cultural axes
+// Questions are designed to be neutral while covering the full political spectrum
 export const allQuestions: Question[] = [
-  // ECONOMIC QUESTIONS (25 total)
+  // ECONOMIC QUESTIONS (16 total) - 8 left, 8 right
   {
     id: 1,
-    question: "High-income earners should pay significantly higher tax rates than middle-income earners.",
+    question: "High-income earners should pay a much larger percentage of their income in taxes than everyone else.",
     axis: 'economic'
   },
   {
     id: 2,
-    question: "The government should invest heavily in renewable energy infrastructure.",
+    question: "Healthcare should be provided free of charge by the government to all people.",
     axis: 'economic'
   },
   {
     id: 3,
-    question: "Workers should have the right to form unions and collectively bargain for wages.",
+    question: "Labor unions are necessary to protect workers' rights and should be supported.",
     axis: 'economic'
   },
   {
     id: 4,
-    question: "The minimum wage should be increased to ensure full-time workers can afford basic living expenses.",
+    question: "Strong government regulation of businesses is necessary to protect consumers and workers.",
     axis: 'economic'
   },
   {
     id: 5,
-    question: "Healthcare should be provided by the government as a public service.",
+    question: "Ensuring affordable housing for all citizens is a responsibility of the government.",
     axis: 'economic'
   },
   {
     id: 6,
-    question: "Student loan debt should be forgiven or significantly reduced through government intervention.",
+    question: "The government should actively redistribute wealth from the rich to the poor to create a more equal society.",
     axis: 'economic'
   },
   {
     id: 7,
-    question: "Large corporations should be broken up to prevent monopolistic practices.",
+    question: "Protecting the environment should be prioritized even at the cost of economic growth.",
     axis: 'economic'
   },
   {
     id: 8,
-    question: "The government should provide universal basic income to all citizens.",
+    question: "Employees should have an ownership stake or say in the companies they work for.",
     axis: 'economic'
   },
   {
     id: 9,
-    question: "Wealthy individuals should face restrictions on political campaign contributions.",
+    question: "Lowering taxes for businesses and individuals is the best way to encourage economic growth.",
     axis: 'economic'
   },
   {
     id: 10,
-    question: "Private property ownership is essential for economic prosperity.",
+    question: "Private companies can provide services like healthcare and education more efficiently than the government.",
     axis: 'economic'
   },
   {
     id: 11,
-    question: "Free trade agreements generally benefit national economies.",
+    question: "Generous social welfare programs can reduce people's incentive to work.",
     axis: 'economic'
   },
   {
     id: 12,
-    question: "The government should regulate prices for essential goods during emergencies.",
+    question: "Too much government regulation of business stifles economic growth and innovation.",
     axis: 'economic'
   },
   {
     id: 13,
-    question: "Economic inequality is primarily the result of differences in individual effort and ability.",
+    question: "Economic inequality is not a problem as long as there is equality of opportunity.",
     axis: 'economic'
   },
   {
     id: 14,
-    question: "Government spending should prioritize infrastructure over tax cuts.",
+    question: "Free-market capitalism is the best economic system, despite any imperfections.",
     axis: 'economic'
   },
   {
     id: 15,
-    question: "Banks and financial institutions require more government oversight.",
+    question: "Tariffs and import restrictions are necessary to protect domestic industries.",
     axis: 'economic'
   },
   {
     id: 16,
-    question: "Small businesses should receive tax advantages over large corporations.",
-    axis: 'economic'
-  },
-  {
-    id: 17,
-    question: "The government should guarantee employment for all citizens willing to work.",
-    axis: 'economic'
-  },
-  {
-    id: 18,
-    question: "International economic cooperation is more beneficial than economic nationalism.",
-    axis: 'economic'
-  },
-  {
-    id: 19,
-    question: "Inheritance taxes help reduce wealth concentration across generations.",
-    axis: 'economic'
-  },
-  {
-    id: 20,
-    question: "Market competition naturally leads to fair pricing and innovation.",
-    axis: 'economic'
-  },
-  {
-    id: 21,
-    question: "Government subsidies for renewable energy are necessary for climate progress.",
-    axis: 'economic'
-  },
-  {
-    id: 22,
-    question: "Cryptocurrency should be regulated similarly to traditional financial instruments.",
-    axis: 'economic'
-  },
-  {
-    id: 23,
-    question: "Public transportation should be funded primarily through government investment.",
-    axis: 'economic'
-  },
-  {
-    id: 24,
-    question: "Economic growth should be prioritized over environmental protection when they conflict.",
-    axis: 'economic'
-  },
-  {
-    id: 25,
-    question: "Social safety nets reduce people's motivation to work and be self-reliant.",
+    question: "Implementing socialist policies would only harm the economy.",
     axis: 'economic'
   },
 
-  // SOCIAL QUESTIONS (25 total)
+  // AUTHORITY QUESTIONS (17 total) - 8 libertarian, 9 authoritarian
+  {
+    id: 17,
+    question: "Government surveillance of citizens' communications is acceptable if it prevents crime and terrorism.",
+    axis: 'authority'
+  },
+  {
+    id: 18,
+    question: "The government should be able to censor speech or media that it considers dangerous or extremist.",
+    axis: 'authority'
+  },
+  {
+    id: 19,
+    question: "In a national emergency, it is acceptable for the government to suspend some normal legal rights.",
+    axis: 'authority'
+  },
+  {
+    id: 20,
+    question: "Criminals who commit serious crimes deserve harsh punishments, not rehabilitation.",
+    axis: 'authority'
+  },
+  {
+    id: 21,
+    question: "A strong, centralized government is necessary to maintain order in society.",
+    axis: 'authority'
+  },
+  {
+    id: 22,
+    question: "People should always obey the law, even if they feel it is unjust.",
+    axis: 'authority'
+  },
+  {
+    id: 23,
+    question: "Government policy should follow the advice of qualified experts, even if it goes against popular opinion.",
+    axis: 'authority'
+  },
+  {
+    id: 24,
+    question: "Every citizen should be required to serve in the military or perform national service for at least a year.",
+    axis: 'authority'
+  },
+  {
+    id: 25,
+    question: "Individuals should be free to make their own lifestyle choices as long as they do not harm others.",
+    axis: 'authority'
+  },
   {
     id: 26,
-    question: "Government agencies should monitor online communications to prevent terrorism.",
-    axis: 'social'
+    question: "The government should have as little involvement in citizens' lives as possible.",
+    axis: 'authority'
   },
   {
     id: 27,
-    question: "Social media platforms should be required to remove content deemed harmful or misleading.",
-    axis: 'social'
+    question: "Local communities should have more power to govern themselves and less oversight from the central government.",
+    axis: 'authority'
   },
   {
     id: 28,
-    question: "Law enforcement funding should be reduced in favor of community social services.",
-    axis: 'social'
+    question: "People have the right to disobey laws they find unjust.",
+    axis: 'authority'
   },
   {
     id: 29,
-    question: "Firearms ownership should be subject to extensive background checks and licensing.",
-    axis: 'social'
+    question: "Law-abiding citizens should be able to own firearms without heavy restrictions.",
+    axis: 'authority'
   },
   {
     id: 30,
-    question: "Educational curricula should include comprehensive coverage of historical injustices.",
-    axis: 'social'
+    question: "The government should not enforce any moral or cultural values on individuals.",
+    axis: 'authority'
   },
   {
     id: 31,
-    question: "Adults should be free to make personal choices about their own bodies without government interference.",
-    axis: 'social'
+    question: "If the government violates the people's rights, the people have the right to overthrow it.",
+    axis: 'authority'
   },
   {
     id: 32,
-    question: "Organizations should actively work to increase diversity in their hiring practices.",
-    axis: 'social'
+    question: "In an ideal society, communities could manage themselves without any centralized government.",
+    axis: 'authority'
   },
+
+  // CULTURAL QUESTIONS (17 total) - 9 conservative, 8 progressive  
   {
     id: 33,
-    question: "National security concerns justify some limitations on individual privacy rights.",
-    axis: 'social'
+    question: "Consensual acts that do not harm others (such as adult sex work) should not be outlawed.",
+    axis: 'authority'
   },
+
+  // CULTURAL QUESTIONS (17 total) - 9 conservative, 8 progressive
   {
     id: 34,
-    question: "Religious institutions should be exempt from laws that conflict with their beliefs.",
-    axis: 'social'
+    question: "Children are best off when raised by a married mother and father in the same household.",
+    axis: 'cultural'
   },
   {
     id: 35,
-    question: "Immigration levels should be determined primarily by economic labor needs.",
-    axis: 'social'
+    question: "Immigration into our country should be strictly limited to protect our national culture and economy.",
+    axis: 'cultural'
   },
   {
     id: 36,
-    question: "Traditional family structures provide the best environment for raising children.",
-    axis: 'social'
+    question: "It is more important to preserve traditional values and ways of life than to adopt new social changes.",
+    axis: 'cultural'
   },
   {
     id: 37,
-    question: "Hate speech should be legally prohibited even if it limits free expression.",
-    axis: 'social'
+    question: "It's important for citizens to be proud of their country's history and heritage.",
+    axis: 'cultural'
   },
   {
     id: 38,
-    question: "Cultural assimilation should be encouraged for immigrants to promote social cohesion.",
-    axis: 'social'
+    question: "Maintaining our national sovereignty should be prioritized over working with international organizations.",
+    axis: 'cultural'
   },
   {
     id: 39,
-    question: "Government should remain neutral in matters of personal morality and lifestyle choices.",
-    axis: 'social'
+    question: "Political correctness has gone too far, to the point where people are afraid to speak their minds.",
+    axis: 'cultural'
   },
   {
     id: 40,
-    question: "Schools should teach standardized moral values shared by the broader community.",
-    axis: 'social'
+    question: "Society has become too permissive and would be better off if we returned to more traditional standards of morality.",
+    axis: 'cultural'
   },
   {
     id: 41,
-    question: "Peaceful protest is an essential right that should rarely be restricted.",
-    axis: 'social'
+    question: "A diverse society with many cultures, religions, and identities is a strength for a nation.",
+    axis: 'cultural'
   },
   {
     id: 42,
-    question: "Society benefits when people maintain strong connections to their cultural heritage.",
-    axis: 'social'
+    question: "Laws and policies should not be influenced by any religion; the government needs to stay secular.",
+    axis: 'cultural'
   },
   {
     id: 43,
-    question: "Government should have access to all digital communications to ensure public safety.",
-    axis: 'social'
+    question: "Policies like affirmative action are necessary to help correct historical inequalities.",
+    axis: 'cultural'
   },
   {
     id: 44,
-    question: "Local communities should have the authority to establish their own social norms and rules.",
-    axis: 'social'
+    question: "Society should accept people's gender identities, even if they differ from their birth sex.",
+    axis: 'cultural'
   },
   {
     id: 45,
-    question: "International cooperation is more important than maintaining national sovereignty.",
-    axis: 'social'
+    question: "Women should have the right to choose an abortion without government interference.",
+    axis: 'cultural'
   },
   {
     id: 46,
-    question: "Scientific consensus should guide government policy even when it conflicts with popular opinion.",
-    axis: 'social'
+    question: "The death penalty should be abolished in all cases.",
+    axis: 'cultural'
   },
   {
     id: 47,
-    question: "Individual merit should be the primary factor in college admissions and job hiring.",
-    axis: 'social'
+    question: "People should avoid adopting elements of other cultures in ways that are disrespectful or insensitive.",
+    axis: 'cultural'
   },
   {
     id: 48,
-    question: "Social order requires some people to have authority over others.",
-    axis: 'social'
+    question: "Drug use should be treated as a public health issue (with education and treatment) rather than a criminal one.",
+    axis: 'cultural'
   },
   {
     id: 49,
-    question: "Drug use should be treated as a health issue rather than a criminal justice issue.",
-    axis: 'social'
+    question: "Schools should teach students about the historical injustices committed by our country.",
+    axis: 'cultural'
   },
   {
     id: 50,
     question: "Maintaining social stability is more important than rapid social change.",
-    axis: 'social'
+    axis: 'cultural'
   }
 ];
 
-// Short quiz: 10 questions (5 economic, 5 social)
+// Short quiz: 10 questions mixed across axes for engagement
 export const shortQuestions: Question[] = [
-  allQuestions[0],  // Tax rates
-  allQuestions[4],  // Healthcare
-  allQuestions[3],  // Minimum wage
-  allQuestions[10], // Free trade
-  allQuestions[19], // Market competition
-  allQuestions[25], // Surveillance
-  allQuestions[28], // Gun control
-  allQuestions[42], // Government access to digital communications (more extreme auth)
-  allQuestions[36], // Hate speech
-  allQuestions[40]  // Peaceful protest
+  allQuestions[3],  // ID 4 - Strong government regulation (economic left)
+  allQuestions[16], // ID 17 - Government surveillance (authority authoritarian)
+  allQuestions[40], // ID 41 - Diversity strength (cultural progressive)
+  allQuestions[8],  // ID 9 - Tax cuts for growth (economic right)
+  allQuestions[25], // ID 26 - Limited government involvement (authority libertarian)
+  allQuestions[5],  // ID 6 - Wealth redistribution (economic left)
+  allQuestions[17], // ID 18 - Government censorship (authority authoritarian)
+  allQuestions[33], // ID 34 - Traditional family values (cultural conservative)
+  allQuestions[13], // ID 14 - Free-market capitalism (economic right)
+  allQuestions[44]  // ID 45 - Abortion rights (cultural progressive)
 ];
 
-// Long quiz uses all 50 questions
-export const longQuestions: Question[] = allQuestions;
+// Long quiz: all 50 questions in mixed order to keep users engaged
+export const longQuestions: Question[] = [
+  allQuestions[0],  // ID 1 - Economic
+  allQuestions[16], // ID 17 - Authority
+  allQuestions[33], // ID 34 - Cultural
+  allQuestions[8],  // ID 9 - Economic
+  allQuestions[24], // ID 25 - Authority
+  allQuestions[40], // ID 41 - Cultural
+  allQuestions[1],  // ID 2 - Economic
+  allQuestions[17], // ID 18 - Authority
+  allQuestions[34], // ID 35 - Cultural
+  allQuestions[9],  // ID 10 - Economic
+  allQuestions[25], // ID 26 - Authority
+  allQuestions[41], // ID 42 - Cultural
+  allQuestions[2],  // ID 3 - Economic
+  allQuestions[18], // ID 19 - Authority
+  allQuestions[35], // ID 36 - Cultural
+  allQuestions[10], // ID 11 - Economic
+  allQuestions[26], // ID 27 - Authority
+  allQuestions[42], // ID 43 - Cultural
+  allQuestions[3],  // ID 4 - Economic
+  allQuestions[19], // ID 20 - Authority
+  allQuestions[36], // ID 37 - Cultural
+  allQuestions[11], // ID 12 - Economic
+  allQuestions[27], // ID 28 - Authority
+  allQuestions[43], // ID 44 - Cultural
+  allQuestions[4],  // ID 5 - Economic
+  allQuestions[20], // ID 21 - Authority
+  allQuestions[37], // ID 38 - Cultural
+  allQuestions[12], // ID 13 - Economic
+  allQuestions[28], // ID 29 - Authority
+  allQuestions[44], // ID 45 - Cultural
+  allQuestions[5],  // ID 6 - Economic
+  allQuestions[21], // ID 22 - Authority
+  allQuestions[38], // ID 39 - Cultural
+  allQuestions[13], // ID 14 - Economic
+  allQuestions[29], // ID 30 - Authority
+  allQuestions[45], // ID 46 - Cultural
+  allQuestions[6],  // ID 7 - Economic
+  allQuestions[22], // ID 23 - Authority
+  allQuestions[39], // ID 40 - Cultural
+  allQuestions[14], // ID 15 - Economic
+  allQuestions[30], // ID 31 - Authority
+  allQuestions[46], // ID 47 - Cultural
+  allQuestions[7],  // ID 8 - Economic
+  allQuestions[23], // ID 24 - Authority
+  allQuestions[47], // ID 48 - Cultural
+  allQuestions[15], // ID 16 - Economic
+  allQuestions[31], // ID 32 - Authority
+  allQuestions[48], // ID 49 - Cultural
+  allQuestions[32], // ID 33 - Authority
+  allQuestions[49]  // ID 50 - Cultural
+];

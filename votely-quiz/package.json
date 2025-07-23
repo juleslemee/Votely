@@ -28,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "^0.178.1",
     "autoprefixer": "^10.4.17",
     "babel-loader": "^10.0.0",
     "eslint": "^8",

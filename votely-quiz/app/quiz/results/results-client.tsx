@@ -303,7 +303,7 @@ export default function ResultsClient() {
       
       // Get surprising alignments, excluding the groups already shown in "You Align With"
       const excludeGroups = groupMatches.map(group => group.name);
-      const surprisingMatches = await getSurprisingAlignments(economic, social, excludeGroups);
+      const surprisingMatches = await getSurprisingAlignments(economic, social, progressive, excludeGroups);
 
       console.log('Analytics data loaded:', { percentage, totalCount, groupMatches, surprisingMatches });
 

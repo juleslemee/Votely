@@ -26,7 +26,7 @@ export default function QuizPageClient() {
   
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [screen, setScreen] = useState(0);
-  const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean; startValue?: number } | null>(null);
+  const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean; startValue?: number; element?: HTMLElement } | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -50,30 +50,23 @@ export default function QuizPageClient() {
 
   const handleSliderMouseDown = (questionId: number, event: React.MouseEvent<HTMLDivElement>) => {
     const currentValue = answers[questionId] ?? 0.5;
-    setDragState({ questionId, isDragging: true, startValue: currentValue });
+    setDragState({ questionId, isDragging: true, startValue: currentValue, element: event.currentTarget });
     handleSliderInteraction(questionId, event);
   };
 
   const handleSliderTouchStart = (questionId: number, event: React.TouchEvent<HTMLDivElement>) => {
     const currentValue = answers[questionId] ?? 0.5;
-    setDragState({ questionId, isDragging: true, startValue: currentValue });
+    setDragState({ questionId, isDragging: true, startValue: currentValue, element: event.currentTarget });
     handleSliderInteraction(questionId, event);
   };
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      if (dragState?.isDragging) {
-        const sliderElement = document.querySelector(`[data-question-id="${dragState.questionId}"]`);
-        if (sliderElement) {
-          const rect = sliderElement.getBoundingClientRect();
-          const relativeX = event.clientX - rect.left;
-          const percentage = relativeX / rect.width;
-          
-          // Only update if we're within reasonable bounds - prevents jumping when dragging outside
-          if (percentage >= 0 && percentage <= 1) {
-            handleAnswerSelect(dragState.questionId, percentage);
-          }
-        }
+      if (dragState?.isDragging && dragState.element) {
+        const rect = dragState.element.getBoundingClientRect();
+        const relativeX = event.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
+        handleAnswerSelect(dragState.questionId, percentage);
       }
     };
 
@@ -82,18 +75,11 @@ export default function QuizPageClient() {
     };
 
     const handleTouchMove = (event: TouchEvent) => {
-      if (dragState?.isDragging) {
-        const sliderElement = document.querySelector(`[data-question-id="${dragState.questionId}"]`);
-        if (sliderElement) {
-          const rect = sliderElement.getBoundingClientRect();
-          const relativeX = event.touches[0].clientX - rect.left;
-          const percentage = relativeX / rect.width;
-          
-          // Only update if we're within reasonable bounds - prevents jumping when dragging outside
-          if (percentage >= 0 && percentage <= 1) {
-            handleAnswerSelect(dragState.questionId, percentage);
-          }
-        }
+      if (dragState?.isDragging && dragState.element) {
+        const rect = dragState.element.getBoundingClientRect();
+        const relativeX = event.touches[0].clientX - rect.left;
+        const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
+        handleAnswerSelect(dragState.questionId, percentage);
       }
     };
 
@@ -193,7 +179,7 @@ export default function QuizPageClient() {
                         <div
                           className="h-full bg-purple-500 rounded-full"
                           style={{
-                            width: `${(answers[question.id] || 0.5) * 100}%`
+                            width: `${(answers[question.id] ?? 0.5) * 100}%`
                           }}
                         />
                         {/* Slider thumb */}

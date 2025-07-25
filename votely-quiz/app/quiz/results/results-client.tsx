@@ -53,11 +53,17 @@ function calculateScores(answers: number[], quizType: string = 'short') {
   // Map question indices to actual question IDs based on quiz type
   const getQuestionIds = (quizType: string): number[] => {
     if (quizType === 'long') {
-      // Long quiz uses all questions 1-50
-      return Array.from({ length: 50 }, (_, i) => i + 1);
+      // Long quiz uses questions in a specific shuffled order
+      return [
+        1, 17, 34, 9, 25, 41, 2, 18, 35, 10,
+        26, 42, 3, 19, 36, 11, 27, 43, 4, 20,
+        37, 12, 28, 44, 5, 21, 38, 13, 29, 45,
+        6, 22, 39, 14, 30, 46, 7, 23, 40, 15,
+        31, 47, 8, 24, 48, 16, 32, 49, 33, 50
+      ];
     } else {
-      // Short quiz uses specific question IDs: [4, 17, 41, 9, 26, 6, 18, 34, 14, 45]
-      return [4, 17, 41, 9, 26, 6, 18, 34, 14, 45];
+      // Short quiz uses specific question IDs: [4, 20, 41, 9, 25, 6, 35, 29, 14, 44]
+      return [4, 20, 41, 9, 25, 6, 35, 29, 14, 44];
     }
   };
 
@@ -248,7 +254,8 @@ export default function ResultsClient() {
   // Convert to -10..10 scale for Vision alignment
   const x = toVisionScale(economic);
   const y = toVisionScale(social);
-  const alignment = findVisionAlignment(x, y);
+  const z = toVisionScale(progressive);
+  const alignment = findVisionAlignment(x, y, z);
 
   // Save the quiz result (skip if this is a shared result)
   useEffect(() => {
@@ -287,13 +294,16 @@ export default function ResultsClient() {
       }
 
       // Load all analytics data in parallel
-      const [percentage, totalCount, groupMatches, surprisingMatches, waitlist] = await Promise.all([
+      const [percentage, totalCount, groupMatches, waitlist] = await Promise.all([
         getAlignmentPercentage(alignment.label),
         getTotalQuizCount(),
-        getPoliticalGroupMatches(economic, social),
-        getSurprisingAlignments(economic, social),
+        getPoliticalGroupMatches(economic, social, progressive),
         getWaitlistCount()
       ]);
+      
+      // Get surprising alignments, excluding the groups already shown in "You Align With"
+      const excludeGroups = groupMatches.map(group => group.name);
+      const surprisingMatches = await getSurprisingAlignments(economic, social, excludeGroups);
 
       console.log('Analytics data loaded:', { percentage, totalCount, groupMatches, surprisingMatches });
 

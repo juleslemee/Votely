@@ -29,7 +29,10 @@ export default function QuizPageClient() {
   const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean; startValue?: number; element?: HTMLElement } | null>(null);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }, [screen]);
 
   const handleAnswerSelect = (questionId: number, value: AnswerValue) => {
@@ -105,10 +108,6 @@ export default function QuizPageClient() {
   const handleNext = () => {
     if (screen < TOTAL_SCREENS - 1) {
       setScreen(screen + 1);
-      // Force scroll to top with a slight delay for mobile browsers
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
     }
   };
 

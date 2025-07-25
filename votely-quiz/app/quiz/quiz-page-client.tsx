@@ -167,7 +167,7 @@ export default function QuizPageClient() {
                   <div className="relative h-8 md:h-10">
                     {/* Slider track */}
                     <div 
-                      className="absolute top-1/2 left-0 right-0 -translate-y-1/2 cursor-pointer"
+                      className="absolute top-1/2 left-0 right-0 -translate-y-1/2 cursor-pointer select-none"
                       data-question-id={question.id}
                       onMouseDown={(e) => handleSliderMouseDown(question.id, e)}
                       onTouchStart={(e) => handleSliderTouchStart(question.id, e)}
@@ -176,14 +176,18 @@ export default function QuizPageClient() {
                       <div className="h-2 bg-purple-200 rounded-full relative">
                         {/* Selected range */}
                         <div
-                          className="h-full bg-purple-500 rounded-full"
+                          className={`h-full bg-purple-500 rounded-full ${
+                            dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-all duration-150'
+                          }`}
                           style={{
                             width: `${(answers[question.id] ?? 0.5) * 100}%`
                           }}
                         />
                         {/* Slider thumb */}
                         <div
-                          className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing transition-transform hover:scale-110"
+                          className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing hover:scale-110 ${
+                            dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-transform'
+                          }`}
                           style={{
                             left: `${(answers[question.id] ?? 0.5) * 100}%`,
                             transform: 'translateX(-50%) translateY(-50%)'

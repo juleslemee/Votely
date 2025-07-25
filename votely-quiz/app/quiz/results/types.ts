@@ -118,7 +118,7 @@ export function toVisionScale(value: number): number {
 export const alignments: Alignment[] = [
   {
     label: "Revolutionary Socialist",
-    description: "Believes equality must be achieved through organized state action and revolution.",
+    description: "Capitalism isn't just flawed in your view: it's fundamentally broken. Only collective ownership can deliver real justice, and you're ready for the systemic change that requires, even if it means tearing down what exists.",
     realIdeologies: "Marxist-Leninism",
     usExamples: "Historic USSR, Cuban Revolution sympathizers",
     xRange: [-10, -5],
@@ -126,7 +126,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Welfare Commander",
-    description: "Believes a strong welfare state and regulation can ensure fairness.",
+    description: "Markets fail people, but government can fix that. Nordic-style socialism speaks to you: high taxes funding strong safety nets, with regulation that actually puts people before profits.",
     realIdeologies: "State Socialism",
     usExamples: "Bernie Sanders (economic ideas, but democratic leaning)",
     xRange: [-5, 0],
@@ -134,7 +134,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Homeland Defender",
-    description: "Believes in preserving national culture, values, and strong leadership.",
+    description: "Globalization has gone too far, threatening both national identity and working families. What resonates with you: strong borders, traditional values, and leaders who genuinely put country first.",
     realIdeologies: "National Conservatism",
     usExamples: "Donald Trump (NatCon movement), Brexit supporters",
     xRange: [0, 5],
@@ -142,7 +142,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Order-First Conservative",
-    description: "Believes tradition, hierarchy, and national strength are critical.",
+    description: "Chaos surrounds us, and only strong leadership can restore sanity. Traditional hierarchies didn't emerge by accident: they serve important purposes. Society needs structure, not endless questioning of authority.",
     realIdeologies: "Fascism-lite",
     usExamples: "Hard-right authoritarian populists in Europe",
     xRange: [5, 10],
@@ -150,7 +150,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Structured Progressive",
-    description: "Supports systemic reforms within existing frameworks to create equity.",
+    description: "Major reforms are needed, but democracy is the way to get them. The system has serious flaws, yet it's fixable with smart policies, competent experts, and the political will to take on entrenched interests.",
     realIdeologies: "Democratic Socialism (authoritarian-leaning)",
     usExamples: "Elizabeth Warren (milder version), AOC (left-wing establishment reform)",
     xRange: [-10, -5],
@@ -158,7 +158,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "People's Advocate",
-    description: "Favors populist social programs combined with strong leadership.",
+    description: "Working-class anger needs a voice, and economic populism is the answer. The elites have rigged this game, which is why we need leaders who'll actually fight for ordinary people instead of Wall Street.",
     realIdeologies: "Populist Socialism",
     usExamples: "Chávez-inspired Latin American populists",
     xRange: [-5, 0],
@@ -167,7 +167,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Structured Capitalist",
-    description: "Supports corporate activity guided by state direction for societal benefit.",
+    description: "Markets need smart guidance to reach their potential. Government and business should work together building national strength. Pure laissez-faire economics is just as naive as pure socialism.",
     realIdeologies: "Corporatism",
     usExamples: "Italy's corporatist period under Mussolini (economic system only)",
     xRange: [0, 5],
@@ -176,7 +176,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Tradition Capitalist",
-    description: "Defends traditional markets while emphasizing moral hierarchy.",
+    description: "Free markets and timeless values both deserve defending. Real success flows from hard work paired with moral discipline. When we abandon what our ancestors built, society inevitably declines.",
     realIdeologies: "Reactionary Capitalism",
     usExamples: "Economic Nationalists in US Right (e.g. Bannonites)",
     xRange: [5, 10],
@@ -184,7 +184,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Cooperative Dreamer",
-    description: "Believes true freedom is collective — without bosses or centralized states.",
+    description: "Picture communities organizing themselves with no bosses, no bureaucrats. That's true freedom: collective self-management where people cooperate as equals rather than compete as rivals.",
     realIdeologies: "Libertarian Socialism",
     usExamples: "Grassroots socialism, Occupy Wall Street radicals",
     xRange: [-10, -5],
@@ -192,7 +192,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Collective Rebel",
-    description: "Advocates for workers controlling production through unions and grassroots action.",
+    description: "Workers should run the factories. Communities should govern themselves. Unions and direct action, not politicians and CEOs, will build the world we actually need.",
     realIdeologies: "Anarcho-Syndicalism",
     usExamples: "Union-led worker movements, grassroots labor organizing",
     xRange: [-5, 0],
@@ -201,7 +201,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Underground Organizer",
-    description: "Pushes for counter-economic strategies to undermine state dominance.",
+    description: "The system won't reform itself, so build alternatives: crypto networks, black markets, parallel institutions. When the state won't leave people alone, help them route around it entirely.",
     realIdeologies: "Agorism",
     usExamples: "Crypto-anarchist movements, underground economic activism",
     xRange: [0, 5],
@@ -210,7 +210,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Freedom Entrepreneur",
-    description: "Favors absolute free markets with little to no government interference.",
+    description: "Every regulation represents chains on human potential. Markets solve problems while governments create them. Simply let people trade freely and prosperity will bloom.",
     realIdeologies: "Market Anarchism",
     usExamples: "Libertarian-leaning entrepreneurs, crypto-libertarians",
     xRange: [5, 10],
@@ -218,7 +218,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Localist Organizer",
-    description: "Supports decentralized local economies and self-management.",
+    description: "Neighbors deserve more trust than nations ever will. Small-scale, face-to-face democracy actually works. Communities should manage their own affairs without distant bureaucrats interfering.",
     realIdeologies: "Mutualism",
     usExamples: "Local food co-ops, decentralization movements",
     xRange: [-10, -5],
@@ -226,7 +226,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Green Radical",
-    description: "Combines environmental action with critiques of capitalism.",
+    description: "Capitalism is literally cooking the planet. Real environmentalism demands dismantling these growth-obsessed systems and building sustainable communities that respect natural limits.",
     realIdeologies: "Eco-Socialism",
     usExamples: "Green New Deal radicals, Extinction Rebellion supporters",
     xRange: [-5, 0],
@@ -234,7 +234,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Minimalist Libertarian",
-    description: "Wants a minimal state focused only on basic protection (police, courts, military).",
+    description: "Government should stick to the basics: courts, cops, and defense. Everything else works better through voluntary associations, private charity, and genuine free markets.",
     realIdeologies: "Minarchism",
     usExamples: "Ron Paul, small-government libertarians",
     xRange: [0, 5],
@@ -242,7 +242,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Radical Capitalist",
-    description: "Believes government should not exist at all; total voluntary exchange.",
+    description: "Why have government at all? Private property, voluntary contracts, and market competition can handle every function the state claims to serve, including courts and police.",
     realIdeologies: "Anarcho-Capitalism",
     usExamples: "Radical libertarians, Silicon Valley anarcho-capitalists",
     xRange: [5, 10],
@@ -250,7 +250,7 @@ export const alignments: Alignment[] = [
   },
   {
     label: "Pragmatic Moderate",
-    description: "Prefers pragmatic, flexible solutions over rigid ideologies.",
+    description: "Pragmatic solutions beat rigid ideologies every time. Evidence trumps theory. The sensible approach: fix what's broken, keep what works, and adapt as circumstances change.",
     realIdeologies: "Radical Centrism / Social Liberalism",
     usExamples: "Mainstream moderates, Third Way Democrats, pragmatic centrists",
     xRange: [-2.5, 2.5],
@@ -260,13 +260,98 @@ export const alignments: Alignment[] = [
 ];
 
 // Find the closest alignment based on -10..10 scale and Vision logic
-export function findVisionAlignment(economicScore: number, socialScore: number): Alignment {
+export function findVisionAlignment(economicScore: number, socialScore: number, culturalScore: number = 0): Alignment {
   // economicScore and socialScore are expected to be in -10..10
+  let baseAlignment: Alignment = alignments[0];
+  
   for (const alignment of alignments) {
     const inX = economicScore >= alignment.xRange[0] && economicScore <= alignment.xRange[1];
     const inY = socialScore >= alignment.yRange[0] && socialScore <= alignment.yRange[1];
     const cond = alignment.additionalCondition ? alignment.additionalCondition(economicScore, socialScore) : true;
-    if (inX && inY && cond) return alignment;
+    if (inX && inY && cond) {
+      baseAlignment = alignment;
+      break;
+    }
   }
-  return alignments[0];
+  
+  // Add cultural modifiers for strong cultural leanings
+  const culturalThreshold = 4; // Strong cultural lean threshold
+  if (Math.abs(culturalScore) >= culturalThreshold) {
+    const modifiedAlignment = { ...baseAlignment };
+    
+    // Ideology-specific cultural spins
+    const culturalSpins: Record<string, { progressive: { sublabel: string, description: string }, conservative: { sublabel: string, description: string } }> = {
+      'Revolutionary Socialist': {
+        progressive: {
+          sublabel: 'Intersectional Focus',
+          description: 'You see capitalism as fundamentally broken and believe only collective ownership can deliver justice. Your focus on intersectional liberation means dismantling all forms of oppression simultaneously.'
+        },
+        conservative: {
+          sublabel: 'Communitarian Focus', 
+          description: 'You see capitalism as fundamentally broken and believe only collective ownership can deliver justice. You emphasize traditional community bonds and cultural continuity within socialist structures.'
+        }
+      },
+      'Welfare Commander': {
+        progressive: {
+          sublabel: 'Social Justice Emphasis',
+          description: 'You trust government to fix market failures and protect the vulnerable. Your progressive approach prioritizes expanding rights and dismantling systemic inequalities through policy.'
+        },
+        conservative: {
+          sublabel: 'Family Values Emphasis',
+          description: 'You trust government to fix market failures and protect the vulnerable. Your traditional values focus on strengthening working families and preserving community institutions.'
+        }
+      },
+      'Homeland Defender': {
+        progressive: {
+          sublabel: 'Environmental Nationalism',
+          description: 'You believe globalization threatens national identity and working families. Your environmental focus channels nationalism toward protecting the homeland from climate threats and corporate exploitation.'
+        },
+        conservative: {
+          sublabel: 'Cultural Preservation',
+          description: 'You believe globalization threatens national identity and working families. Your traditional values emphasize preserving heritage, customs, and moral foundations against foreign influence.'
+        }
+      },
+      'Freedom Entrepreneur': {
+        progressive: {
+          sublabel: 'Social Liberty Focus',
+          description: 'You see every regulation as chains on human potential. Your progressive values emphasize personal autonomy in lifestyle choices while maintaining strong free-market principles.'
+        },
+        conservative: {
+          sublabel: 'Constitutional Markets',
+          description: 'You see every regulation as chains on human potential. Your traditional values ground free markets in constitutional principles and moral entrepreneurship.'
+        }
+      },
+      'Minimalist Libertarian': {
+        progressive: {
+          sublabel: 'Civil Rights Focus',
+          description: 'You want government doing only the basics: courts, cops, and defense. Your progressive instincts focus on protecting individual rights from both state and social conformity pressures.'
+        },
+        conservative: {
+          sublabel: 'Constitutional Originalist',
+          description: 'You want government doing only the basics: courts, cops, and defense. Your traditional values emphasize returning to constitutional foundations and time-tested governance principles.'
+        }
+      },
+      'Pragmatic Moderate': {
+        progressive: {
+          sublabel: 'Reform-Minded',
+          description: 'You prefer pragmatic, flexible solutions over rigid ideologies. Your progressive lean means supporting gradual social change through evidence-based reforms and inclusive institutions.'
+        },
+        conservative: {
+          sublabel: 'Stability-Focused',
+          description: 'You prefer pragmatic, flexible solutions over rigid ideologies. Your traditional values favor cautious, incremental change that preserves stability while addressing genuine problems.'
+        }
+      }
+    };
+    
+    const spin = culturalSpins[baseAlignment.label];
+    if (spin) {
+      const culturalDirection = culturalScore < -culturalThreshold ? 'progressive' : 'conservative';
+      modifiedAlignment.label = `${baseAlignment.label}: ${spin[culturalDirection].sublabel}`;
+      modifiedAlignment.description = spin[culturalDirection].description;
+    }
+    
+    return modifiedAlignment;
+  }
+  
+  return baseAlignment;
 }

@@ -269,17 +269,18 @@ export const allQuestions: Question[] = [
 ];
 
 // Short quiz: 10 questions mixed across axes for engagement
+// Improved balance: 4 economic (2L/2R), 3 authority (1A/2L), 3 cultural (1C/2P)
 export const shortQuestions: Question[] = [
   allQuestions[3],  // ID 4 - Strong government regulation (economic left)
-  allQuestions[16], // ID 17 - Government surveillance (authority authoritarian)
+  allQuestions[19], // ID 20 - Harsh punishment for criminals (authority authoritarian)
   allQuestions[40], // ID 41 - Diversity strength (cultural progressive)
   allQuestions[8],  // ID 9 - Tax cuts for growth (economic right)
-  allQuestions[25], // ID 26 - Limited government involvement (authority libertarian)
+  allQuestions[24], // ID 25 - Individual lifestyle freedom (authority libertarian)
   allQuestions[5],  // ID 6 - Wealth redistribution (economic left)
-  allQuestions[17], // ID 18 - Government censorship (authority authoritarian)
-  allQuestions[33], // ID 34 - Traditional family values (cultural conservative)
+  allQuestions[34], // ID 35 - Restrict immigration (cultural conservative)
+  allQuestions[28], // ID 29 - Gun rights (authority libertarian)
   allQuestions[13], // ID 14 - Free-market capitalism (economic right)
-  allQuestions[44]  // ID 45 - Abortion rights (cultural progressive)
+  allQuestions[43]  // ID 44 - Gender identity acceptance (cultural progressive)
 ];
 
 // Long quiz: all 50 questions in mixed order to keep users engaged

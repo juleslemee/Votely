@@ -101,6 +101,7 @@ export default function QuizPageClient() {
 
     const handleTouchMove = (event: TouchEvent) => {
       if (dragState?.isDragging && dragState.element) {
+        event.preventDefault(); // Prevent default touch behavior like swiping
         const sliderTrack = dragState.element.querySelector('.slider-track');
         if (!sliderTrack) return;
         const rect = sliderTrack.getBoundingClientRect();
@@ -195,6 +196,7 @@ export default function QuizPageClient() {
                     {/* Slider track with extended click area */}
                     <div 
                       className="absolute top-1/2 left-0 right-0 -translate-y-1/2 cursor-pointer select-none pt-8 pb-8 px-10 -mx-10"
+                      style={{ touchAction: 'none' }}
                       data-question-id={question.id}
                       onMouseDown={(e) => handleSliderMouseDown(question.id, e)}
                       onTouchStart={(e) => handleSliderTouchStart(question.id, e)}

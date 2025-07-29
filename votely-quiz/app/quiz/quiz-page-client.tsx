@@ -180,7 +180,7 @@ export default function QuizPageClient() {
                 {/* Current selection label - moved higher and made more prominent */}
                 {answers[question.id] !== undefined && (
                   <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                    <span className="inline-block bg-primary/20 text-secondary font-semibold px-6 py-1.5 rounded-full text-sm md:text-base">
+                    <span className="inline-block bg-primary/20 text-secondary font-semibold px-6 py-1.5 rounded-full text-sm md:text-base whitespace-nowrap">
                       {getValueLabel(answers[question.id])} • {getPercentageDisplay(answers[question.id])}
                     </span>
                   </div>

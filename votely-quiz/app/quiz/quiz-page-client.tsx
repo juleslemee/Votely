@@ -8,11 +8,27 @@ import { shortQuestions, longQuestions, Question } from './questions';
 type AnswerValue = number;
 
 const getValueLabel = (value: number): string => {
-  if (value < 0.1) return "~Strongly Disagree";
-  if (value < 0.3) return "~Disagree";
-  if (value < 0.7) return "~Neutral";
-  if (value < 0.9) return "~Agree";
-  return "~Strongly Agree";
+  const percentage = Math.abs((value - 0.5) * 200);
+  if (percentage <= 10) return "Neutral";
+  
+  const prefix = value < 0.5 ? "Disagree" : "Agree";
+  if (percentage <= 35) return `Slightly ${prefix}`;
+  if (percentage <= 65) return prefix;
+  return `Strongly ${prefix}`;
+};
+
+const getPercentageDisplay = (value: number): string => {
+  const percentage = Math.round(Math.abs((value - 0.5) * 200));
+  return `${percentage}%`;
+};
+
+const getSliderColor = (value: number): string => {
+  const distance = Math.abs(value - 0.5) * 2; // 0 to 1
+  // Interpolate between purple-200 (233, 213, 255) and purple-600 (147, 51, 234)
+  const r = Math.round(233 - (233 - 147) * distance);
+  const g = Math.round(213 - (213 - 51) * distance);
+  const b = Math.round(255 - (255 - 234) * distance);
+  return `rgb(${r} ${g} ${b})`;
 };
 
 const QUESTIONS_PER_SCREEN = 5;
@@ -27,6 +43,7 @@ export default function QuizPageClient() {
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [screen, setScreen] = useState(0);
   const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean; startValue?: number; element?: HTMLElement } | null>(null);
+  const [hoveredQuestion, setHoveredQuestion] = useState<number | null>(null);
 
   useEffect(() => {
     // Use requestAnimationFrame to ensure DOM has updated
@@ -44,7 +61,10 @@ export default function QuizPageClient() {
 
   const handleSliderInteraction = (questionId: number, event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     event.preventDefault(); // Prevent default touch behavior on mobile
-    const rect = event.currentTarget.getBoundingClientRect();
+    // Find the actual slider track element (not the invisible click area)
+    const sliderTrack = event.currentTarget.querySelector('.slider-track');
+    if (!sliderTrack) return;
+    const rect = sliderTrack.getBoundingClientRect();
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
     const relativeX = clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
@@ -66,7 +86,9 @@ export default function QuizPageClient() {
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (dragState?.isDragging && dragState.element) {
-        const rect = dragState.element.getBoundingClientRect();
+        const sliderTrack = dragState.element.querySelector('.slider-track');
+        if (!sliderTrack) return;
+        const rect = sliderTrack.getBoundingClientRect();
         const relativeX = event.clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
         handleAnswerSelect(dragState.questionId, percentage);
@@ -79,7 +101,9 @@ export default function QuizPageClient() {
 
     const handleTouchMove = (event: TouchEvent) => {
       if (dragState?.isDragging && dragState.element) {
-        const rect = dragState.element.getBoundingClientRect();
+        const sliderTrack = dragState.element.querySelector('.slider-track');
+        if (!sliderTrack) return;
+        const rect = sliderTrack.getBoundingClientRect();
         const relativeX = event.touches[0].clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
         handleAnswerSelect(dragState.questionId, percentage);
@@ -136,8 +160,11 @@ export default function QuizPageClient() {
         {/* Progress Bar */}
         <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-6">
           <div
-            className="h-full bg-purple-600 transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full transition-all duration-300"
+            style={{ 
+              width: `${progress}%`,
+              background: 'linear-gradient(to right, rgb(233 213 255), rgb(147 51 234))'
+            }}
           />
         </div>
         <h1 className="text-4xl font-bold text-foreground text-center mb-8">
@@ -154,7 +181,7 @@ export default function QuizPageClient() {
                 {answers[question.id] !== undefined && (
                   <div className="absolute top-0 left-1/2 -translate-x-1/2">
                     <span className="inline-block bg-primary/20 text-secondary font-semibold px-6 py-1.5 rounded-full text-sm md:text-base">
-                      {getValueLabel(answers[question.id])}
+                      {getValueLabel(answers[question.id])} • {getPercentageDisplay(answers[question.id])}
                     </span>
                   </div>
                 )}
@@ -165,32 +192,44 @@ export default function QuizPageClient() {
                     <span>Strongly Agree</span>
                   </div>
                   <div className="relative h-8 md:h-10">
-                    {/* Slider track */}
+                    {/* Slider track with extended click area */}
                     <div 
-                      className="absolute top-1/2 left-0 right-0 -translate-y-1/2 cursor-pointer select-none"
+                      className="absolute top-1/2 left-0 right-0 -translate-y-1/2 cursor-pointer select-none pt-8 pb-8 px-10 -mx-10"
                       data-question-id={question.id}
                       onMouseDown={(e) => handleSliderMouseDown(question.id, e)}
                       onTouchStart={(e) => handleSliderTouchStart(question.id, e)}
                       onClick={(e) => handleSliderInteraction(question.id, e)}
+                      onMouseEnter={() => setHoveredQuestion(question.id)}
+                      onMouseLeave={() => setHoveredQuestion(null)}
                     >
-                      <div className="h-2 bg-purple-200 rounded-full relative">
-                        {/* Selected range */}
-                        <div
-                          className={`h-full bg-purple-500 rounded-full ${
-                            dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-all duration-150'
-                          }`}
-                          style={{
-                            width: `${(answers[question.id] ?? 0.5) * 100}%`
-                          }}
-                        />
-                        {/* Slider thumb */}
+                      {/* Slider track */}
+                      <div className="slider-track h-2 bg-purple-200 rounded-full relative overflow-visible absolute top-1/2 left-0 right-0 -translate-y-1/2">
+                        {/* Solid color fill based on direction and value */}
+                        {answers[question.id] !== undefined && (
+                          <div
+                            className={`absolute h-full ${
+                              answers[question.id] < 0.5 ? 'rounded-l-full' : 'rounded-r-full'
+                            } ${
+                              dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-all duration-150'
+                            }`}
+                            style={{
+                              backgroundColor: getSliderColor(answers[question.id]),
+                              left: answers[question.id] < 0.5 ? `${answers[question.id] * 100}%` : '50%',
+                              right: answers[question.id] >= 0.5 ? `${(1 - answers[question.id]) * 100}%` : '50%'
+                            }}
+                          />
+                        )}
+                        {/* Center line indicator */}
+                        <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-purple-300" />
+                        {/* Slider thumb - now with pulsating animation when not set */}
                         <div
                           className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing hover:scale-110 ${
                             dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-transform'
                           }`}
                           style={{
                             left: `${(answers[question.id] ?? 0.5) * 100}%`,
-                            transform: 'translateX(-50%) translateY(-50%)'
+                            transform: 'translateX(-50%) translateY(-50%)',
+                            animation: answers[question.id] === undefined ? 'pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
                           }}
                         />
                       </div>

@@ -1,5 +1,11 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+
+// Lazy initialization variables
+let adminApp: any;
+let adminDb: Firestore | null = null;
+let initializationError: Error | null = null;
+let isInitialized = false;
 
 // Initialize Firebase Admin SDK
 const initializeFirebaseAdmin = () => {
@@ -44,27 +50,54 @@ const initializeFirebaseAdmin = () => {
   }
 };
 
-// Initialize app
-let adminApp;
-let adminDb;
+// Lazy initialization function
+const ensureInitialized = () => {
+  if (isInitialized) {
+    return adminDb;
+  }
 
-try {
-  adminApp = initializeFirebaseAdmin();
-  adminDb = getFirestore(adminApp);
-} catch (error) {
-  console.error('Failed to initialize Firebase Admin on module load:', error);
-  // Create a lazy initialization wrapper
-  adminDb = new Proxy({}, {
-    get(target, prop) {
-      throw new Error('Firebase Admin SDK not initialized. Check FIREBASE_SERVICE_ACCOUNT_KEY environment variable.');
-    }
-  });
-}
+  if (initializationError) {
+    throw initializationError;
+  }
 
-// Export Firestore instance
-export { adminDb };
+  try {
+    console.log('Initializing Firebase Admin SDK...');
+    adminApp = initializeFirebaseAdmin();
+    adminDb = getFirestore(adminApp);
+    isInitialized = true;
+    console.log('Firebase Admin SDK initialized successfully');
+    return adminDb;
+  } catch (error: any) {
+    console.error('Failed to initialize Firebase Admin:', error);
+    initializationError = error;
+    throw error;
+  }
+};
+
+// Export a getter function for adminDb
+export const getAdminDb = () => {
+  return ensureInitialized();
+};
 
 // Helper function to get server timestamp
 export const serverTimestamp = () => {
   return new Date().toISOString();
 };
+
+// For backward compatibility, export adminDb as a getter
+export const adminDb = new Proxy({} as Firestore, {
+  get(target, prop) {
+    const db = ensureInitialized();
+    if (!db) {
+      throw new Error('Firebase Admin SDK not initialized');
+    }
+    return (db as any)[prop];
+  },
+  apply(target, thisArg, argArray) {
+    const db = ensureInitialized();
+    if (!db) {
+      throw new Error('Firebase Admin SDK not initialized');
+    }
+    return (db as any).apply(thisArg, argArray);
+  }
+});

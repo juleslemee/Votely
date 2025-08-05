@@ -34,9 +34,12 @@ export default function AboutCreator() {
         setEmail('');
         setWantsReply(false);
       } else {
+        const data = await response.json();
+        console.error('Feedback submission error:', data.error);
         setSubmitStatus('error');
       }
     } catch (error) {
+      console.error('Feedback submission error:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

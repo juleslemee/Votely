@@ -331,6 +331,11 @@ export default function UnifiedShareModal({
       // Dynamic import to avoid SSR issues
       const html2canvas = (await import('html2canvas')).default;
       
+      // For 3D, wait a bit longer to ensure WebGL rendering is complete
+      if (type === '3d') {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
       const canvas = await html2canvas(ref, {
         width: 1080,
         height: 1080,
@@ -732,7 +737,7 @@ export default function UnifiedShareModal({
             <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white h-24 flex items-center justify-center px-8">
               <div className="flex items-center justify-between w-full max-w-4xl">
                 <div className="flex items-center gap-4">
-                  <img src="/logo.svg" alt="Votely" className="h-12 w-auto" />
+                  <img src={`${window.location.origin}/logo.svg`} alt="Votely" className="h-12 w-auto" />
                   <div>
                     <div className="text-2xl font-bold">VOTELY</div>
                     <div className="text-sm text-purple-200">Political Quiz</div>
@@ -1353,7 +1358,7 @@ export default function UnifiedShareModal({
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white h-24 flex items-center justify-center px-8">
         <div className="flex items-center justify-between w-full max-w-4xl">
           <div className="flex items-center gap-4">
-            <img src="/logo.svg" alt="Votely" className="h-12 w-auto" />
+            <img src={`${typeof window !== 'undefined' ? window.location.origin : ''}/logo.svg`} alt="Votely" className="h-12 w-auto" />
             <div>
               <div className="text-2xl font-bold">VOTELY</div>
               <div className="text-sm text-purple-200">Political Quiz</div>

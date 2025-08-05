@@ -393,7 +393,7 @@ export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, colo
   }, [hideHint])
 
   // Calculate camera position based on fixed rotation angle if provided
-  const getCameraPosition = () => {
+  const getCameraPosition = (): [number, number, number] => {
     if (fixedRotationAngle !== undefined) {
       const distance = 566; // Math.sqrt(400² + 400²)
       const angleInRadians = (fixedRotationAngle * Math.PI) / 180;
@@ -411,7 +411,9 @@ export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, colo
       className="relative w-full aspect-square bg-gray-50 rounded-lg select-none"
       style={{ 
         userSelect: 'none',
+        // @ts-ignore
         WebkitUserDrag: 'none',
+        // @ts-ignore
         WebkitTouchCallout: 'none'
       }}
       aria-label={`Political position: Economic ${x}, Social ${y}, Progressive-Conservative ${z}`}
@@ -426,6 +428,7 @@ export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, colo
         style={{ 
           background: 'transparent',
           userSelect: 'none',
+          // @ts-ignore
           WebkitUserDrag: 'none'
         }}
       >

@@ -375,7 +375,7 @@ export default function ResultsClient() {
         economicScore: economic,
         socialScore: social,
         alignmentLabel: ideologyData?.ideology || ideologyData?.friendlyLabel || alignment.label,
-        alignmentDescription: ideologyData?.description || alignment.description,
+        alignmentDescription: ideologyData?.explanation || alignment.description,
       },
     })
       .then(id => {
@@ -487,7 +487,7 @@ export default function ResultsClient() {
           <h1 className="text-4xl font-bold text-foreground">Your Political Alignment</h1>
           <p className="text-foreground/60 mt-2">
             <span className="inline-flex items-center gap-1">
-              <span>👥</span> You're {totalQuizCount !== null && totalQuizCount > 0 ? `1 of ${totalQuizCount.toLocaleString()}` : 'joining'} quiz takers
+              <span>👥</span> You're {totalQuizCount !== null && Number(totalQuizCount) > 0 ? `1 of ${Number(totalQuizCount).toLocaleString()}` : 'joining'} quiz takers
             </span>
           </p>
         </div>

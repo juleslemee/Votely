@@ -29,3 +29,6 @@ firebase-debug.log
 
 # Feedback
 feedback/
+
+# TypeScript
+tsconfig.tsbuildinfo

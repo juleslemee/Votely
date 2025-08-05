@@ -3,7 +3,7 @@ import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 // Lazy initialization variables
 let adminApp: any;
-let adminDb: Firestore | null = null;
+let _adminDb: Firestore | null = null;
 let initializationError: Error | null = null;
 let isInitialized = false;
 
@@ -53,7 +53,7 @@ const initializeFirebaseAdmin = () => {
 // Lazy initialization function
 const ensureInitialized = () => {
   if (isInitialized) {
-    return adminDb;
+    return _adminDb;
   }
 
   if (initializationError) {
@@ -63,10 +63,10 @@ const ensureInitialized = () => {
   try {
     console.log('Initializing Firebase Admin SDK...');
     adminApp = initializeFirebaseAdmin();
-    adminDb = getFirestore(adminApp);
+    _adminDb = getFirestore(adminApp);
     isInitialized = true;
     console.log('Firebase Admin SDK initialized successfully');
-    return adminDb;
+    return _adminDb;
   } catch (error: any) {
     console.error('Failed to initialize Firebase Admin:', error);
     initializationError = error;

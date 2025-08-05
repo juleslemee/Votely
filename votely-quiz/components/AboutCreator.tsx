@@ -35,11 +35,20 @@ export default function AboutCreator() {
         setWantsReply(false);
       } else {
         try {
-          const data = await response.json();
-          console.error('Feedback submission error:', data.error);
-        } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
+          const text = await response.text();
+          console.error('Feedback submission error - Response:', text);
           console.error('Response status:', response.status);
+          console.error('Response headers:', response.headers);
+          
+          // Try to parse as JSON if possible
+          try {
+            const data = JSON.parse(text);
+            console.error('Parsed error:', data);
+          } catch (e) {
+            // Not JSON, that's ok
+          }
+        } catch (parseError) {
+          console.error('Failed to read error response:', parseError);
         }
         setSubmitStatus('error');
       }

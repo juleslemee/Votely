@@ -57,11 +57,19 @@ export async function loadGridData(quizType: 'short' | 'long'): Promise<GridCell
   const filename = quizType === 'short' ? 'grid-3x3-details.tsv' : 'grid-details.tsv';
   
   try {
-    const response = await fetch(`/${filename}`);
+    // Use absolute URL in production to avoid issues
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const response = await fetch(`${baseUrl}/${filename}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const content = await response.text();
     return parseTSV(content);
   } catch (error) {
     console.error(`Error loading ${filename}:`, error);
+    // Return empty array to prevent app from crashing
     return [];
   }
 }

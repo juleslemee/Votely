@@ -737,7 +737,7 @@ export default function UnifiedShareModal({
             <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white h-24 flex items-center justify-center px-8">
               <div className="flex items-center justify-between w-full max-w-4xl">
                 <div className="flex items-center gap-4">
-                  <img src={`${window.location.origin}/logo.svg`} alt="Votely" className="h-12 w-auto" />
+                  <img src="https://votelyquiz.juleslemee.com/logo.svg" alt="Votely" className="h-12 w-auto" />
                   <div>
                     <div className="text-2xl font-bold">VOTELY</div>
                     <div className="text-sm text-purple-200">Political Quiz</div>
@@ -1358,7 +1358,7 @@ export default function UnifiedShareModal({
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white h-24 flex items-center justify-center px-8">
         <div className="flex items-center justify-between w-full max-w-4xl">
           <div className="flex items-center gap-4">
-            <img src={`${typeof window !== 'undefined' ? window.location.origin : ''}/logo.svg`} alt="Votely" className="h-12 w-auto" />
+            <img src="https://votelyquiz.juleslemee.com/logo.svg" alt="Votely" className="h-12 w-auto" />
             <div>
               <div className="text-2xl font-bold">VOTELY</div>
               <div className="text-sm text-purple-200">Political Quiz</div>

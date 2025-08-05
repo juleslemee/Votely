@@ -38,11 +38,13 @@ async function checkRateLimit(ip: string): Promise<boolean> {
 }
 
 async function sendEmailNotification(feedbackData: any) {
-  // If using Vercel, you can use their Email API
-  // Or integrate with services like Resend, SendGrid, etc.
+  console.log('sendEmailNotification called');
+  console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+  console.log('FEEDBACK_EMAIL:', process.env.FEEDBACK_EMAIL || 'contact@juleslemee.com');
   
   if (process.env.RESEND_API_KEY) {
     try {
+      console.log('Attempting to send email via Resend...');
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -50,7 +52,7 @@ async function sendEmailNotification(feedbackData: any) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'Votely Feedback <feedback@votely.app>',
+          from: process.env.RESEND_FROM_EMAIL || 'Votely Quiz <votely@juleslemee.com>',
           to: process.env.FEEDBACK_EMAIL || 'contact@juleslemee.com',
           subject: 'New Votely Quiz Feedback',
           html: `
@@ -70,12 +72,19 @@ async function sendEmailNotification(feedbackData: any) {
         }),
       });
 
+      console.log('Resend API response status:', response.status);
+      const responseText = await response.text();
+      
       if (!response.ok) {
-        console.error('Failed to send email:', await response.text());
+        console.error('Failed to send email:', responseText);
+      } else {
+        console.log('Email sent successfully:', responseText);
       }
     } catch (error) {
       console.error('Error sending email notification:', error);
     }
+  } else {
+    console.log('RESEND_API_KEY not found, skipping email notification');
   }
 }
 
@@ -184,10 +193,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Send email notification (non-blocking)
-    sendEmailNotification(feedbackData).catch(error => {
+    // Send email notification (await it to see any errors)
+    try {
+      await sendEmailNotification(feedbackData);
+    } catch (error) {
       console.error('Failed to send email notification:', error);
-    });
+      // Don't fail the request just because email failed
+    }
 
     // Log for monitoring
     console.log(`New feedback received: ${feedbackData.id}`);

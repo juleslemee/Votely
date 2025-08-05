@@ -1,5 +1,5 @@
 import { db, auth } from './firebase';
-import { collection, addDoc, serverTimestamp, Timestamp, doc, updateDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp, doc, updateDoc, getDocs, query, where, orderBy, limit, getDoc, setDoc, increment, runTransaction } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { findVisionAlignment, alignments, toVisionScale } from '../app/quiz/results/types';
 
@@ -46,6 +46,10 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
     );
     
     console.log('Quiz result saved successfully, docId:', docRef.id);
+    
+    // Update aggregated stats to avoid reading all documents later
+    await updateAggregatedStats(result.result.economicScore, result.result.socialScore);
+    
     return docRef.id;
   } catch (error: any) {
     console.error('Error saving quiz result:', error);
@@ -82,6 +86,48 @@ export async function saveEmailToWaitlist(email: string) {
   }
 }
 
+// Helper function to update aggregated statistics
+async function updateAggregatedStats(economicScore: number, socialScore: number) {
+  try {
+    // Update total count
+    const statsRef = doc(db, 'aggregatedStats', 'totals');
+    await setDoc(statsRef, {
+      totalCount: increment(1),
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
+
+    // Update grid cell counts for both 3x3 and 9x9 grids
+    await updateGridCellCount(economicScore, socialScore, 'short');
+    await updateGridCellCount(economicScore, socialScore, 'long');
+  } catch (error) {
+    console.error('Error updating aggregated stats:', error);
+    // Don't throw - this is not critical for the user experience
+  }
+}
+
+// Helper to update grid cell counts
+async function updateGridCellCount(economic: number, social: number, quizType: 'short' | 'long') {
+  const cellSize = quizType === 'short' ? (200 / 3) : (200 / 9);
+  const gridSize = quizType === 'short' ? 3 : 9;
+  
+  let econCell = Math.floor((economic + 100) / cellSize);
+  if (econCell >= gridSize) econCell = gridSize - 1;
+  
+  let socialCell = Math.floor((100 - social) / cellSize);
+  if (socialCell >= gridSize) socialCell = gridSize - 1;
+  
+  const cellId = `${quizType}_${econCell}_${socialCell}`;
+  const cellRef = doc(db, 'gridCellCounts', cellId);
+  
+  await setDoc(cellRef, {
+    count: increment(1),
+    economicCell: econCell,
+    socialCell: socialCell,
+    quizType: quizType,
+    lastUpdated: serverTimestamp()
+  }, { merge: true });
+}
+
 // Analytics functions for the new features
 
 // Simple test function to check Firebase connection
@@ -97,6 +143,45 @@ export async function testFirebaseConnection(): Promise<boolean> {
   }
 }
 
+// New coordinate-range-based percentage calculation - ULTRA OPTIMIZED VERSION
+export async function getCoordinateRangePercentage(
+  userEconomic: number, 
+  userSocial: number, 
+  quizType: 'short' | 'long'
+): Promise<number> {
+  try {
+    const cellSize = quizType === 'short' ? (200 / 3) : (200 / 9);
+    const gridSize = quizType === 'short' ? 3 : 9;
+    
+    let econCell = Math.floor((userEconomic + 100) / cellSize);
+    if (econCell >= gridSize) econCell = gridSize - 1;
+    
+    let socialCell = Math.floor((100 - userSocial) / cellSize);
+    if (socialCell >= gridSize) socialCell = gridSize - 1;
+    
+    const cellId = `${quizType}_${econCell}_${socialCell}`;
+    
+    // ONLY read from cache - never calculate on the fly
+    const cacheRef = doc(db, 'cachedPercentages', cellId);
+    const cacheDoc = await getDoc(cacheRef);
+    
+    if (cacheDoc.exists() && cacheDoc.data().percentage !== undefined) {
+      console.log(`Using cached percentage for cell ${cellId}: ${cacheDoc.data().percentage}%`);
+      return cacheDoc.data().percentage;
+    }
+    
+    // If no cache exists, return a default
+    // The batch job will ensure cache is always populated
+    console.warn(`No cached percentage for cell ${cellId}, returning default`);
+    return 5;
+    
+  } catch (error) {
+    console.error('Error getting cached percentage:', error);
+    return 5; // Default fallback percentage
+  }
+}
+
+// Keep the old function for backward compatibility, but mark it as deprecated
 export async function getAlignmentPercentage(alignmentLabel: string): Promise<number> {
   // Get all quiz responses
   const allResponsesSnapshot = await getDocs(collection(db, 'quizResponses'));
@@ -113,27 +198,29 @@ export async function getAlignmentPercentage(alignmentLabel: string): Promise<nu
   return Math.round((alignmentCount / totalResponses) * 100);
 }
 
-export async function getTotalQuizCount(): Promise<number> {
+export async function getTotalQuizCount(): Promise<number | string> {
   try {
-    console.log('Fetching total quiz count from Firestore...');
-    const snapshot = await getDocs(collection(db, 'quizResponses'));
-    console.log('Total quiz responses found:', snapshot.size);
+    // Always get fresh count from aggregated stats (just 1 read!)
+    const statsRef = doc(db, 'aggregatedStats', 'totals');
+    const statsDoc = await getDoc(statsRef);
     
-    // Return actual count if we have data, otherwise return minimum
-    if (snapshot.size > 0) {
-      return snapshot.size;
+    if (statsDoc.exists() && statsDoc.data().totalCount) {
+      const totalCount = statsDoc.data().totalCount;
+      console.log(`Total quiz count: ${totalCount}`);
+      return totalCount;
     }
     
-    // Default to 172 if no data
-    console.log('No quiz responses found, returning default count');
-    return 172;
+    // Default fallback if document doesn't exist
+    console.log('No aggregated stats found, returning fallback text');
+    return 'a lot of';
+    
   } catch (error: any) {
     console.error('Error getting total quiz count:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
     
-    // Return a reasonable default if Firebase fails
-    return 172;
+    // Return fallback text if Firebase fails
+    return 'a lot of';
   }
 }
 
@@ -639,5 +726,151 @@ export async function getWaitlistCount(): Promise<number> {
   } catch (error) {
     console.error('Error getting waitlist count:', error);
     return 0;
+  }
+}
+
+// Batch calculate and cache ALL grid percentages at once
+// This should be run periodically (e.g., once per day via a scheduled function)
+export async function batchUpdateAllGridPercentages() {
+  try {
+    console.log('Starting batch update of all grid percentages...');
+    
+    // Get total count once
+    const statsRef = doc(db, 'aggregatedStats', 'totals');
+    const statsDoc = await getDoc(statsRef);
+    const totalCount = statsDoc.exists() ? statsDoc.data().totalCount || 0 : 0;
+    
+    if (totalCount === 0) {
+      console.log('No responses to calculate percentages for');
+      return;
+    }
+    
+    // Get all grid cell counts in one query
+    const gridCellsSnapshot = await getDocs(collection(db, 'gridCellCounts'));
+    
+    // Calculate all percentages
+    const updates: Promise<any>[] = [];
+    
+    gridCellsSnapshot.docs.forEach(docSnapshot => {
+      const cellData = docSnapshot.data();
+      const cellId = docSnapshot.id;
+      const cellCount = cellData.count || 0;
+      const percentage = Math.max(1, Math.round((cellCount / totalCount) * 100));
+      
+      // Update cache for this cell
+      const cacheRef = doc(db, 'cachedPercentages', cellId);
+      updates.push(
+        setDoc(cacheRef, {
+          percentage,
+          cellId,
+          lastUpdated: serverTimestamp(),
+          economicCell: cellData.economicCell,
+          socialCell: cellData.socialCell,
+          quizType: cellData.quizType,
+          totalCount: totalCount,
+          cellCount: cellCount
+        })
+      );
+    });
+    
+    // Also pre-cache percentages for empty cells (0%)
+    const quizTypes = ['short', 'long'];
+    quizTypes.forEach(quizType => {
+      const gridSize = quizType === 'short' ? 3 : 9;
+      for (let econCell = 0; econCell < gridSize; econCell++) {
+        for (let socialCell = 0; socialCell < gridSize; socialCell++) {
+          const cellId = `${quizType}_${econCell}_${socialCell}`;
+          if (!gridCellsSnapshot.docs.find(docSnapshot => docSnapshot.id === cellId)) {
+            const cacheRef = doc(db, 'cachedPercentages', cellId);
+            updates.push(
+              setDoc(cacheRef, {
+                percentage: 0,
+                cellId,
+                lastUpdated: serverTimestamp(),
+                economicCell: econCell,
+                socialCell: socialCell,
+                quizType: quizType,
+                totalCount: totalCount,
+                cellCount: 0
+              })
+            );
+          }
+        }
+      }
+    });
+    
+    await Promise.all(updates);
+    
+    console.log(`Batch update complete! Updated ${updates.length} grid cell percentages`);
+    return { success: true, updatedCells: updates.length };
+    
+  } catch (error) {
+    console.error('Error during batch update:', error);
+    throw error;
+  }
+}
+
+// One-time migration function to initialize aggregated stats from existing data
+// Run this ONCE to set up the aggregated collections
+export async function migrateToAggregatedStats() {
+  try {
+    console.log('Starting migration to aggregated stats...');
+    
+    // Get all existing quiz responses
+    const allResponsesSnapshot = await getDocs(collection(db, 'quizResponses'));
+    const totalCount = allResponsesSnapshot.size;
+    
+    console.log(`Found ${totalCount} existing quiz responses to migrate`);
+    
+    // Initialize total count
+    await setDoc(doc(db, 'aggregatedStats', 'totals'), {
+      totalCount: totalCount,
+      lastUpdated: serverTimestamp()
+    });
+    
+    // Initialize grid cell counts
+    const gridCellCounts: Record<string, number> = {};
+    
+    allResponsesSnapshot.docs.forEach(doc => {
+      const data = doc.data() as QuizResult;
+      const economic = data.result.economicScore;
+      const social = data.result.socialScore;
+      
+      // Calculate for both grid types
+      ['short', 'long'].forEach(quizType => {
+        const cellSize = quizType === 'short' ? (200 / 3) : (200 / 9);
+        const gridSize = quizType === 'short' ? 3 : 9;
+        
+        let econCell = Math.floor((economic + 100) / cellSize);
+        if (econCell >= gridSize) econCell = gridSize - 1;
+        
+        let socialCell = Math.floor((100 - social) / cellSize);
+        if (socialCell >= gridSize) socialCell = gridSize - 1;
+        
+        const cellId = `${quizType}_${econCell}_${socialCell}`;
+        gridCellCounts[cellId] = (gridCellCounts[cellId] || 0) + 1;
+      });
+    });
+    
+    // Write all grid cell counts
+    const promises = Object.entries(gridCellCounts).map(([cellId, count]) => {
+      const [quizType, econCell, socialCell] = cellId.split('_');
+      return setDoc(doc(db, 'gridCellCounts', cellId), {
+        count: count,
+        economicCell: parseInt(econCell),
+        socialCell: parseInt(socialCell),
+        quizType: quizType,
+        lastUpdated: serverTimestamp()
+      });
+    });
+    
+    await Promise.all(promises);
+    
+    console.log(`Migration complete! Migrated ${totalCount} responses across ${Object.keys(gridCellCounts).length} grid cells`);
+    return { success: true, totalCount, cellCount: Object.keys(gridCellCounts).length };
+    
+  } catch (error) {
+    console.error('Error during migration:', error);
+    throw error;
   }
 } 

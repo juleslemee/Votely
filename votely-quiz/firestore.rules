@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Allow users to read and write their own survey results
+    match /quizResponses/{document=**} {
+      allow create: if request.resource.data.keys().hasAll(['answers', 'result', 'timestamp']) &&
+        request.resource.data.answers is list &&
+        request.resource.data.result is map &&
+        request.resource.data.timestamp is timestamp;
+      // Allow updating email field
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email']) &&
+        request.resource.data.email is string;
+      // Allow reading for analytics
+      allow read: if true;
+    }
+
+    // Allow anyone to add to the waitlist
+    match /waitlist/{document=**} {
+      allow create: if request.resource.data.keys().hasAll(['email', 'timestamp', 'source']) &&
+        request.resource.data.email is string &&
+        request.resource.data.timestamp is timestamp &&
+        request.resource.data.source is string;
+      allow read: if true;
+    }
+    
+    // NEW: Aggregated statistics - read by all, write only by authenticated
+    match /aggregatedStats/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // NEW: Grid cell counts - read by all, write only by authenticated
+    match /gridCellCounts/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // NEW: Cached percentages - read by all, write only by authenticated
+    match /cachedPercentages/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // NEW: Cached daily stats - read by all, write only by authenticated
+    match /cachedStats/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Feedback collection - write only through API (no direct client access)
+    match /feedback/{document} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

@@ -20,61 +20,45 @@ export interface QuestionConfig {
 }
 
 export const QUESTION_CONFIG: QuestionConfig[] = [
-  // ECONOMIC QUESTIONS (16 total) - IDs 1-16
-  { id: 1, axis: 'economic', agreeDirection: 'left' }, // Progressive taxation
-  { id: 2, axis: 'economic', agreeDirection: 'left' }, // Government healthcare
-  { id: 3, axis: 'economic', agreeDirection: 'left' }, // Labor unions
+  // ECONOMIC QUESTIONS
+  { id: 1, axis: 'economic', agreeDirection: 'left' }, // Wealth redistribution
+  { id: 2, axis: 'economic', agreeDirection: 'right' }, // Tax cuts
+  { id: 3, axis: 'economic', agreeDirection: 'right' }, // Free market
   { id: 4, axis: 'economic', agreeDirection: 'left' }, // Business regulation
-  { id: 5, axis: 'economic', agreeDirection: 'left' }, // Government housing
-  { id: 6, axis: 'economic', agreeDirection: 'left' }, // Wealth redistribution
-  { id: 7, axis: 'economic', agreeDirection: 'left' }, // Environment over growth
-  { id: 8, axis: 'economic', agreeDirection: 'left' }, // Worker ownership
-  { id: 9, axis: 'economic', agreeDirection: 'right' }, // Tax cuts
-  { id: 10, axis: 'economic', agreeDirection: 'right' }, // Privatization
-  { id: 11, axis: 'economic', agreeDirection: 'right' }, // Welfare concerns
-  { id: 12, axis: 'economic', agreeDirection: 'right' }, // Regulation burden
-  { id: 13, axis: 'economic', agreeDirection: 'right' }, // Economic inequality acceptance
-  { id: 14, axis: 'economic', agreeDirection: 'right' }, // Free market capitalism
-  { id: 15, axis: 'economic', agreeDirection: 'right' }, // Trade protectionism
-  { id: 16, axis: 'economic', agreeDirection: 'right' }, // Anti-socialism
+  { id: 5, axis: 'economic', agreeDirection: 'left' }, // Government healthcare
+  { id: 6, axis: 'economic', agreeDirection: 'right' }, // Welfare skepticism
+  { id: 7, axis: 'economic', agreeDirection: 'left' }, // Labor unions
+  { id: 8, axis: 'economic', agreeDirection: 'right' }, // Privatization
+  { id: 25, axis: 'economic', agreeDirection: 'left' }, // Progressive taxation
+  { id: 26, axis: 'economic', agreeDirection: 'right' }, // Regulation burden
+  { id: 31, axis: 'economic', agreeDirection: 'left' }, // Environment over growth
+  { id: 32, axis: 'economic', agreeDirection: 'right' }, // Trade protectionism
 
-  // AUTHORITY QUESTIONS (17 total) - IDs 17-33
-  { id: 17, axis: 'authority', agreeDirection: 'authoritarian' }, // Government surveillance
-  { id: 18, axis: 'authority', agreeDirection: 'authoritarian' }, // Government censorship
-  { id: 19, axis: 'authority', agreeDirection: 'authoritarian' }, // Emergency powers
-  { id: 20, axis: 'authority', agreeDirection: 'authoritarian' }, // Harsh punishment
-  { id: 21, axis: 'authority', agreeDirection: 'authoritarian' }, // Centralized government
-  { id: 22, axis: 'authority', agreeDirection: 'authoritarian' }, // Law obedience
-  { id: 23, axis: 'authority', agreeDirection: 'authoritarian' }, // Expert governance
-  { id: 24, axis: 'authority', agreeDirection: 'authoritarian' }, // Mandatory service
-  { id: 25, axis: 'authority', agreeDirection: 'libertarian' }, // Personal freedom
-  { id: 26, axis: 'authority', agreeDirection: 'libertarian' }, // Limited government
-  { id: 27, axis: 'authority', agreeDirection: 'libertarian' }, // Local governance
-  { id: 28, axis: 'authority', agreeDirection: 'libertarian' }, // Civil disobedience
-  { id: 29, axis: 'authority', agreeDirection: 'libertarian' }, // Gun rights
-  { id: 30, axis: 'authority', agreeDirection: 'libertarian' }, // Moral freedom
-  { id: 31, axis: 'authority', agreeDirection: 'libertarian' }, // Right to revolt
-  { id: 32, axis: 'authority', agreeDirection: 'libertarian' }, // Anarchism
-  { id: 33, axis: 'authority', agreeDirection: 'libertarian' }, // Victimless crimes
+  // AUTHORITY QUESTIONS  
+  { id: 9, axis: 'authority', agreeDirection: 'authoritarian' }, // Surveillance
+  { id: 10, axis: 'authority', agreeDirection: 'libertarian' }, // Limited government
+  { id: 11, axis: 'authority', agreeDirection: 'authoritarian' }, // Censorship
+  { id: 12, axis: 'authority', agreeDirection: 'libertarian' }, // Personal freedom
+  { id: 13, axis: 'authority', agreeDirection: 'authoritarian' }, // Emergency powers
+  { id: 14, axis: 'authority', agreeDirection: 'libertarian' }, // Civil disobedience
+  { id: 15, axis: 'authority', agreeDirection: 'authoritarian' }, // Centralized government
+  { id: 16, axis: 'authority', agreeDirection: 'libertarian' }, // Gun rights
+  { id: 27, axis: 'authority', agreeDirection: 'authoritarian' }, // Mandatory service
+  { id: 28, axis: 'authority', agreeDirection: 'libertarian' }, // Local governance
+  { id: 33, axis: 'authority', agreeDirection: 'authoritarian' }, // Expert governance
+  { id: 34, axis: 'authority', agreeDirection: 'libertarian' }, // Resist government
 
-  // CULTURAL QUESTIONS (17 total) - IDs 34-50
-  { id: 34, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional family
-  { id: 35, axis: 'cultural', agreeDirection: 'conservative' }, // Immigration limits
-  { id: 36, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional values
-  { id: 37, axis: 'cultural', agreeDirection: 'conservative' }, // National pride
-  { id: 38, axis: 'cultural', agreeDirection: 'conservative' }, // National sovereignty
-  { id: 39, axis: 'cultural', agreeDirection: 'conservative' }, // Political correctness
-  { id: 40, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional morality
-  { id: 41, axis: 'cultural', agreeDirection: 'progressive' }, // Diversity strength
-  { id: 42, axis: 'cultural', agreeDirection: 'progressive' }, // Secularism
-  { id: 43, axis: 'cultural', agreeDirection: 'progressive' }, // Affirmative action
-  { id: 44, axis: 'cultural', agreeDirection: 'progressive' }, // Gender identity
-  { id: 45, axis: 'cultural', agreeDirection: 'progressive' }, // Reproductive rights
-  { id: 46, axis: 'cultural', agreeDirection: 'progressive' }, // Death penalty abolition
-  { id: 47, axis: 'cultural', agreeDirection: 'progressive' }, // Cultural appropriation
-  { id: 48, axis: 'cultural', agreeDirection: 'progressive' }, // Drug health approach
-  { id: 49, axis: 'cultural', agreeDirection: 'progressive' }, // Historical awareness
-  { id: 50, axis: 'cultural', agreeDirection: 'conservative' }, // Social stability
+  // CULTURAL QUESTIONS
+  { id: 17, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional family
+  { id: 18, axis: 'cultural', agreeDirection: 'progressive' }, // Diversity strength
+  { id: 19, axis: 'cultural', agreeDirection: 'progressive' }, // Reproductive rights
+  { id: 20, axis: 'cultural', agreeDirection: 'conservative' }, // Political correctness
+  { id: 21, axis: 'cultural', agreeDirection: 'progressive' }, // Secularism
+  { id: 22, axis: 'cultural', agreeDirection: 'progressive' }, // Gender identity
+  { id: 23, axis: 'cultural', agreeDirection: 'conservative' }, // Immigration limits
+  { id: 24, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional values
+  { id: 29, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional morality
+  { id: 30, axis: 'cultural', agreeDirection: 'progressive' }, // Historical awareness
 ];
 
 // Scoring constants

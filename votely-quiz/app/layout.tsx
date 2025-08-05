@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Ubuntu, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import GoogleTagManager from "@/lib/GoogleTagManager";
+import StructuredData from "@/components/StructuredData";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const ubuntu = Ubuntu({
   weight: ['300', '400', '500', '700'],
@@ -22,11 +24,42 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://votelyquiz.juleslemee.com'),
   title: {
-    template: '%s',
-    default: 'Votely - Take Quiz',
+    template: '%s | The Votely Political Quiz',
+    default: 'The Votely Political Quiz - Most Accurate 3D Political Compass Test | 39 Axes',
   },
-  description: "Discover your political engagement style with our quick quiz",
+  description: "Take the most accurate political quiz with 39 total axes, 81 ideologies, and 3D cube visualization. Better than Political Compass, 8values, or 12axes. Choose 10 or 50 questions.",
+  keywords: ['political compass alternative', '3D political quiz', 'most accurate political quiz', '39 axes political test', '81 ideologies', 'political compass test better than', 'votely quiz', 'jules lemee'],
+  authors: [{ name: 'Jules Lemee', url: 'https://juleslemee.com' }],
+  creator: 'Jules Lemee',
+  publisher: 'Jules Lemee',
+  alternates: {
+    canonical: 'https://votelyquiz.juleslemee.com',
+  },
+  openGraph: {
+    title: 'The Votely Political Quiz - Most Accurate 3D Political Compass',
+    description: 'Discover your position among 81 ideologies with the most advanced political quiz. 39 axes, percentage sliders, 3D visualization.',
+    url: 'https://votelyquiz.juleslemee.com',
+    siteName: 'Votely Political Quiz',
+    images: [
+      {
+        url: '/logo.svg',
+        width: 512,
+        height: 512,
+        alt: 'Votely Political Quiz Logo',
+      }
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Votely Political Quiz - 3D Political Compass',
+    description: 'Most accurate political quiz: 39 axes, 81 ideologies, 3D visualization',
+    images: ['/logo.svg'],
+    creator: '@juleslemee',
+  },
   icons: {
     icon: [
       {
@@ -87,6 +120,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <GoogleTagManager />
+        <StructuredData />
+        <Breadcrumbs />
         {children}
       </body>
     </html>

@@ -3,8 +3,8 @@ import { Suspense } from 'react';
 import QuizPageClient from './quiz-page-client';
 
 export const metadata: Metadata = {
-  title: 'Political Views Quiz | Votely',
-  description: 'Take the Votely quiz to discover your political alignment and see where you stand on the issues.',
+  title: 'Take the Quiz - 39 Axes Political Test',
+  description: 'Start your political ideology assessment across 39 total axes. Choose between 10-question quick mode or 50-question detailed analysis. Most accurate political quiz with percentage sliders.',
 };
 
 function QuizLoading() {

@@ -13,10 +13,48 @@ import {
   findVisionAlignment
 } from './types';
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
+import { AdaptivePoliticalCompass } from '../../../lib/adaptive-political-compass';
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
+import { loadGridData, findIdeologyByPosition, findDetailedIdeology, GridCellData } from '@/lib/grid-data-loader';
+
+// Macro cell colors from the political compass
+const MACRO_CELL_COLORS = {
+  'EL-GL': '#ff9ea0',   // Revolutionary Communism & State Socialism
+  'EM-GL': '#ff9fff',   // Authoritarian Statist Centrism
+  'ER-GL': '#9f9fff',   // Authoritarian Right & Corporatist Monarchism
+  'EL-GM': '#ffcfa1',   // Democratic Socialism & Left Populism
+  'EM-GM': '#e5e5e5',   // Mixed-Economy Liberal Center
+  'ER-GM': '#9ffffe',   // Conservative Capitalism & National Conservatism
+  'EL-GR': '#9fff9e',   // Libertarian Socialism & Anarcho-Communism
+  'EM-GR': '#d4fe9a',   // Social-Market Libertarianism
+  'ER-GR': '#ffff9f'    // Anarcho-Capitalism & Ultra-Free-Market Libertarianism
+};
+
+// Helper function to get macro cell color
+function getMacroCellColor(macroCellCode: string): string {
+  return MACRO_CELL_COLORS[macroCellCode as keyof typeof MACRO_CELL_COLORS] || '#e5e5e5';
+}
+
+// Helper function to find grid data by macro cell code
+function findGridDataByMacroCell(gridData: GridCellData[], macroCellCode: string): GridCellData | null {
+  return gridData.find(cell => cell.macroCellCode === macroCellCode) || null;
+}
+
+// Helper function to find grid data by ideology name (for alignments)
+function findGridDataByIdeology(gridData: GridCellData[], ideologyName: string): GridCellData | null {
+  return gridData.find(cell => 
+    cell.ideology === ideologyName || 
+    cell.friendlyLabel === ideologyName ||
+    cell.macroCellLabel.includes(ideologyName)
+  ) || null;
+}
 const ResultCube = lazy(() => import('../../../components/ResultCube'));
 const ResultCubeFallback = lazy(() => import('../../../components/ResultCubeFallback'));
-import { saveQuizResult, getAlignmentPercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
+const UnifiedShareModal = lazy(() => import('../../../components/UnifiedShareModal'));
+import AboutCreator from '../../../components/AboutCreator';
+import SupplementAxes from '../../../components/SupplementAxes';
+import { loadSupplementAxes, calculateSupplementScores } from '@/lib/supplement-axes-loader';
+import { saveQuizResult, getCoordinateRangePercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
 
 // SVGs to preload for next steps
 const NEXT_STEPS_SVGS = [
@@ -53,17 +91,15 @@ function calculateScores(answers: number[], quizType: string = 'short') {
   // Map question indices to actual question IDs based on quiz type
   const getQuestionIds = (quizType: string): number[] => {
     if (quizType === 'long') {
-      // Long quiz uses questions in a specific shuffled order
+      // Long quiz uses all 30 Phase 1 core questions - these are the question IDs from our new questions.ts
       return [
-        1, 17, 34, 9, 25, 41, 2, 18, 35, 10,
-        26, 42, 3, 19, 36, 11, 27, 43, 4, 20,
-        37, 12, 28, 44, 5, 21, 38, 13, 29, 45,
-        6, 22, 39, 14, 30, 46, 7, 23, 40, 15,
-        31, 47, 8, 24, 48, 16, 32, 49, 33, 50
+        1, 9, 17, 2, 10, 18, 3, 11, 19, 4,
+        12, 20, 5, 13, 21, 6, 14, 22, 7, 15,
+        23, 8, 16, 24, 25, 27, 29, 26, 28, 30
       ];
     } else {
-      // Short quiz uses specific question IDs: [4, 20, 41, 9, 25, 6, 35, 29, 14, 44]
-      return [4, 20, 41, 9, 25, 6, 35, 29, 14, 44];
+      // Short quiz uses priority 2 questions: P01, P02, P03, P04, P09, P10, P11, P12, P17, P18
+      return [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
     }
   };
 
@@ -106,27 +142,6 @@ function calculateScores(answers: number[], quizType: string = 'short') {
   return { economic, social, progressive };
 }
 
-function handleShare() {
-  const currentUrl = new URL(window.location.href);
-  currentUrl.searchParams.set('shared', 'true');
-  const shareUrl = currentUrl.toString();
-  
-  const shareData = {
-    title: 'My Political Alignment Results',
-    text: 'Check out my political alignment results on Votely!',
-    url: shareUrl,
-  };
-
-  if (navigator.share) {
-    navigator.share(shareData).catch(() => {});
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(shareUrl);
-    alert('Link copied to clipboard!');
-  } else {
-    // Fallback for very old browsers
-    window.prompt('Copy this link:', shareUrl);
-  }
-}
 
 // Star background effect (copied and adapted from Home)
 interface Star {
@@ -234,6 +249,12 @@ export default function ResultsClient() {
   const [docId, setDocId] = useState<string | null>(null);
   const hasSaved = useRef(false);
   const [view3D, setView3D] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [gridData, setGridData] = useState<GridCellData[]>([]);
+  const [ideologyData, setIdeologyData] = useState<GridCellData | null>(null);
+  const [supplementAxes, setSupplementAxes] = useState<any[]>([]);
+  const [supplementScores, setSupplementScores] = useState<Record<string, number>>({});
+  const hasLoadedAnalytics = useRef(false);
 
   useEffect(() => {
     if (!graphRef.current) return;
@@ -251,10 +272,96 @@ export default function ResultsClient() {
   });
   
   const { economic, social, progressive } = calculateScores(answers, quizType);
-  // Convert to -10..10 scale for Vision alignment
-  const x = toVisionScale(economic);
-  const y = toVisionScale(social);
-  const z = toVisionScale(progressive);
+
+  // Load grid data and find matching ideology
+  useEffect(() => {
+    async function loadIdeologyData() {
+      try {
+        const data = await loadGridData(quizType as 'short' | 'long');
+        setGridData(data);
+        
+        const ideology = quizType === 'long' 
+          ? findDetailedIdeology(data, economic, social, progressive)
+          : findIdeologyByPosition(data, economic, social);
+        setIdeologyData(ideology);
+        
+        // Load supplement axes for long quiz
+        if (quizType === 'long' && ideology?.macroCellCode) {
+          const axesMap = await loadSupplementAxes();
+          const macroAxes = axesMap.get(ideology.macroCellCode) || [];
+          setSupplementAxes(macroAxes);
+          
+          // Calculate scores for these axes
+          const scores = calculateSupplementScores(answers, ideology.macroCellCode, macroAxes);
+          setSupplementScores(scores);
+        }
+      } catch (error) {
+        console.error('Error loading ideology data:', error);
+      }
+    }
+    
+    loadIdeologyData();
+  }, [economic, social, progressive, quizType, answers]);
+  
+  // Calculate display coordinates - for long quiz, adjust to cell position; for short quiz, use actual coordinates
+  let displayX = economic;
+  let displayY = social;
+  let displayProgressive = progressive;
+  
+  if (quizType === 'long' && ideologyData?.coordinateRange) {
+    // Parse the coordinate range to get cell boundaries
+    const coordMatch = ideologyData.coordinateRange.match(/x:\s*(-?\d+\.?\d*)\s*to\s*(-?\d+\.?\d*),\s*y:\s*(-?\d+\.?\d*)\s*to\s*(-?\d+\.?\d*)/);
+    if (coordMatch) {
+      const [, xMinStr, xMaxStr, yMinStr, yMaxStr] = coordMatch;
+      const xMin = parseFloat(xMinStr);
+      const xMax = parseFloat(xMaxStr);
+      const yMin = parseFloat(yMinStr);
+      const yMax = parseFloat(yMaxStr);
+      
+      // Get cell center as the base position
+      const centerX = (xMin + xMax) / 2;
+      const centerY = (yMin + yMax) / 2;
+      
+      // Convert user's actual position to -10 to +10 scale for calculation
+      const userX = economic / 10;
+      const userY = social / 10;
+      
+      // Calculate user's offset from cell center with muted influence (0.75 effect)
+      const userOffsetX = (userX - centerX) * 0.75;
+      const userOffsetY = (userY - centerY) * 0.75;
+      
+      // Apply the muted offset to the center position
+      let adjustedX = centerX + userOffsetX;
+      let adjustedY = centerY + userOffsetY;
+      
+      // Clamp within cell boundaries to ensure we don't go outside
+      adjustedX = Math.max(xMin, Math.min(xMax, adjustedX));
+      adjustedY = Math.max(yMin, Math.min(yMax, adjustedY));
+      
+      // Add slight inward padding if at exact boundaries
+      const cellWidth = xMax - xMin;
+      const cellHeight = yMax - yMin;
+      const padding = 0.05; // 5% padding from edges (reduced)
+      
+      if (adjustedX === xMin) adjustedX = adjustedX + (cellWidth * padding);
+      if (adjustedX === xMax) adjustedX = adjustedX - (cellWidth * padding);
+      if (adjustedY === yMin) adjustedY = adjustedY + (cellHeight * padding);
+      if (adjustedY === yMax) adjustedY = adjustedY - (cellHeight * padding);
+      
+      // Convert back to -100 to +100 scale
+      displayX = adjustedX * 10;
+      displayY = adjustedY * 10;
+      
+      // For cultural/social score, also apply muted positioning within reasonable bounds
+      // This ensures 3D cube positioning is also consistent
+      displayProgressive = progressive * 0.75;
+    }
+  }
+  
+  // Convert to -10..10 scale for Vision alignment and display
+  const x = toVisionScale(displayX);
+  const y = toVisionScale(displayY);
+  const z = toVisionScale(displayProgressive);
   const alignment = findVisionAlignment(x, y, z);
 
   // Save the quiz result (skip if this is a shared result)
@@ -267,8 +374,8 @@ export default function ResultsClient() {
       result: {
         economicScore: economic,
         socialScore: social,
-        alignmentLabel: alignment.label,
-        alignmentDescription: alignment.description,
+        alignmentLabel: ideologyData?.ideology || ideologyData?.friendlyLabel || alignment.label,
+        alignmentDescription: ideologyData?.description || alignment.description,
       },
     })
       .then(id => {
@@ -283,6 +390,13 @@ export default function ResultsClient() {
 
   // Load analytics data
   useEffect(() => {
+    // Skip if no ideology data yet or already loaded
+    if (!ideologyData || hasLoadedAnalytics.current) {
+      return;
+    }
+    
+    hasLoadedAnalytics.current = true;
+    
     const loadAnalyticsData = async () => {
       console.log('Starting analytics data load...');
       
@@ -295,7 +409,7 @@ export default function ResultsClient() {
 
       // Load all analytics data in parallel
       const [percentage, totalCount, groupMatches, waitlist] = await Promise.all([
-        getAlignmentPercentage(alignment.label),
+        getCoordinateRangePercentage(economic, social, quizType as 'short' | 'long'),
         getTotalQuizCount(),
         getPoliticalGroupMatches(economic, social, progressive),
         getWaitlistCount()
@@ -317,14 +431,14 @@ export default function ResultsClient() {
     loadAnalyticsData().catch(error => {
       console.error('Error loading analytics data:', error);
     });
-  }, [alignment.label, economic, social]);
+  }, [economic, social, progressive, quizType, ideologyData]);
 
 
 
 
   // State for dynamic data
   const [resultPercentage, setResultPercentage] = useState<number | null>(null);
-  const [totalQuizCount, setTotalQuizCount] = useState<number | null>(null);
+  const [totalQuizCount, setTotalQuizCount] = useState<number | string | null>(null);
   const [politicalGroups, setPoliticalGroups] = useState<Array<{name: string, description: string, match: number}>>([]);
   const [surprisingAlignments, setSurprisingAlignments] = useState<Array<{group: string, commonGround: string}>>([]);
   const [waitlistCount, setWaitlistCount] = useState<number>(0);
@@ -353,14 +467,23 @@ export default function ResultsClient() {
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          {isShared && (
-            <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-2 rounded-full text-sm font-medium mb-4 mr-2">
-              👤 Viewing shared results
+          {isShared ? (
+            <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-3 rounded-full text-sm font-medium mb-4">
+              👤 Viewing shared results – take the quiz yourself at{' '}
+              <a 
+                href="https://votelyquiz.juleslemee.com" 
+                className="font-semibold underline hover:no-underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                votelyquiz.juleslemee.com
+              </a>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <span>🎯</span> Quiz Complete!
             </div>
           )}
-          <div className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <span>🎯</span> Quiz Complete!
-          </div>
           <h1 className="text-4xl font-bold text-foreground">Your Political Alignment</h1>
           <p className="text-foreground/60 mt-2">
             <span className="inline-flex items-center gap-1">
@@ -369,10 +492,10 @@ export default function ResultsClient() {
           </p>
         </div>
 
-        {/* 2x2 Grid Layout with custom proportions */}
-        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6">
-          {/* Left Column - Political Compass + Founding Supporter */}
-          <div className="flex flex-col gap-6 contents lg:flex lg:flex-col">
+        {/* 2x1 Grid Layout with equal height columns */}
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:items-start">
+          {/* Left Column - Political Compass + Founding Supporter + AboutCreator */}
+          <div className="flex flex-col gap-6 contents lg:flex lg:flex-col lg:h-full">
             {/* Political Compass */}
             <div ref={graphRef} className="bg-background rounded-2xl shadow-lg p-8 relative order-1 lg:order-none">
               {/* View Toggle and Instructions */}
@@ -418,29 +541,40 @@ export default function ResultsClient() {
                   )}
                 </Suspense>
               ) : (
-                <PoliticalCompassSvg point={{ x, y }} />
+                <AdaptivePoliticalCompass point={{ x, y }} quizType={quizType === 'short' ? 'short' : 'long'} />
               )}
+
+              {/* Share Button */}
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-4 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-300 font-medium shadow-lg hover:shadow-xl flex items-center justify-center gap-2 mx-auto"
+                >
+                  <span>📤</span>
+                  Share & Download Your Results
+                </button>
+              </div>
             </div>
 
             {/* Become a Founding Supporter */}
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg p-8 text-white flex-1 flex flex-col order-4 lg:order-none">
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg p-8 text-white flex flex-col order-3 lg:order-none">
               <h3 className="text-2xl font-bold mb-4">Be the {waitlistCount + 1}{getOrdinalSuffix(waitlistCount + 1)} to join our email list</h3>
               <p className="mb-6 text-white/90">
                 Stop scrolling, start doing. Get early access to the app that shows you exactly how to influence local elections and policy decisions that actually affect your life.
               </p>
               
-              <ul className="space-y-3 mb-8 flex-1">
+              <ul className="space-y-3 mb-8 flex-grow">
                 <li className="flex items-start gap-2">
                   <span className="text-xl">•</span>
-                  <span>Early access to new features</span>
+                  <span>Get early access and shape development</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-xl">•</span>
-                  <span>Show the founder you actually want the app</span>
+                  <span>Show the founder you want this built</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-xl">•</span>
-                  <span>Shape the app's development</span>
+                  <span>Free forever guaranteed</span>
                 </li>
               </ul>
               
@@ -457,43 +591,48 @@ export default function ResultsClient() {
                 >
                   <span>✉️</span> Join as Founding Supporter
                 </button>
-                
-                <button 
-                  className="w-full bg-white/20 backdrop-blur text-white font-medium py-3 px-6 rounded-xl hover:bg-white/30 transition-colors flex items-center justify-center gap-2"
-                  onClick={handleShare}
-                >
-                  <span>🔗</span> Share Your Results
-                </button>
               </div>
               
-              <p className="text-center text-white/60 text-sm mt-auto pt-6">
-                <span>⭐</span> Join {waitlistCount > 0 ? waitlistCount.toLocaleString() : ''} political enthusiasts
-              </p>
+            </div>
+            
+            {/* About Creator - Now in left column */}
+            <div className="order-4 lg:order-none">
+              <AboutCreator />
             </div>
           </div>
 
-          {/* Right Column - User Results + You Align With */}
-          <div className="flex flex-col gap-6 h-full contents lg:flex lg:flex-col">
-            {/* User Results (takes more vertical space) */}
-            <div className="bg-background rounded-2xl shadow-lg p-8 pb-12 order-2 lg:order-none" style={{ flex: '0 0 auto' }}>
-              <h2 className="text-3xl font-bold text-purple-600 mb-2">{alignment.label}</h2>
+          {/* Right Column - User Results + Alignment sections */}
+          <div className="flex flex-col gap-6 contents lg:flex lg:flex-col lg:h-full">
+            {/* User Results - Single card containing everything */}
+            <div className="bg-background rounded-2xl shadow-lg p-8 pb-12 flex flex-col h-full order-2 lg:order-none">
+              <h2 className="text-3xl font-bold text-purple-600 mb-2">
+                {quizType === 'short' ? (ideologyData?.macroCellLabel || alignment.label) : (ideologyData?.ideology || alignment.label)}
+              </h2>
               <p className="text-sm text-foreground/60 mb-4">{resultPercentage !== null ? `${resultPercentage}% of quiz takers get this result` : 'Loading percentage...'}</p>
-              <p className="text-foreground/80 mb-8">{alignment.description}</p>
+              <p className="text-foreground/80 mb-6">{ideologyData?.explanation || alignment.description}</p>
+              
+              {/* Recent Examples Section */}
+              {ideologyData?.examples && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-8">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">Recent Examples</h3>
+                  <p className="text-sm text-gray-700">{ideologyData.examples}</p>
+                </div>
+              )}
               
               {/* Score Bars */}
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium text-purple-600">Economic Score</span>
-                    <span className="text-sm text-foreground/60">{economic < 0 ? 'Left' : 'Right'} ({Math.abs(economic).toFixed(1)}%)</span>
+                    <span className="text-sm text-foreground/60">{displayX < 0 ? 'Left' : 'Right'} ({Math.abs(displayX).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
                       <div 
                         className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
                         style={{ 
-                          width: `${Math.abs(economic) / 2}%`,
-                          marginLeft: economic < 0 ? `${50 - Math.abs(economic) / 2}%` : '50%'
+                          width: `${Math.abs(displayX) / 2}%`,
+                          marginLeft: displayX < 0 ? `${50 - Math.abs(displayX) / 2}%` : '50%'
                         }}
                       />
                     </div>
@@ -505,16 +644,16 @@ export default function ResultsClient() {
                 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Authority Score</span>
-                    <span className="text-sm text-foreground/60">{social > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(social).toFixed(1)}%)</span>
+                    <span className="text-sm font-medium text-purple-600">Governance Score</span>
+                    <span className="text-sm text-foreground/60">{displayY > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(displayY).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
                       <div 
                         className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
                         style={{ 
-                          width: `${Math.abs(social) / 2}%`,
-                          marginLeft: social < 0 ? `${50 - Math.abs(social) / 2}%` : '50%'
+                          width: `${Math.abs(displayY) / 2}%`,
+                          marginLeft: displayY < 0 ? `${50 - Math.abs(displayY) / 2}%` : '50%'
                         }}
                       />
                     </div>
@@ -526,16 +665,16 @@ export default function ResultsClient() {
                 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Cultural Score</span>
-                    <span className="text-sm text-foreground/60">{progressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(progressive).toFixed(1)}%)</span>
+                    <span className="text-sm font-medium text-purple-600">Social Score</span>
+                    <span className="text-sm text-foreground/60">{displayProgressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(displayProgressive).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
                       <div 
                         className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
                         style={{ 
-                          width: `${Math.abs(progressive) / 2}%`,
-                          marginLeft: progressive < 0 ? `${50 - Math.abs(progressive) / 2}%` : '50%'
+                          width: `${Math.abs(displayProgressive) / 2}%`,
+                          marginLeft: displayProgressive < 0 ? `${50 - Math.abs(displayProgressive) / 2}%` : '50%'
                         }}
                       />
                     </div>
@@ -545,56 +684,160 @@ export default function ResultsClient() {
                   </div>
                 </div>
               </div>
+              
+              {/* Supplement Axes for Long Quiz */}
+              {quizType === 'long' && supplementAxes.length > 0 && (
+                <SupplementAxes
+                  axes={supplementAxes}
+                  scores={supplementScores}
+                  macroCell={ideologyData?.macroCellLabel || ''}
+                  macroCellColor={ideologyData?.macroCellCode ? getMacroCellColor(ideologyData.macroCellCode) : undefined}
+                />
+              )}
+              
+              {/* You Align With section - integrated for both quiz types */}
+              {ideologyData && (
+                <div className="mt-8 pt-8 border-t">
+                  <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+                    <span>👥</span> You Align With
+                  </h3>
+                  
+                  <div className="space-y-4 mb-8">
+                    {/* Single alignment */}
+                    {(() => {
+                      let alignmentData = null;
+                      let alignmentLabel = ideologyData.alignIdeology1;
+                      let alignmentColor = '#22c55e';
+                      
+                      if (quizType === 'short') {
+                        alignmentData = findGridDataByIdeology(gridData, ideologyData.alignIdeology1);
+                        if (alignmentData) {
+                          alignmentLabel = alignmentData.macroCellLabel;
+                          alignmentColor = getMacroCellColor(alignmentData.macroCellCode);
+                        }
+                      } else {
+                        alignmentData = gridData.find(cell => cell.ideology === ideologyData.alignIdeology1);
+                        if (alignmentData) {
+                          alignmentColor = getMacroCellColor(alignmentData.macroCellCode);
+                        }
+                      }
+                      
+                      return (
+                        <div 
+                          className="border-l-4 pl-6 pr-4 bg-gray-50/50 rounded-r-lg py-4" 
+                          style={{ 
+                            borderLeftColor: alignmentColor,
+                            boxShadow: `inset 4px 0 0 ${alignmentColor}, 0 1px 3px rgba(0,0,0,0.05)`
+                          }}
+                        >
+                          <h4 className="font-semibold text-foreground">{alignmentLabel}</h4>
+                          <p className="text-sm text-foreground/60">{ideologyData.alignIdeology1Text}</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                  {/* What Might Surprise You */}
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <span>💭</span> What Might Surprise You
+                    </h4>
+                    <div className="space-y-3">
+                      {(() => {
+                        let surpriseData = null;
+                        let surpriseLabel = ideologyData.surpriseIdeology1;
+                        let surpriseColor = '#f59e0b';
+                        
+                        if (quizType === 'short') {
+                          surpriseData = findGridDataByIdeology(gridData, ideologyData.surpriseIdeology1);
+                          if (surpriseData) {
+                            surpriseLabel = surpriseData.macroCellLabel;
+                            surpriseColor = getMacroCellColor(surpriseData.macroCellCode);
+                          }
+                        } else {
+                          surpriseData = gridData.find(cell => cell.ideology === ideologyData.surpriseIdeology1);
+                          if (surpriseData) {
+                            surpriseColor = getMacroCellColor(surpriseData.macroCellCode);
+                          }
+                        }
+                        
+                        return (
+                          <div 
+                            className="border-l-4 pl-6 pr-4 bg-gray-50/50 rounded-r-lg py-4" 
+                            style={{ 
+                              borderLeftColor: surpriseColor,
+                              boxShadow: `inset 4px 0 0 ${surpriseColor}, 0 1px 3px rgba(0,0,0,0.05)`
+                            }}
+                          >
+                            <h5 className="font-medium text-foreground">{surpriseLabel}</h5>
+                            <p className="text-sm text-foreground/70">{ideologyData.surpriseIdeology1Text}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Long Quiz CTA for Short Quiz Users */}
+              {quizType === 'short' && (
+                <div className="mt-8 pt-8 border-t">
+                  <h3 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    <span>🎯</span> Want More Accurate Results?
+                  </h3>
+                  <p className="text-foreground/80 mb-4">
+                    This 10-question quiz mapped you to one of 9 general regions. But political ideologies aren't monolithic. 
+                    Each region contains rich internal debates and variations.
+                  </p>
+                  <div className="bg-purple-50 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-purple-900">
+                      <strong>The 50-question quiz reveals:</strong>
+                    </p>
+                    <ul className="mt-2 space-y-1 text-sm text-purple-800">
+                      <li>• Your specific ideology within your region (81 total possibilities)</li>
+                      <li>• Your position on 4 additional axes unique to your political area</li>
+                      <li>• More nuanced alignments and surprising connections</li>
+                    </ul>
+                  </div>
+                  <button
+                    onClick={() => router.push('/quiz?type=long')}
+                    className="w-full bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Take the Full 50-Question Quiz
+                    <span className="text-sm font-normal opacity-90">(free, 5-10 minutes)</span>
+                  </button>
+                </div>
+              )}
+              
             </div>
 
-            {/* You Align With (smaller card that fills remaining space) */}
-            <div className="bg-background rounded-2xl shadow-lg p-8 min-h-0 overflow-auto order-3 lg:order-none">
-              <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-                <span>👥</span> You Align With
-              </h3>
-              <p className="text-foreground/60 mb-6">Based on your responses, here are the political groups that share similar views:</p>
-              
-              <div className="space-y-4 mb-8">
-                {politicalGroups.map((group, index) => (
-                  <div key={index}>
-                    <div className="flex justify-between items-start mb-2 gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-foreground">{group.name}</h4>
-                        <p className="text-sm text-foreground/60">{group.description}</p>
-                      </div>
-                      <span className="text-sm font-medium text-purple-600 whitespace-nowrap flex flex-col items-end flex-shrink-0">
-                        <span>{group.match}%</span>
-                        <span>match</span>
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${group.match}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* What Might Surprise You */}
-              <div className="border-t pt-6">
-                <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <span>💭</span> What Might Surprise You
-                </h4>
-                <div className="space-y-3">
-                  {surprisingAlignments.map((item, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-3">
-                      <h5 className="font-medium text-sm text-purple-600 mb-1">{item.group}</h5>
-                      <p className="text-xs text-foreground/70">{item.commonGround}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
+
       </div>
+
+      {/* Share Modal */}
+      <Suspense fallback={null}>
+        <UnifiedShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          alignment={alignment}
+          economic={displayX}
+          social={displayY}
+          progressive={displayProgressive}
+          x={x}
+          y={y}
+          z={z}
+          quizType={quizType}
+          resultPercentage={resultPercentage}
+          politicalGroups={politicalGroups}
+          surprisingAlignments={surprisingAlignments}
+          ideologyData={ideologyData}
+          gridData={gridData}
+          supplementAxes={supplementAxes}
+          supplementScores={supplementScores}
+        />
+      </Suspense>
       
     </div>
   );

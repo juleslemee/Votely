@@ -1,8 +1,13 @@
+# Votely Political Quiz robots.txt
+# https://votelyquiz.juleslemee.com
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 2
 
 User-agent: Twitterbot
 Allow: /
@@ -12,3 +17,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+Crawl-delay: 2
+
+# Sitemap location
+Sitemap: https://votelyquiz.juleslemee.com/sitemap.xml

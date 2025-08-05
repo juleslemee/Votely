@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useState, useEffect, Suspense } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Sphere, Box, Html } from '@react-three/drei'
 import * as THREE from 'three'
 
@@ -14,6 +14,9 @@ interface ResultCubeProps {
   ideologyLabel: string
   onInteraction?: (type: 'rotate' | 'tooltip') => void
   color?: string
+  hideHint?: boolean
+  disableAutoRotate?: boolean
+  fixedRotationAngle?: number // For GIF generation - overrides camera position
 }
 
 interface CubeContentProps extends ResultCubeProps {
@@ -21,65 +24,72 @@ interface CubeContentProps extends ResultCubeProps {
   setShowHint: (show: boolean) => void
 }
 
-// Define the colors from the original 2D compass
-const QUADRANT_COLORS = {
-  topLeft: '#fecaca',     // Light red - authoritarian left
-  topRight: '#bfdbfe',    // Light blue - authoritarian right  
-  bottomLeft: '#bbf7d0',  // Light green - libertarian left
-  bottomRight: '#fef3c7'  // Light yellow - libertarian right
+// Define the colors for the 3x3 macro-cell grid
+const MACRO_CELL_COLORS = {
+  topLeft: '#ff9ea0',      // Revolutionary Communism & State Socialism
+  topCenter: '#ff9fff',    // Authoritarian Statist Centrism
+  topRight: '#9f9fff',     // Authoritarian Right & Corporatist Monarchism
+  middleLeft: '#ffcfa1',   // Democratic Socialism & Left Populism
+  middleCenter: '#e5e5e5', // Mixed-Economy Liberal Center
+  middleRight: '#9ffffe',  // Conservative Capitalism & National Conservatism
+  bottomLeft: '#9fff9e',   // Libertarian Socialism & Anarcho-Communism
+  bottomCenter: '#d4fe9a', // Social-Market Libertarianism
+  bottomRight: '#ffff9f'   // Anarcho-Capitalism & Ultra-Free-Market Libertarianism
 }
 
-function ColoredQuadrants({ userX, userY, userZ }: { userX: number, userY: number, userZ: number }) {
-  // Calculate which quadrant the user is in and proximity to center
-  const leftSide = userX < 0
-  const topSide = userY > 0
-  const nearCenterX = Math.abs(userX) < 30  // Within 30 units of center X
-  const nearCenterY = Math.abs(userY) < 30  // Within 30 units of center Y
+function ColoredMacroCells({ userX, userY, userZ }: { userX: number, userY: number, userZ: number }) {
+  // Determine which macro-cell the user is in based on their position
+  // X axis: -100 to -33.4 (left), -33.3 to 33.3 (center), 33.4 to 100 (right)
+  // Y axis: 33.4 to 100 (top), -33.3 to 33.3 (middle), -100 to -33.4 (bottom)
+  
+  const getUserMacroCell = (x: number, y: number) => {
+    let xPos = 'center'
+    let yPos = 'middle'
+    
+    if (x <= -33.4) xPos = 'left'
+    else if (x >= 33.4) xPos = 'right'
+    
+    if (y >= 33.4) yPos = 'top'
+    else if (y <= -33.4) yPos = 'bottom'
+    
+    return `${yPos}${xPos.charAt(0).toUpperCase() + xPos.slice(1)}`
+  }
+  
+  const userMacroCell = getUserMacroCell(userX, userY)
   
   // Function to calculate opacity based on user position
-  const getOpacity = (isUserQuadrant: boolean, isNearX: boolean, isNearY: boolean) => {
-    if (isUserQuadrant) return 0.10  // Very transparent in user's quadrant
-    if (isNearX || isNearY) return 0.25  // Somewhat transparent if near center
-    return 0.40  // Normal opacity for distant quadrants
+  const getOpacity = (isUserCell: boolean) => {
+    return isUserCell ? 0.15 : 0.35  // More transparent in user's cell
   }
+  
+  // Create 3x3 grid of macro-cells
+  const cellSize = 66.67  // 200/3
+  const positions = [
+    // Top row
+    { pos: [-66.67, 66.67, 0], color: MACRO_CELL_COLORS.topLeft, key: 'topLeft' },
+    { pos: [0, 66.67, 0], color: MACRO_CELL_COLORS.topCenter, key: 'topCenter' },
+    { pos: [66.67, 66.67, 0], color: MACRO_CELL_COLORS.topRight, key: 'topRight' },
+    // Middle row
+    { pos: [-66.67, 0, 0], color: MACRO_CELL_COLORS.middleLeft, key: 'middleLeft' },
+    { pos: [0, 0, 0], color: MACRO_CELL_COLORS.middleCenter, key: 'middleCenter' },
+    { pos: [66.67, 0, 0], color: MACRO_CELL_COLORS.middleRight, key: 'middleRight' },
+    // Bottom row
+    { pos: [-66.67, -66.67, 0], color: MACRO_CELL_COLORS.bottomLeft, key: 'bottomLeft' },
+    { pos: [0, -66.67, 0], color: MACRO_CELL_COLORS.bottomCenter, key: 'bottomCenter' },
+    { pos: [66.67, -66.67, 0], color: MACRO_CELL_COLORS.bottomRight, key: 'bottomRight' }
+  ]
   
   return (
     <>
-      {/* Top Left - Authoritarian Left (red) */}
-      <Box args={[100, 100, 200]} position={[-50, 50, 0]}>
-        <meshBasicMaterial 
-          color={QUADRANT_COLORS.topLeft} 
-          transparent 
-          opacity={getOpacity(leftSide && topSide, nearCenterX && topSide, nearCenterY && leftSide)} 
-        />
-      </Box>
-      
-      {/* Top Right - Authoritarian Right (blue) */}
-      <Box args={[100, 100, 200]} position={[50, 50, 0]}>
-        <meshBasicMaterial 
-          color={QUADRANT_COLORS.topRight} 
-          transparent 
-          opacity={getOpacity(!leftSide && topSide, nearCenterX && topSide, nearCenterY && !leftSide)} 
-        />
-      </Box>
-      
-      {/* Bottom Left - Libertarian Left (green) */}
-      <Box args={[100, 100, 200]} position={[-50, -50, 0]}>
-        <meshBasicMaterial 
-          color={QUADRANT_COLORS.bottomLeft} 
-          transparent 
-          opacity={getOpacity(leftSide && !topSide, nearCenterX && !topSide, nearCenterY && leftSide)} 
-        />
-      </Box>
-      
-      {/* Bottom Right - Libertarian Right (yellow) */}
-      <Box args={[100, 100, 200]} position={[50, -50, 0]}>
-        <meshBasicMaterial 
-          color={QUADRANT_COLORS.bottomRight} 
-          transparent 
-          opacity={getOpacity(!leftSide && !topSide, nearCenterX && !topSide, nearCenterY && !leftSide)} 
-        />
-      </Box>
+      {positions.map(({ pos, color, key }) => (
+        <Box key={key} args={[cellSize, cellSize, 200]} position={pos as [number, number, number]}>
+          <meshBasicMaterial 
+            color={color} 
+            transparent 
+            opacity={getOpacity(userMacroCell === key)} 
+          />
+        </Box>
+      ))}
     </>
   )
 }
@@ -87,8 +97,8 @@ function ColoredQuadrants({ userX, userY, userZ }: { userX: number, userY: numbe
 function GridLines() {
   const lines = []
   
-  // Create a 4x4x4 grid
-  const gridSize = 4
+  // Create a 3x3x3 grid for macro-cells
+  const gridSize = 3
   const step = 200 / gridSize
   
   // YZ plane grids (at x = -100 and x = 100)
@@ -143,43 +153,92 @@ function AxisLines() {
 }
 
 function MovingLabels() {
+  const { camera } = useThree()
+  const [visibleLabels, setVisibleLabels] = useState({
+    showEconLeft: true,
+    showEconRight: false,
+    showLibertarian: true,
+    showAuthoritarian: false,
+    showProgressive: true,
+    showConservative: false
+  })
+  
+  useFrame(() => {
+    // Get camera position
+    const camPos = camera.position
+    
+    // Determine which labels should be visible based on camera distance
+    // For X axis (Economic)
+    const distToEconLeft = camPos.distanceTo(new THREE.Vector3(-120, 0, 0))
+    const distToEconRight = camPos.distanceTo(new THREE.Vector3(120, 0, 0))
+    
+    // For Y axis (Authority)
+    const distToLibertarian = camPos.distanceTo(new THREE.Vector3(0, -120, 0))
+    const distToAuthoritarian = camPos.distanceTo(new THREE.Vector3(0, 120, 0))
+    
+    // For Z axis (Social)
+    const distToProgressive = camPos.distanceTo(new THREE.Vector3(0, 0, -120))
+    const distToConservative = camPos.distanceTo(new THREE.Vector3(0, 0, 120))
+    
+    setVisibleLabels({
+      showEconLeft: distToEconLeft < distToEconRight,
+      showEconRight: distToEconLeft >= distToEconRight,
+      showLibertarian: distToLibertarian < distToAuthoritarian,
+      showAuthoritarian: distToLibertarian >= distToAuthoritarian,
+      showProgressive: distToProgressive < distToConservative,
+      showConservative: distToProgressive >= distToConservative
+    })
+  })
+  
   return (
     <>
       {/* Economic axis labels */}
-      <Html position={[-120, 0, 0]} center>
-        <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap">
-          Economic Left
-        </div>
-      </Html>
-      <Html position={[120, 0, 0]} center>
-        <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap">
-          Economic Right
-        </div>
-      </Html>
+      {visibleLabels.showEconLeft && (
+        <Html position={[-120, 0, 0]} center>
+          <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap select-none">
+            Economic Left
+          </div>
+        </Html>
+      )}
+      {visibleLabels.showEconRight && (
+        <Html position={[120, 0, 0]} center>
+          <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap select-none">
+            Economic Right
+          </div>
+        </Html>
+      )}
       
       {/* Social axis labels */}
-      <Html position={[0, -120, 0]} center>
-        <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap">
-          Libertarian
-        </div>
-      </Html>
-      <Html position={[0, 120, 0]} center>
-        <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap">
-          Authoritarian
-        </div>
-      </Html>
+      {visibleLabels.showLibertarian && (
+        <Html position={[0, -120, 0]} center>
+          <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap select-none">
+            Libertarian
+          </div>
+        </Html>
+      )}
+      {visibleLabels.showAuthoritarian && (
+        <Html position={[0, 120, 0]} center>
+          <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap select-none">
+            Authoritarian
+          </div>
+        </Html>
+      )}
       
       {/* Progressive-Conservative axis labels */}
-      <Html position={[0, 0, -120]} center>
-        <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap">
-          Progressive
-        </div>
-      </Html>
-      <Html position={[0, 0, 120]} center>
-        <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap">
-          Conservative
-        </div>
-      </Html>
+      {visibleLabels.showProgressive && (
+        <Html position={[0, 0, -120]} center>
+          <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap select-none">
+            Progressive
+          </div>
+        </Html>
+      )}
+      {visibleLabels.showConservative && (
+        <Html position={[0, 0, 120]} center>
+          <div className="text-xs font-medium text-gray-700 bg-white/90 px-2 py-1 rounded pointer-events-none whitespace-nowrap select-none">
+            Conservative
+          </div>
+        </Html>
+      )}
     </>
   )
 }
@@ -244,15 +303,39 @@ function UserPoint({ x, y, z, color = '#8e6cf0' }: { x: number, y: number, z: nu
   )
 }
 
-function CubeContent({ x, y, z, ideologyLabel, onInteraction, color, showHint, setShowHint }: CubeContentProps) {
+function CubeContent({ x, y, z, ideologyLabel, onInteraction, color, showHint, setShowHint, disableAutoRotate, fixedRotationAngle }: CubeContentProps) {
   const hasRotated = useRef(false)
   const controlsRef = useRef<any>(null)
-
+  const autoRotateRef = useRef(!disableAutoRotate)
+  const { camera, gl } = useThree()
+  const startTime = useRef(Date.now())
+  
+  // Add mouse event listeners to detect interaction
+  useEffect(() => {
+    const handleMouseDown = () => {
+      if (autoRotateRef.current) {
+        autoRotateRef.current = false
+        if (!hasRotated.current) {
+          hasRotated.current = true
+          if (onInteraction) onInteraction('rotate')
+          if (showHint) setShowHint(false)
+        }
+      }
+    }
+    
+    gl.domElement.addEventListener('mousedown', handleMouseDown)
+    gl.domElement.addEventListener('touchstart', handleMouseDown)
+    
+    return () => {
+      gl.domElement.removeEventListener('mousedown', handleMouseDown)
+      gl.domElement.removeEventListener('touchstart', handleMouseDown)
+    }
+  }, [gl.domElement, onInteraction, showHint, setShowHint])
+  
   useFrame(() => {
-    if (controlsRef.current && controlsRef.current.getAzimuthalAngle() !== 0 && !hasRotated.current) {
-      hasRotated.current = true
-      if (onInteraction) onInteraction('rotate')
-      if (showHint) setShowHint(false)
+    // Update OrbitControls autoRotate property
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = autoRotateRef.current
     }
   })
 
@@ -262,8 +345,8 @@ function CubeContent({ x, y, z, ideologyLabel, onInteraction, color, showHint, s
       <directionalLight position={[150, 150, 150]} intensity={0.5} />
       <directionalLight position={[-150, -150, -150]} intensity={0.3} />
       
-      {/* Colored quadrants */}
-      <ColoredQuadrants userX={x} userY={y} userZ={z} />
+      {/* Colored macro-cells */}
+      <ColoredMacroCells userX={x} userY={y} userZ={z} />
       
       {/* Grid lines */}
       <GridLines />
@@ -280,37 +363,71 @@ function CubeContent({ x, y, z, ideologyLabel, onInteraction, color, showHint, s
       {/* User's position */}
       <UserPoint x={x} y={y} z={z} color={color} />
       
-      <OrbitControls
-        ref={controlsRef}
-        enablePan={false}
-        minDistance={280}
-        maxDistance={600}
-        target={[0, 0, 0]}
-        enableDamping
-        dampingFactor={0.05}
-      />
+      {/* Only show OrbitControls if not using fixed rotation */}
+      {fixedRotationAngle === undefined && (
+        <OrbitControls
+          ref={controlsRef}
+          enablePan={false}
+          minDistance={320}
+          maxDistance={800}
+          target={[0, 0, 0]}
+          enableDamping
+          dampingFactor={0.08}
+          autoRotate={autoRotateRef.current}
+          autoRotateSpeed={1.7}
+          enableZoom={true}
+        />
+      )}
     </>
   )
 }
 
-export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, color = '#8e6cf0' }: ResultCubeProps) {
-  const [showHint, setShowHint] = useState(true)
+export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, color = '#8e6cf0', hideHint = false, disableAutoRotate = false, fixedRotationAngle }: ResultCubeProps) {
+  const [showHint, setShowHint] = useState(!hideHint)
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowHint(false), 3000)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!hideHint) {
+      const timer = setTimeout(() => setShowHint(false), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [hideHint])
+
+  // Calculate camera position based on fixed rotation angle if provided
+  const getCameraPosition = () => {
+    if (fixedRotationAngle !== undefined) {
+      const distance = 566; // Math.sqrt(400² + 400²)
+      const angleInRadians = (fixedRotationAngle * Math.PI) / 180;
+      return [
+        distance * Math.cos(angleInRadians),
+        350,
+        distance * Math.sin(angleInRadians)
+      ];
+    }
+    return [400, 350, 400]; // Default position
+  };
 
   return (
-    <div className="relative w-full aspect-square bg-gray-50 rounded-lg" aria-label={`Political position: Economic ${x}, Social ${y}, Progressive-Conservative ${z}`}>
+    <div 
+      className="relative w-full aspect-square bg-gray-50 rounded-lg select-none"
+      style={{ 
+        userSelect: 'none',
+        WebkitUserDrag: 'none',
+        WebkitTouchCallout: 'none'
+      }}
+      aria-label={`Political position: Economic ${x}, Social ${y}, Progressive-Conservative ${z}`}
+    >
       <Canvas 
         camera={{ 
-          position: [250, 180, 250], 
-          fov: 40,
+          position: getCameraPosition(), 
+          fov: 35,
           near: 10,
-          far: 1000
+          far: 1200
         }}
-        style={{ background: 'transparent' }}
+        style={{ 
+          background: 'transparent',
+          userSelect: 'none',
+          WebkitUserDrag: 'none'
+        }}
       >
         <Suspense fallback={null}>
           <CubeContent
@@ -322,6 +439,8 @@ export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, colo
             color={color}
             showHint={showHint}
             setShowHint={setShowHint}
+            disableAutoRotate={disableAutoRotate}
+            fixedRotationAngle={fixedRotationAngle}
           />
         </Suspense>
       </Canvas>

@@ -1,0 +1,37 @@
+Macro Cell	Code	Axis	-100 Anchor	100 Anchor
+EL-GL	ELGL-A	Leadership Model	Mass-spontaneous uprising	Vanguard party directs
+EL-GL	ELGL-B	National vs International	Global class solidarity	Nation-first self-reliance
+EL-GL	ELGL-C	Urban vs Rural Base	Industrial workers	Peasant / agrarian base
+EL-GL	ELGL-D	Class vs Ethno-Populism	Pure class struggle	National-ethnic populism
+EM-GL	EMGL-A	Religious Legitimacy	Secular technocracy	Divine or clerical mandate
+EM-GL	EMGL-B	Ethno-Racial Emphasis	Civic nationalism	Ethno-racial purity
+EM-GL	EMGL-C	State vs Market Control	Heavy state ownership	Corporatist / mixed markets
+EM-GL	EMGL-D	Tradition vs Modernization	Preserve folk tradition	Accelerate industrial modernity
+ER-GL	ERGL-A	Source of Rule	Nationalist party state	Divine or hereditary right
+ER-GL	ERGL-B	Religious Centrality	Secular authority	Church-anchored authority
+ER-GL	ERGL-C	Economic Direction	Command economy	Authoritarian free market
+ER-GL	ERGL-D	Modernization vs Heritage	Futurist corporatism	Medieval or ancestral order
+EL-GM	ELGM-A	Reform vs Revolution	Gradual ballots	Sudden rupture
+EL-GM	ELGM-B	Central vs Local Power	Local councils	Central parliament
+EL-GM	ELGM-C	Market Usage	Abolish markets	Regulated markets
+EL-GM	ELGM-D	Futurism vs Pragmatism	Tech-utopian or esoteric	Incremental, practical
+EM-GM	EMGM-A	Market Freedom	Strong regulation	Deregulated markets
+EM-GM	EMGM-B	Welfare Commitment	Robust safety net	Minimal safety net
+EM-GM	EMGM-C	Globalism vs Domestic	Free-trade internationalism	Domestic protection
+EM-GM	EMGM-D	Social Progressivism	Rapid cultural reform	Cautious incrementalism
+ER-GM	ERGM-A	Government Scope	Large paternal state	Minimal night-watchman
+ER-GM	ERGM-B	Traditional Authority	Modern merit institutions	Monarchic or clerical roots
+ER-GM	ERGM-C	Moral Regulation	Light social control	Heavy social policing
+ER-GM	ERGM-D	Corporatist Coordination	Free enterprise pluralism	State-brokered sectors
+EL-GR	ELGR-A	State Presence	Stateless	Transitional minimal state
+EL-GR	ELGR-B	Violence vs Pacifism	Strictly non-violent	Accepts revolutionary force
+EL-GR	ELGR-C	Eco Priority	Human-centric	Ecological socialist
+EL-GR	ELGR-D	Local vs Network	Localist communes	Global federations
+EM-GR	EMGR-A	Redistribution Method	Income/wealth tax	Single land-value tax
+EM-GR	EMGR-B	Welfare Provision	Public safety net	Voluntary mutual aid
+EM-GR	EMGR-C	Scale of Governance	National systems	Hyper-local federations
+EM-GR	EMGR-D	Market Intervention	Social regulation	Pure market autonomy
+ER-GR	ERGR-A	State Existence	Minimal night-watchman	Absolute no state
+ER-GR	ERGR-B	Property Absolutism	Use-based limits	Unlimited private rights
+ER-GR	ERGR-C	Moral Traditionalism	Socially permissive	Traditionalist culture
+ER-GR	ERGR-D	Collective Solutions	Voluntary cooperatives	Pure individual contracts

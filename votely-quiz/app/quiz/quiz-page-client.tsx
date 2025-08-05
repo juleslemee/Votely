@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { shortQuestions, longQuestions, Question } from './questions';
+import { shortQuestions, longQuestions, Question, Phase2Question, generateShortQuizQuestions, generateLongQuizQuestions, adjustForTiebreakers, getPhase2Questions } from './questions';
+import { QUESTION_CONFIG } from './results/types';
 
 // Continuous answer value (0.0 to 1.0)
 type AnswerValue = number;
@@ -37,20 +38,31 @@ export default function QuizPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const quizType = searchParams.get('type') || 'short';
-  const questions = quizType === 'long' ? longQuestions : shortQuestions;
+  
+  // Generate randomized questions on component mount
+  const [questions, setQuestions] = useState<(Question | Phase2Question)[]>([]);
+  const [originalQuestions, setOriginalQuestions] = useState<Question[]>([]); // Keep original for tiebreaker adjustment
+  const [phase2QuestionsLoaded, setPhase2QuestionsLoaded] = useState(false);
+  
+  // Calculate total screens dynamically based on current questions length
   const TOTAL_SCREENS = Math.ceil(questions.length / QUESTIONS_PER_SCREEN);
   
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [screen, setScreen] = useState(0);
   const [dragState, setDragState] = useState<{ questionId: number; isDragging: boolean; startValue?: number; element?: HTMLElement } | null>(null);
   const [hoveredQuestion, setHoveredQuestion] = useState<number | null>(null);
-
+  const [tiebreakerChecked, setTiebreakerChecked] = useState(false);
+  
+  // Initialize randomized questions
   useEffect(() => {
-    // Use requestAnimationFrame to ensure DOM has updated
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }, [screen]);
+    const randomizedQuestions = quizType === 'long' 
+      ? generateLongQuizQuestions()
+      : generateShortQuizQuestions();
+    setQuestions(randomizedQuestions);
+    setOriginalQuestions([...randomizedQuestions]);
+    console.log(`🎮 Quiz initialized with ${randomizedQuestions.length} questions`);
+  }, [quizType]);
+
 
   const handleAnswerSelect = (questionId: number, value: AnswerValue) => {
     setAnswers(prev => ({
@@ -130,17 +142,138 @@ export default function QuizPageClient() {
     };
   }, [dragState]);
 
-  const handleNext = () => {
-    if (screen < TOTAL_SCREENS - 1) {
+  // Calculate current scores for tiebreaker check
+  const calculateCurrentScores = () => {
+    let economicScore = 0;
+    let governanceScore = 0; // Renamed from socialScore for clarity
+    let economicQuestions = 0;
+    let governanceQuestions = 0; // Renamed from socialQuestions
+    
+    // Convert continuous values (0-1) to score values (-2 to +2)
+    const convertToScore = (value: number): number => {
+      return (value - 0.5) * 4; // Maps 0->-2, 0.5->0, 1->2
+    };
+    
+    // Only calculate for questions that have been answered
+    questions.slice(0, 20).forEach((question) => {
+      const answer = answers[question.id];
+      if (answer === undefined) return;
+      
+      const score = convertToScore(answer);
+      const config = QUESTION_CONFIG.find(c => c.id === question.id);
+      if (!config) return;
+      
+      if (config.axis === 'economic') {
+        economicScore += config.agreeDirection === 'left' ? -score : score;
+        economicQuestions++;
+      } else if (config.axis === 'authority') {
+        governanceScore += config.agreeDirection === 'authoritarian' ? score : -score;
+        governanceQuestions++;
+      }
+    });
+    
+    // Normalize to -100 to +100 scale
+    const maxEconomicScore = economicQuestions * 2;
+    const maxGovernanceScore = governanceQuestions * 2;
+    
+    const normalizedEconomic = maxEconomicScore > 0 ? (economicScore / maxEconomicScore) * 100 : 0;
+    const normalizedGovernance = maxGovernanceScore > 0 ? (governanceScore / maxGovernanceScore) * 100 : 0;
+    
+    return { economic: normalizedEconomic, governance: normalizedGovernance };
+  };
+
+  const handleNext = async () => {
+    console.log(`🎮 Screen transition: ${screen} -> ${screen + 1}, Total screens: ${TOTAL_SCREENS}, Questions: ${questions.length}`);
+    
+    // Check for tiebreakers after screen 3 (before moving to screen 4)
+    // Screen 3 = questions 15-20, so after this we've answered 20 questions
+    if (screen === 3 && quizType === 'long' && !tiebreakerChecked) {
+      console.log('📊 Reached screen 4 - checking for tiebreaker needs...');
+      
+      const scores = calculateCurrentScores();
+      const remainingQuestions = questions.slice(20); // Last 10 questions
+      const adjustedQuestions = adjustForTiebreakers(remainingQuestions, scores.economic, scores.governance);
+      
+      // Update the questions array if tiebreakers were added
+      if (adjustedQuestions !== remainingQuestions) {
+        const newQuestions = [...questions.slice(0, 20), ...adjustedQuestions];
+        setQuestions(newQuestions);
+        console.log('📝 Questions updated with tiebreakers');
+      }
+      
+      setTiebreakerChecked(true);
+    }
+    
+    // Load Phase 2 questions when completing screen 5 (the last screen of Phase 1)  
+    console.log(`🔍 Phase 2 Check: screen=${screen}, quizType=${quizType}, phase2Loaded=${phase2QuestionsLoaded}, questions=${questions.length}`);
+    if (screen === 5 && quizType === 'long' && !phase2QuestionsLoaded && questions.length === 30) {
+      console.log('🚀 Phase 1 complete - Loading Phase 2 questions...');
+      
+      const scores = calculateCurrentScores();
+      
+      // Determine macro cell for Phase 2
+      let econCode: 'EL' | 'EM' | 'ER';
+      if (scores.economic < -33) econCode = 'EL';
+      else if (scores.economic > 33) econCode = 'ER';
+      else econCode = 'EM';
+      
+      let authCode: 'GL' | 'GM' | 'GR';
+      if (scores.governance > 33) authCode = 'GL';
+      else if (scores.governance < -33) authCode = 'GR';
+      else authCode = 'GM';
+      
+      const macroCellCode = `${econCode}-${authCode}`;
+      console.log(`📍 User landed in macro cell: ${macroCellCode}`);
+      console.log(`📊 Final Phase 1 Scores - Economic: ${scores.economic.toFixed(2)}, Governance: ${scores.governance.toFixed(2)}`);
+      
+      try {
+        const phase2Questions = await getPhase2Questions(macroCellCode);
+        console.log(`✨ Phase 2 Ready: ${phase2Questions.length} questions loaded and shuffled`);
+        
+        // Add Phase 2 questions to the existing questions array
+        const extendedQuestions = [...questions, ...phase2Questions];
+        setQuestions(extendedQuestions);
+        setPhase2QuestionsLoaded(true);
+        
+        console.log(`🎯 Quiz extended to ${extendedQuestions.length} total questions (Phase 1: 30, Phase 2: 20)`);
+        console.log(`📱 New TOTAL_SCREENS will be: ${Math.ceil(extendedQuestions.length / QUESTIONS_PER_SCREEN)}`);
+      } catch (error) {
+        console.error('Error loading Phase 2 questions:', error);
+      }
+    }
+    
+    // Check if we should proceed to next screen
+    const canProceed = screen < TOTAL_SCREENS - 1;
+    const justLoadedPhase2 = screen === 5 && quizType === 'long' && phase2QuestionsLoaded;
+    const willLoadPhase2 = screen === 5 && quizType === 'long' && !phase2QuestionsLoaded && questions.length === 30;
+    
+    if (canProceed || justLoadedPhase2 || willLoadPhase2) {
       setScreen(screen + 1);
+      
+      // Ensure scroll to top after screen change
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
     }
   };
 
   const handleBack = () => {
-    if (screen > 0) setScreen(screen - 1);
+    if (screen > 0) {
+      setScreen(screen - 1);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    console.log('🏁 Quiz Complete!');
+    console.log(`📊 Final Quiz: ${questions.length} questions answered (${quizType === 'long' ? 'Phase 1: 30, Phase 2: 20' : 'Short quiz: 10'})`);
+    
     const answerArray = questions.map(q => answers[q.id] !== undefined ? answers[q.id] : 0.5); // Default to neutral (0.5) if not answered
     const formattedAnswers = answerArray.map(val => val.toFixed(2));
     router.push(`/quiz/results?answers=${formattedAnswers.join(',')}&type=${quizType}`);
@@ -251,7 +384,7 @@ export default function QuizPageClient() {
           >
             Back
           </button>
-          {screen < TOTAL_SCREENS - 1 ? (
+          {screen < TOTAL_SCREENS - 1 || (screen === 5 && quizType === 'long' && !phase2QuestionsLoaded && questions.length === 30) ? (
             <button
               onClick={handleNext}
               disabled={!isScreenComplete}

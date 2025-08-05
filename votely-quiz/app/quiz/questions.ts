@@ -4,335 +4,536 @@ export interface Question {
   id: number;
   question: string;
   axis: PoliticalAxis;
+  agreeDir?: -1 | 1; // Direction that "agree" pushes the score
 }
 
-// 50 balanced political questions across economic, authority, and cultural axes
-// Questions are designed to be neutral while covering the full political spectrum
+// New phase-based political questions from TSV
+// 30 core questions for balanced assessment
 export const allQuestions: Question[] = [
-  // ECONOMIC QUESTIONS (16 total) - 8 left, 8 right
+  // ECONOMIC QUESTIONS
   {
     id: 1,
-    question: "High-income earners should pay a much larger percentage of their income in taxes than everyone else.",
-    axis: 'economic'
+    question: "The government should actively redistribute wealth from the rich to the poor to create a more equal society.",
+    axis: 'economic',
+    agreeDir: -1
   },
   {
     id: 2,
-    question: "Healthcare should be provided free of charge by the government to all people.",
-    axis: 'economic'
+    question: "Lowering taxes for businesses and individuals is the best way to encourage economic growth.",
+    axis: 'economic',
+    agreeDir: 1
   },
   {
     id: 3,
-    question: "Labor unions are necessary to protect workers' rights and should be supported.",
-    axis: 'economic'
+    question: "Free-market capitalism is the best economic system, despite any imperfections.",
+    axis: 'economic',
+    agreeDir: 1
   },
   {
     id: 4,
     question: "Strong government regulation of businesses is necessary to protect consumers and workers.",
-    axis: 'economic'
+    axis: 'economic',
+    agreeDir: -1
   },
   {
     id: 5,
-    question: "Ensuring affordable housing for all citizens is a responsibility of the government.",
-    axis: 'economic'
+    question: "Healthcare should be provided free of charge by the government to all people.",
+    axis: 'economic',
+    agreeDir: -1
   },
   {
     id: 6,
-    question: "The government should actively redistribute wealth from the rich to the poor to create a more equal society.",
-    axis: 'economic'
+    question: "Generous social welfare programs can reduce people's incentive to work.",
+    axis: 'economic',
+    agreeDir: 1
   },
   {
     id: 7,
-    question: "Protecting the environment should be prioritized even at the cost of economic growth.",
-    axis: 'economic'
+    question: "Labor unions are necessary to protect workers' rights and should be supported.",
+    axis: 'economic',
+    agreeDir: -1
   },
   {
     id: 8,
-    question: "Employees should have an ownership stake or say in the companies they work for.",
-    axis: 'economic'
-  },
-  {
-    id: 9,
-    question: "Lowering taxes for businesses and individuals is the best way to encourage economic growth.",
-    axis: 'economic'
-  },
-  {
-    id: 10,
     question: "Private companies can provide services like healthcare and education more efficiently than the government.",
-    axis: 'economic'
-  },
-  {
-    id: 11,
-    question: "Generous social welfare programs can reduce people's incentive to work.",
-    axis: 'economic'
-  },
-  {
-    id: 12,
-    question: "Too much government regulation of business stifles economic growth and innovation.",
-    axis: 'economic'
-  },
-  {
-    id: 13,
-    question: "Economic inequality is not a problem as long as there is equality of opportunity.",
-    axis: 'economic'
-  },
-  {
-    id: 14,
-    question: "Free-market capitalism is the best economic system, despite any imperfections.",
-    axis: 'economic'
-  },
-  {
-    id: 15,
-    question: "Tariffs and import restrictions are necessary to protect domestic industries.",
-    axis: 'economic'
-  },
-  {
-    id: 16,
-    question: "Implementing socialist policies would only harm the economy.",
-    axis: 'economic'
-  },
-
-  // AUTHORITY QUESTIONS (17 total) - 8 libertarian, 9 authoritarian
-  {
-    id: 17,
-    question: "Government surveillance of citizens' communications is acceptable if it prevents crime and terrorism.",
-    axis: 'authority'
-  },
-  {
-    id: 18,
-    question: "The government should be able to censor speech or media that it considers dangerous or extremist.",
-    axis: 'authority'
-  },
-  {
-    id: 19,
-    question: "In a national emergency, it is acceptable for the government to suspend some normal legal rights.",
-    axis: 'authority'
-  },
-  {
-    id: 20,
-    question: "Criminals who commit serious crimes deserve harsh punishments, not rehabilitation.",
-    axis: 'authority'
-  },
-  {
-    id: 21,
-    question: "A strong, centralized government is necessary to maintain order in society.",
-    axis: 'authority'
-  },
-  {
-    id: 22,
-    question: "People should always obey the law, even if they feel it is unjust.",
-    axis: 'authority'
-  },
-  {
-    id: 23,
-    question: "Government policy should follow the advice of qualified experts, even if it goes against popular opinion.",
-    axis: 'authority'
-  },
-  {
-    id: 24,
-    question: "Every citizen should be required to serve in the military or perform national service for at least a year.",
-    axis: 'authority'
+    axis: 'economic',
+    agreeDir: 1
   },
   {
     id: 25,
-    question: "Individuals should be free to make their own lifestyle choices as long as they do not harm others.",
-    axis: 'authority'
+    question: "High-income earners should pay a much larger percentage of their income in taxes than everyone else.",
+    axis: 'economic',
+    agreeDir: -1
   },
   {
     id: 26,
+    question: "Too much government regulation of business stifles economic growth and innovation.",
+    axis: 'economic',
+    agreeDir: 1
+  },
+
+  // AUTHORITY QUESTIONS
+  {
+    id: 9,
+    question: "Government surveillance of citizens' communications is acceptable if it prevents crime and terrorism.",
+    axis: 'authority',
+    agreeDir: 1
+  },
+  {
+    id: 10,
     question: "The government should have as little involvement in citizens' lives as possible.",
-    axis: 'authority'
+    axis: 'authority',
+    agreeDir: -1
+  },
+  {
+    id: 11,
+    question: "The government should be able to censor speech or media that it considers dangerous or extremist.",
+    axis: 'authority',
+    agreeDir: 1
+  },
+  {
+    id: 12,
+    question: "Individuals should be free to make their own lifestyle choices as long as they do not harm others.",
+    axis: 'authority',
+    agreeDir: -1
+  },
+  {
+    id: 13,
+    question: "In a national emergency, it is acceptable for the government to suspend some normal legal rights.",
+    axis: 'authority',
+    agreeDir: 1
+  },
+  {
+    id: 14,
+    question: "People have the right to disobey laws they find unjust.",
+    axis: 'authority',
+    agreeDir: -1
+  },
+  {
+    id: 15,
+    question: "A strong, centralized government is necessary to maintain order in society.",
+    axis: 'authority',
+    agreeDir: 1
+  },
+  {
+    id: 16,
+    question: "Law-abiding citizens should be able to own firearms without heavy restrictions.",
+    axis: 'authority',
+    agreeDir: -1
   },
   {
     id: 27,
-    question: "Local communities should have more power to govern themselves and less oversight from the central government.",
-    axis: 'authority'
+    question: "Every citizen should be required to serve in the military or perform national service for at least a year.",
+    axis: 'authority',
+    agreeDir: 1
   },
   {
     id: 28,
-    question: "People have the right to disobey laws they find unjust.",
-    axis: 'authority'
+    question: "Local communities should have more power to govern themselves with less central oversight.",
+    axis: 'authority',
+    agreeDir: -1
+  },
+
+  // CULTURAL/SOCIAL QUESTIONS
+  {
+    id: 17,
+    question: "Children are best off when raised by a married mother and father in the same household.",
+    axis: 'cultural',
+    agreeDir: 1
+  },
+  {
+    id: 18,
+    question: "A diverse society with many cultures, religions, and identities is a strength for a nation.",
+    axis: 'cultural',
+    agreeDir: -1
+  },
+  {
+    id: 19,
+    question: "Women should have the right to choose an abortion without government interference.",
+    axis: 'cultural',
+    agreeDir: -1
+  },
+  {
+    id: 20,
+    question: "Political correctness has gone too far, to the point where people are afraid to speak their minds.",
+    axis: 'cultural',
+    agreeDir: 1
+  },
+  {
+    id: 21,
+    question: "Laws and policies should not be influenced by any religion; the government needs to stay secular.",
+    axis: 'cultural',
+    agreeDir: -1
+  },
+  {
+    id: 22,
+    question: "Society should accept people's gender identities, even if they differ from their birth sex.",
+    axis: 'cultural',
+    agreeDir: -1
+  },
+  {
+    id: 23,
+    question: "Immigration into our country should be strictly limited to protect our national culture and economy.",
+    axis: 'cultural',
+    agreeDir: 1
+  },
+  {
+    id: 24,
+    question: "It is more important to preserve traditional values and ways of life than to adopt new social changes.",
+    axis: 'cultural',
+    agreeDir: 1
   },
   {
     id: 29,
-    question: "Law-abiding citizens should be able to own firearms without heavy restrictions.",
-    axis: 'authority'
+    question: "Society has become too permissive and would benefit from traditional moral standards.",
+    axis: 'cultural',
+    agreeDir: 1
   },
   {
     id: 30,
-    question: "The government should not enforce any moral or cultural values on individuals.",
-    axis: 'authority'
+    question: "Schools should teach students about historical injustices committed by our country.",
+    axis: 'cultural',
+    agreeDir: -1
   },
+
+  // TIEBREAKER QUESTIONS (for when scores are close to center)
   {
     id: 31,
-    question: "If the government violates the people's rights, the people have the right to overthrow it.",
-    axis: 'authority'
+    question: "Protecting the environment should be prioritized even at the cost of economic growth.",
+    axis: 'economic',
+    agreeDir: -1
   },
   {
     id: 32,
-    question: "In an ideal society, communities could manage themselves without any centralized government.",
-    axis: 'authority'
+    question: "Tariffs and import restrictions are necessary to protect domestic industries.",
+    axis: 'economic',
+    agreeDir: 1
   },
-
-  // CULTURAL QUESTIONS (17 total) - 9 conservative, 8 progressive  
   {
     id: 33,
-    question: "Consensual acts that do not harm others (such as adult sex work) should not be outlawed.",
-    axis: 'authority'
+    question: "Government policy should follow the advice of qualified experts, even if it goes against popular opinion.",
+    axis: 'authority',
+    agreeDir: 1
   },
-
-  // CULTURAL QUESTIONS (17 total) - 9 conservative, 8 progressive
   {
     id: 34,
-    question: "Children are best off when raised by a married mother and father in the same household.",
-    axis: 'cultural'
-  },
-  {
-    id: 35,
-    question: "Immigration into our country should be strictly limited to protect our national culture and economy.",
-    axis: 'cultural'
-  },
-  {
-    id: 36,
-    question: "It is more important to preserve traditional values and ways of life than to adopt new social changes.",
-    axis: 'cultural'
-  },
-  {
-    id: 37,
-    question: "It's important for citizens to be proud of their country's history and heritage.",
-    axis: 'cultural'
-  },
-  {
-    id: 38,
-    question: "Maintaining our national sovereignty should be prioritized over working with international organizations.",
-    axis: 'cultural'
-  },
-  {
-    id: 39,
-    question: "Political correctness has gone too far, to the point where people are afraid to speak their minds.",
-    axis: 'cultural'
-  },
-  {
-    id: 40,
-    question: "Society has become too permissive and would be better off if we returned to more traditional standards of morality.",
-    axis: 'cultural'
-  },
-  {
-    id: 41,
-    question: "A diverse society with many cultures, religions, and identities is a strength for a nation.",
-    axis: 'cultural'
-  },
-  {
-    id: 42,
-    question: "Laws and policies should not be influenced by any religion; the government needs to stay secular.",
-    axis: 'cultural'
-  },
-  {
-    id: 43,
-    question: "Policies like affirmative action are necessary to help correct historical inequalities.",
-    axis: 'cultural'
-  },
-  {
-    id: 44,
-    question: "Society should accept people's gender identities, even if they differ from their birth sex.",
-    axis: 'cultural'
-  },
-  {
-    id: 45,
-    question: "Women should have the right to choose an abortion without government interference.",
-    axis: 'cultural'
-  },
-  {
-    id: 46,
-    question: "The death penalty should be abolished in all cases.",
-    axis: 'cultural'
-  },
-  {
-    id: 47,
-    question: "People should avoid adopting elements of other cultures in ways that are disrespectful or insensitive.",
-    axis: 'cultural'
-  },
-  {
-    id: 48,
-    question: "Drug use should be treated as a public health issue (with education and treatment) rather than a criminal one.",
-    axis: 'cultural'
-  },
-  {
-    id: 49,
-    question: "Schools should teach students about the historical injustices committed by our country.",
-    axis: 'cultural'
-  },
-  {
-    id: 50,
-    question: "Maintaining social stability is more important than rapid social change.",
-    axis: 'cultural'
+    question: "If government violates rights, citizens should resist through civil disobedience.",
+    axis: 'authority',
+    agreeDir: -1
   }
 ];
 
-// Short quiz: 10 questions mixed across axes for engagement
-// Improved balance: 4 economic (2L/2R), 3 authority (1A/2L), 3 cultural (1C/2P)
-export const shortQuestions: Question[] = [
-  allQuestions[3],  // ID 4 - Strong government regulation (economic left)
-  allQuestions[19], // ID 20 - Harsh punishment for criminals (authority authoritarian)
-  allQuestions[40], // ID 41 - Diversity strength (cultural progressive)
-  allQuestions[8],  // ID 9 - Tax cuts for growth (economic right)
-  allQuestions[24], // ID 25 - Individual lifestyle freedom (authority libertarian)
-  allQuestions[5],  // ID 6 - Wealth redistribution (economic left)
-  allQuestions[34], // ID 35 - Restrict immigration (cultural conservative)
-  allQuestions[28], // ID 29 - Gun rights (authority libertarian)
-  allQuestions[13], // ID 14 - Free-market capitalism (economic right)
-  allQuestions[43]  // ID 44 - Gender identity acceptance (cultural progressive)
-];
+// Short quiz: Filter allQuestions for only priority 2 questions
+// Generate randomized short quiz questions
+export function generateShortQuizQuestions(): Question[] {
+  console.log('🎲 Generating randomized short quiz questions...');
+  
+  // Get the priority 2 questions and shuffle them
+  const priority2Ids = [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
+  const priority2Questions = allQuestions.filter(q => priority2Ids.includes(q.id));
+  const randomizedShort = shuffleArray(priority2Questions);
+  
+  console.log(`📝 Short Quiz: ${randomizedShort.length} questions randomized`);
+  console.log('Question order:', randomizedShort.map(q => `${q.id}`).join(', '));
+  
+  return randomizedShort;
+}
 
-// Long quiz: all 50 questions in mixed order to keep users engaged
-export const longQuestions: Question[] = [
-  allQuestions[0],  // ID 1 - Economic
-  allQuestions[16], // ID 17 - Authority
-  allQuestions[33], // ID 34 - Cultural
-  allQuestions[8],  // ID 9 - Economic
-  allQuestions[24], // ID 25 - Authority
-  allQuestions[40], // ID 41 - Cultural
-  allQuestions[1],  // ID 2 - Economic
-  allQuestions[17], // ID 18 - Authority
-  allQuestions[34], // ID 35 - Cultural
-  allQuestions[9],  // ID 10 - Economic
-  allQuestions[25], // ID 26 - Authority
-  allQuestions[41], // ID 42 - Cultural
-  allQuestions[2],  // ID 3 - Economic
-  allQuestions[18], // ID 19 - Authority
-  allQuestions[35], // ID 36 - Cultural
-  allQuestions[10], // ID 11 - Economic
-  allQuestions[26], // ID 27 - Authority
-  allQuestions[42], // ID 43 - Cultural
-  allQuestions[3],  // ID 4 - Economic
-  allQuestions[19], // ID 20 - Authority
-  allQuestions[36], // ID 37 - Cultural
-  allQuestions[11], // ID 12 - Economic
-  allQuestions[27], // ID 28 - Authority
-  allQuestions[43], // ID 44 - Cultural
-  allQuestions[4],  // ID 5 - Economic
-  allQuestions[20], // ID 21 - Authority
-  allQuestions[37], // ID 38 - Cultural
-  allQuestions[12], // ID 13 - Economic
-  allQuestions[28], // ID 29 - Authority
-  allQuestions[44], // ID 45 - Cultural
-  allQuestions[5],  // ID 6 - Economic
-  allQuestions[21], // ID 22 - Authority
-  allQuestions[38], // ID 39 - Cultural
-  allQuestions[13], // ID 14 - Economic
-  allQuestions[29], // ID 30 - Authority
-  allQuestions[45], // ID 46 - Cultural
-  allQuestions[6],  // ID 7 - Economic
-  allQuestions[22], // ID 23 - Authority
-  allQuestions[39], // ID 40 - Cultural
-  allQuestions[14], // ID 15 - Economic
-  allQuestions[30], // ID 31 - Authority
-  allQuestions[46], // ID 47 - Cultural
-  allQuestions[7],  // ID 8 - Economic
-  allQuestions[23], // ID 24 - Authority
-  allQuestions[47], // ID 48 - Cultural
-  allQuestions[15], // ID 16 - Economic
-  allQuestions[31], // ID 32 - Authority
-  allQuestions[48], // ID 49 - Cultural
-  allQuestions[32], // ID 33 - Authority
-  allQuestions[49]  // ID 50 - Cultural
-];
+// Static fallback for short quiz (backwards compatibility)
+export const shortQuestions: Question[] = allQuestions.filter(q => {
+  const priority2Ids = [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
+  return priority2Ids.includes(q.id);
+});
+
+// Get core Phase 1 questions (IDs 1-30)
+export const phase1Questions = allQuestions.filter(q => q.id >= 1 && q.id <= 30);
+
+// Get tiebreaker questions (IDs 31-34)
+export const tiebreakerQuestions = allQuestions.filter(q => q.id >= 31 && q.id <= 34);
+
+// Randomize array order using Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// Generate randomized long quiz questions with balanced distribution
+export function generateLongQuizQuestions(): Question[] {
+  console.log('🎲 Generating randomized long quiz questions with balanced distribution...');
+  
+  // Separate questions by axis for balanced distribution
+  const economicQuestions = phase1Questions.filter(q => q.axis === 'economic');
+  const authorityQuestions = phase1Questions.filter(q => q.axis === 'authority');
+  const culturalQuestions = phase1Questions.filter(q => q.axis === 'cultural');
+  
+  // Shuffle each category
+  const shuffledEconomic = shuffleArray(economicQuestions);
+  const shuffledAuthority = shuffleArray(authorityQuestions);
+  const shuffledCultural = shuffleArray(culturalQuestions);
+  
+  console.log(`📊 Question distribution: ${shuffledEconomic.length} economic, ${shuffledAuthority.length} authority, ${shuffledCultural.length} cultural`);
+  
+  // For the first 20 questions (screens 1-4), ensure balanced distribution
+  // We want roughly 6-7 of each type in the first 20
+  const first20: Question[] = [];
+  
+  // Take 7 economic, 7 authority, 6 cultural for first 20
+  first20.push(...shuffledEconomic.slice(0, 7));
+  first20.push(...shuffledAuthority.slice(0, 7));
+  first20.push(...shuffledCultural.slice(0, 6));
+  
+  // Shuffle the first 20 to mix them up
+  const shuffledFirst20 = shuffleArray(first20);
+  
+  // For the last 10 questions (screens 5-6), use remaining questions
+  // This ensures we have 3 economic, 3 authority, 4 cultural available
+  const last10: Question[] = [];
+  last10.push(...shuffledEconomic.slice(7)); // 3 remaining economic
+  last10.push(...shuffledAuthority.slice(7)); // 3 remaining authority
+  last10.push(...shuffledCultural.slice(6));  // 4 remaining cultural
+  
+  // Shuffle the last 10
+  const shuffledLast10 = shuffleArray(last10);
+  
+  const finalQuestions = [...shuffledFirst20, ...shuffledLast10];
+  
+  console.log(`📝 Phase 1: ${finalQuestions.length} questions arranged`);
+  console.log('First 20 distribution:', shuffledFirst20.map(q => q.axis.charAt(0).toUpperCase()).join(''));
+  console.log('Last 10 distribution:', shuffledLast10.map(q => q.axis.charAt(0).toUpperCase()).join(''));
+  console.log('Last 10 reserves - E:', shuffledLast10.filter(q => q.axis === 'economic').length,
+              'A:', shuffledLast10.filter(q => q.axis === 'authority').length,
+              'C:', shuffledLast10.filter(q => q.axis === 'cultural').length);
+  
+  return finalQuestions;
+}
+
+// Function to adjust final questions based on tiebreaker needs (called after screen 4)
+export function adjustForTiebreakers(
+  remainingQuestions: Question[],
+  economicScore: number,
+  governanceScore: number
+): Question[] {
+  console.log('🎯 Checking for tiebreaker needs...');
+  console.log(`Current scores - Economic: ${economicScore.toFixed(2)}, Governance: ${governanceScore.toFixed(2)}`);
+  
+  // Check proximity to macro cell boundaries (±33.33 for 3x3 grid)
+  // If within ±5 of boundary, we need tiebreakers
+  const BOUNDARY_THRESHOLD = 5;
+  const MACRO_BOUNDARY = 33.33;
+  
+  const needsEconomicTiebreaker = Math.abs(Math.abs(economicScore) - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD;
+  const needsGovernanceTiebreaker = Math.abs(Math.abs(governanceScore) - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD;
+  
+  console.log(`Tiebreakers needed - Economic: ${needsEconomicTiebreaker}, Governance: ${needsGovernanceTiebreaker}`);
+  
+  let adjustedQuestions = [...remainingQuestions];
+  let replacedCount = 0;
+  
+  // Count available questions by type in remaining set
+  const remainingByType = {
+    economic: remainingQuestions.filter(q => q.axis === 'economic').length,
+    authority: remainingQuestions.filter(q => q.axis === 'authority').length,
+    cultural: remainingQuestions.filter(q => q.axis === 'cultural').length
+  };
+  
+  console.log('Remaining questions by type:', remainingByType);
+  
+  // Replace cultural questions with tiebreakers if needed
+  if (needsEconomicTiebreaker && remainingByType.cultural >= 2) {
+    const economicTiebreakers = tiebreakerQuestions.filter(q => q.axis === 'economic');
+    const culturalIndices = adjustedQuestions
+      .map((q, i) => q.axis === 'cultural' ? i : -1)
+      .filter(i => i !== -1);
+    
+    // Replace up to 2 cultural questions with economic tiebreakers
+    for (let i = 0; i < Math.min(2, economicTiebreakers.length, culturalIndices.length); i++) {
+      adjustedQuestions[culturalIndices[i]] = economicTiebreakers[i];
+      replacedCount++;
+      console.log(`✅ Replaced cultural question with economic tiebreaker: "${economicTiebreakers[i].question.substring(0, 50)}..."`);
+    }
+  }
+  
+  if (needsGovernanceTiebreaker && remainingByType.cultural >= 2 - replacedCount) {
+    const authorityTiebreakers = tiebreakerQuestions.filter(q => q.axis === 'authority');
+    const culturalIndices = adjustedQuestions
+      .map((q, i) => q.axis === 'cultural' ? i : -1)
+      .filter(i => i !== -1);
+    
+    // Replace up to 2 more cultural questions with authority tiebreakers
+    const startIndex = replacedCount; // Skip already replaced ones
+    for (let i = 0; i < Math.min(2, authorityTiebreakers.length, culturalIndices.length - startIndex); i++) {
+      adjustedQuestions[culturalIndices[startIndex + i]] = authorityTiebreakers[i];
+      console.log(`✅ Replaced cultural question with authority tiebreaker: "${authorityTiebreakers[i].question.substring(0, 50)}..."`);
+    }
+  }
+  
+  return adjustedQuestions;
+}
+
+// Phase 2 Question type with supplementary axis
+export interface Phase2Question extends Question {
+  supplementAxis: string; // e.g., 'ELGL-A' for Leadership Model in EL-GL cell
+  axisName?: string; // e.g., 'Leadership Model'
+}
+
+// Load and parse Phase 2 questions from TSV
+async function loadPhase2QuestionsFromTSV(): Promise<Map<string, Phase2Question[]>> {
+  try {
+    const response = await fetch('/political_quiz_final.tsv');
+    const text = await response.text();
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split('\t');
+    
+    const phase2Map = new Map<string, Phase2Question[]>();
+    
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split('\t');
+      const phase = row[3]; // phase column
+      
+      if (phase === '2') {
+        const id = row[0]; // Question ID like ELGL-A-01
+        const text = row[1];
+        const supplementAxis = row[2]; // This contains the supplementary axis code like ELGL-A
+        const agreeDir = parseInt(row[6]); // agree_dir column
+        
+        // Generate a unique numeric ID for the question
+        const numericId = 1000 + i; // Start Phase 2 questions at ID 1000+
+        
+        const question: Phase2Question = {
+          id: numericId,
+          question: text,
+          axis: 'supplementary' as any, // Mark as supplementary axis
+          supplementAxis: supplementAxis,
+          agreeDir: agreeDir as -1 | 1
+        };
+        
+        // Group by supplementary axis code (e.g., ELGL-A)
+        if (!phase2Map.has(supplementAxis)) {
+          phase2Map.set(supplementAxis, []);
+        }
+        phase2Map.get(supplementAxis)!.push(question);
+      }
+    }
+    
+    return phase2Map;
+  } catch (error) {
+    console.error('Error loading Phase 2 questions:', error);
+    return new Map();
+  }
+}
+
+// Map of supplementary axis names from supplement-axes.tsv
+const SUPPLEMENTARY_AXES: Record<string, string> = {
+  'ELGL-A': 'Leadership Model',
+  'ELGL-B': 'National vs International', 
+  'ELGL-C': 'Urban vs Rural Base',
+  'ELGL-D': 'Class vs Ethno-Populism',
+  'EMGL-A': 'Religious Legitimacy',
+  'EMGL-B': 'Ethno-Racial Emphasis',
+  'EMGL-C': 'State vs Market Control',
+  'EMGL-D': 'Tradition vs Modernization',
+  'ERGL-A': 'Source of Rule',
+  'ERGL-B': 'Religious Centrality',
+  'ERGL-C': 'Economic Direction',
+  'ERGL-D': 'Modernization vs Heritage',
+  'ELGM-A': 'Reform vs Revolution',
+  'ELGM-B': 'Central vs Local Power',
+  'ELGM-C': 'Market Usage',
+  'ELGM-D': 'Futurism vs Pragmatism',
+  'EMGM-A': 'Market Freedom',
+  'EMGM-B': 'Welfare Commitment',
+  'EMGM-C': 'Globalism vs Domestic',
+  'EMGM-D': 'Democracy Model',
+  'ERGM-A': 'Social Control',
+  'ERGM-B': 'Cultural Focus',
+  'ERGM-C': 'Corporate Role',
+  'ERGM-D': 'Nationalism Type',
+  'ELGR-A': 'Organization Model',
+  'ELGR-B': 'Violence Stance',
+  'ELGR-C': 'Technology View',
+  'ELGR-D': 'Solidarity Scope',
+  'EMGR-A': 'State Size',
+  'EMGR-B': 'Community Scale',
+  'EMGR-C': 'Economic Localism',
+  'EMGR-D': 'Social Values',
+  'ERGR-A': 'Property Absolutism',
+  'ERGR-B': 'Authority Source',
+  'ERGR-C': 'Corporate Power',
+  'ERGR-D': 'Social Hierarchy'
+};
+
+// Function to get Phase 2 questions for a specific macro cell
+export async function getPhase2Questions(macroCellCode: string): Promise<Phase2Question[]> {
+  console.log('🎯 Loading Phase 2 questions for macro cell:', macroCellCode);
+  
+  const phase2Map = await loadPhase2QuestionsFromTSV();
+  
+  // Get the axis codes for this macro cell
+  const axisPrefix = macroCellCode.replace('-', '');
+  const relevantAxes = [`${axisPrefix}-A`, `${axisPrefix}-B`, `${axisPrefix}-C`, `${axisPrefix}-D`];
+  
+  console.log('📐 Supplementary axes for refinement:');
+  relevantAxes.forEach(axis => {
+    const axisName = SUPPLEMENTARY_AXES[axis] || 'Unknown Axis';
+    console.log(`  • ${axis}: ${axisName}`);
+  });
+  
+  const phase2Questions: Phase2Question[] = [];
+  
+  for (const axis of relevantAxes) {
+    const questions = phase2Map.get(axis) || [];
+    // Add axis name to each question
+    questions.forEach(q => {
+      q.axisName = SUPPLEMENTARY_AXES[axis];
+    });
+    phase2Questions.push(...questions);
+  }
+  
+  console.log(`📋 Loaded ${phase2Questions.length} Phase 2 questions for supplementary axes`);
+  
+  // Ensure balanced distribution across axes
+  // We want 5 questions from each of the 4 axes
+  const questionsPerAxis = 5;
+  const finalPhase2: Phase2Question[] = [];
+  
+  // Shuffle questions within each axis first
+  const questionsByAxis = new Map<string, Phase2Question[]>();
+  for (const axis of relevantAxes) {
+    const axisQuestions = phase2Questions.filter(q => q.supplementAxis === axis);
+    questionsByAxis.set(axis, shuffleArray(axisQuestions));
+  }
+  
+  // Take 5 questions from each axis
+  for (const [axis, axisQuestions] of questionsByAxis) {
+    finalPhase2.push(...axisQuestions.slice(0, questionsPerAxis));
+  }
+  
+  // Final shuffle to mix questions from different axes
+  const shuffledPhase2 = shuffleArray(finalPhase2);
+  
+  console.log(`✅ Phase 2: ${shuffledPhase2.length} questions ready for 4D positioning within macro cell`);
+  console.log('🧮 These will create 4 additional axes for Euclidean distance calculation to find specific ideology');
+  
+  // Log distribution
+  console.log('📊 Phase 2 question distribution:');
+  for (const axis of relevantAxes) {
+    const count = shuffledPhase2.filter(q => q.supplementAxis === axis).length;
+    const axisName = SUPPLEMENTARY_AXES[axis] || 'Unknown';
+    console.log(`  ${axis} (${axisName}): ${count} questions`);
+  }
+  
+  // Log first few questions to show variety
+  console.log('🎲 First 5 Phase 2 questions (showing variety):');
+  shuffledPhase2.slice(0, 5).forEach((q, i) => {
+    console.log(`  ${i+1}. [${q.supplementAxis}] "${q.question.substring(0, 50)}..."`);
+  });
+  
+  return shuffledPhase2;
+}
+
+// Static fallback for long quiz (backwards compatibility)
+export const longQuestions: Question[] = phase1Questions;

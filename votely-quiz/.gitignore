@@ -27,8 +27,8 @@ yarn-error.log*
 .firebase/
 firebase-debug.log
 
-# Feedback
-feedback/
+# Feedback data directory (not API routes)
+/feedback/
 
 # TypeScript
 tsconfig.tsbuildinfo

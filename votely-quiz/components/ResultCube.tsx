@@ -431,6 +431,19 @@ export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, colo
           // @ts-ignore
           WebkitUserDrag: 'none'
         }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          powerPreference: 'low-power',
+          preserveDrawingBuffer: true,
+          failIfMajorPerformanceCaveat: false
+        }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault();
+            console.log('WebGL context lost, preventing default');
+          }, false);
+        }}
       >
         <Suspense fallback={null}>
           <CubeContent

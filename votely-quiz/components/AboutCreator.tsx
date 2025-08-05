@@ -34,8 +34,13 @@ export default function AboutCreator() {
         setEmail('');
         setWantsReply(false);
       } else {
-        const data = await response.json();
-        console.error('Feedback submission error:', data.error);
+        try {
+          const data = await response.json();
+          console.error('Feedback submission error:', data.error);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          console.error('Response status:', response.status);
+        }
         setSubmitStatus('error');
       }
     } catch (error) {

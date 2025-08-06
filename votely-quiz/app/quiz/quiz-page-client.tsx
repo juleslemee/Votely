@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Question, Phase2Question, generateShortQuizQuestions, generateLongQuizQuestions, adjustForTiebreakers, getPhase2Questions } from './questions';
+import { Question, Phase2Question, generateShortQuizQuestions, generateLongQuizQuestions, generateFinal10Questions, getTiebreakerQuestionsAsync, adjustForTiebreakers, getPhase2Questions } from './questions';
 import { 
   generateSessionId, 
   saveQuizSession, 
@@ -53,6 +53,8 @@ export default function QuizPageClient() {
   const [questions, setQuestions] = useState<(Question | Phase2Question)[]>([]);
   const [originalQuestions, setOriginalQuestions] = useState<Question[]>([]); // Keep original for tiebreaker adjustment
   const [phase2QuestionsLoaded, setPhase2QuestionsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Calculate total screens dynamically based on current questions length
   const TOTAL_SCREENS = Math.ceil(questions.length / QUESTIONS_PER_SCREEN);
@@ -66,46 +68,52 @@ export default function QuizPageClient() {
   // Initialize randomized questions and session
   useEffect(() => {
     const loadQuestions = async () => {
-      // Check if we have an existing session
-      const existingSession = getCurrentSession();
-      if (existingSession && existingSession.type === quizType && !existingSession.completedAt) {
-        // Resume existing session
-        console.log('📂 Resuming existing session:', existingSession.sessionId);
-        setQuestions(existingSession.questions as any[]);
-        setAnswers(existingSession.answers);
-        // Calculate which screen we should be on
-        const answeredCount = Object.keys(existingSession.answers).length;
-        const resumeScreen = Math.floor(answeredCount / QUESTIONS_PER_SCREEN);
-        setScreen(resumeScreen);
-        return;
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        
+        // Always start fresh - no session resume
+        console.log('🧹 Starting fresh quiz session');
+        sessionStorage.removeItem('votely_quiz_session');
+        
+        // Create new session
+        console.log(`🎯 Loading ${quizType} quiz questions...`);
+        const randomizedQuestions = quizType === 'long' 
+          ? await generateLongQuizQuestions()
+          : await generateShortQuizQuestions();
+        
+        if (!randomizedQuestions || randomizedQuestions.length === 0) {
+          throw new Error('No questions loaded from TSV file');
+        }
+        
+        setQuestions(randomizedQuestions);
+        setOriginalQuestions([...randomizedQuestions]);
+        
+        // Save session (only for current quiz, not for resume)
+        const session: QuizSession = {
+          sessionId: generateSessionId(),
+          type: quizType as 'short' | 'long',
+          questions: randomizedQuestions.map(q => ({
+            id: q.id,
+            originalId: (q as any).originalId || `P${q.id}`,
+            text: q.question,
+            axis: q.axis,
+            agreeDir: q.agreeDir || 1,
+            phase: 1,
+            qType: 'core'
+          } as QuizQuestion)),
+          answers: {},
+          createdAt: Date.now()
+        };
+        saveQuizSession(session);
+        console.log(`🎮 New quiz session created: ${session.sessionId}`);
+        console.log(`📋 ${randomizedQuestions.length} questions loaded`);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('❌ Failed to load quiz questions:', error);
+        setLoadError(`Failed to load quiz questions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsLoading(false);
       }
-      
-      // Create new session
-      const randomizedQuestions = quizType === 'long' 
-        ? await generateLongQuizQuestions()
-        : await generateShortQuizQuestions();
-      setQuestions(randomizedQuestions);
-      setOriginalQuestions([...randomizedQuestions]);
-      
-      // Save session
-      const session: QuizSession = {
-        sessionId: generateSessionId(),
-        type: quizType as 'short' | 'long',
-        questions: randomizedQuestions.map(q => ({
-          id: q.id,
-          originalId: (q as any).originalId || `P${q.id}`,
-          text: q.question,
-          axis: q.axis,
-          agreeDir: q.agreeDir || 1,
-          phase: 1,
-          qType: 'core'
-        } as QuizQuestion)),
-        answers: {},
-        createdAt: Date.now()
-      };
-      saveQuizSession(session);
-      console.log(`🎮 New quiz session created: ${session.sessionId}`);
-      console.log(`📋 ${randomizedQuestions.length} questions loaded`);
     };
     loadQuestions();
   }, [quizType]);
@@ -221,7 +229,7 @@ export default function QuizPageClient() {
   }, [dragState]);
 
   // Calculate current scores for tiebreaker check
-  const calculateCurrentScores = () => {
+  const calculateCurrentScores = (debug: boolean = false) => {
     let economicScore = 0;
     let governanceScore = 0; // Renamed from socialScore for clarity
     let economicQuestions = 0;
@@ -232,6 +240,11 @@ export default function QuizPageClient() {
       return (value - 0.5) * 4; // Maps 0->-2, 0.5->0, 1->2
     };
     
+    if (debug) {
+      console.log('🔍 DETAILED SCORING BREAKDOWN:');
+      console.log('================================');
+    }
+    
     // Only calculate for questions that have been answered
     questions.slice(0, 20).forEach((question) => {
       const answer = answers[question.id];
@@ -239,17 +252,32 @@ export default function QuizPageClient() {
       
       const score = convertToScore(answer);
       const agreeDir = question.agreeDir || 1;
+      const contribution = score * agreeDir;
       
       if (question.axis === 'economic') {
         // agreeDir -1 means agreeing pushes left (negative), 1 means agreeing pushes right (positive)
-        economicScore += score * agreeDir;
+        economicScore += contribution;
         economicQuestions++;
+        if (debug) {
+          const direction = agreeDir === -1 ? 'LEFT' : 'RIGHT';
+          console.log(`Q${question.id} (Econ-${direction}): Answer=${answer.toFixed(2)} → Score=${score.toFixed(2)} × Dir=${agreeDir} = ${contribution.toFixed(2)}`);
+        }
       } else if (question.axis === 'authority') {
         // agreeDir -1 means agreeing pushes libertarian (negative), 1 means agreeing pushes authoritarian (positive)
-        governanceScore += score * agreeDir;
+        governanceScore += contribution;
         governanceQuestions++;
+        if (debug) {
+          const direction = agreeDir === -1 ? 'LIB' : 'AUTH';
+          console.log(`Q${question.id} (Auth-${direction}): Answer=${answer.toFixed(2)} → Score=${score.toFixed(2)} × Dir=${agreeDir} = ${contribution.toFixed(2)}`);
+        }
       }
     });
+    
+    if (debug) {
+      console.log('================================');
+      console.log(`Economic: Raw sum=${economicScore.toFixed(2)}, Questions=${economicQuestions}, Max possible=±${economicQuestions * 2}`);
+      console.log(`Authority: Raw sum=${governanceScore.toFixed(2)}, Questions=${governanceQuestions}, Max possible=±${governanceQuestions * 2}`);
+    }
     
     // Normalize to -100 to +100 scale
     const maxEconomicScore = economicQuestions * 2;
@@ -258,58 +286,112 @@ export default function QuizPageClient() {
     const normalizedEconomic = maxEconomicScore > 0 ? (economicScore / maxEconomicScore) * 100 : 0;
     const normalizedGovernance = maxGovernanceScore > 0 ? (governanceScore / maxGovernanceScore) * 100 : 0;
     
+    if (debug) {
+      console.log(`Normalized Economic: ${normalizedEconomic.toFixed(2)}% (${normalizedEconomic < 0 ? 'LEFT' : 'RIGHT'})`);
+      console.log(`Normalized Authority: ${normalizedGovernance.toFixed(2)}% (${normalizedGovernance < 0 ? 'LIBERTARIAN' : 'AUTHORITARIAN'})`);
+      console.log('================================');
+    }
+    
     return { economic: normalizedEconomic, governance: normalizedGovernance };
   };
 
   const handleNext = async () => {
     console.log(`🎮 Screen transition: ${screen} -> ${screen + 1}, Total screens: ${TOTAL_SCREENS}, Questions: ${questions.length}`);
     
-    // Check for tiebreakers after screen 3 (before moving to screen 4)
+    // Get current screen questions for Phase 2 check
+    const startIdx = screen * QUESTIONS_PER_SCREEN;
+    const endIdx = startIdx + QUESTIONS_PER_SCREEN;
+    const currentScreenQuestions = questions.slice(startIdx, endIdx);
+    
+    // Generate final 10 questions after screen 3 (before moving to screen 4)
     // Screen 3 = questions 15-20, so after this we've answered 20 questions
-    if (screen === 3 && quizType === 'long' && !tiebreakerChecked) {
-      console.log('📊 Reached screen 4 - checking for tiebreaker needs...');
+    if (screen === 3 && quizType === 'long' && !tiebreakerChecked && questions.length === 20) {
+      console.log('🎯 Reached screen 4 - generating final 10 questions with tiebreaker evaluation...');
       
-      const scores = calculateCurrentScores();
-      const remainingQuestions = questions.slice(20); // Last 10 questions
-      const adjustedQuestions = await adjustForTiebreakers(remainingQuestions, scores.economic, scores.governance);
+      // Log current session data for debugging
+      const currentSession = getCurrentSession();
+      if (currentSession) {
+        console.log('📋 Current session:', {
+          sessionId: currentSession.sessionId,
+          answeredQuestions: Object.keys(currentSession.answers).length,
+          answers: currentSession.answers
+        });
+      }
       
-      // Update the questions array if tiebreakers were added
-      if (adjustedQuestions !== remainingQuestions) {
-        const newQuestions = [...questions.slice(0, 20), ...adjustedQuestions];
-        setQuestions(newQuestions);
-        console.log('📝 Questions updated with tiebreakers');
-        
-        // Update session with new questions
-        const session = getCurrentSession();
-        if (session) {
-          session.questions = newQuestions.map(q => ({
-            id: q.id,
-            originalId: (q as any).originalId || `P${q.id}`,
-            text: q.question,
-            axis: q.axis,
-            agreeDir: q.agreeDir || 1,
-            phase: 1,
-            qType: q.boundary ? 'tiebreaker' : 'core',
-            boundary: q.boundary
-          } as QuizQuestion));
-          saveQuizSession(session);
-        }
+      const scores = calculateCurrentScores(true); // Enable debug mode for detailed breakdown
+      console.log(`📊 Current scores after 20 questions - Economic: ${scores.economic.toFixed(2)}, Authority: ${scores.governance.toFixed(2)}`);
+      
+      // Detect which boundaries we're near for tiebreakers
+      const BOUNDARY_THRESHOLD = 20; // Increased from 15 to 20 for more generous detection
+      const MACRO_BOUNDARY = 33.33;
+      const boundaries: string[] = [];
+      
+      if (Math.abs(scores.economic + MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+        boundaries.push('LEFT_CENTER');
+        console.log(`📍 Near LEFT_CENTER boundary (economic: ${scores.economic.toFixed(2)} vs -33.33)`);
+      }
+      if (Math.abs(scores.economic - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+        boundaries.push('CENTER_RIGHT');
+        console.log(`📍 Near CENTER_RIGHT boundary (economic: ${scores.economic.toFixed(2)} vs +33.33)`);
+      }
+      if (Math.abs(scores.governance + MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+        boundaries.push('LIB_CENTER');
+        console.log(`📍 Near LIB_CENTER boundary (authority: ${scores.governance.toFixed(2)} vs -33.33)`);
+      }
+      if (Math.abs(scores.governance - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+        boundaries.push('CENTER_AUTH');
+        console.log(`📍 Near CENTER_AUTH boundary (authority: ${scores.governance.toFixed(2)} vs +33.33)`);
+      }
+      
+      // Get tiebreaker questions if needed
+      const tiebreakerQuestions = boundaries.length > 0 
+        ? await getTiebreakerQuestionsAsync(boundaries)
+        : [];
+      
+      console.log(`🎯 Tiebreaker boundaries: ${boundaries.join(', ')}`);
+      console.log(`🎯 Tiebreaker questions available: ${tiebreakerQuestions.length}`);
+      
+      // Generate final 10 questions
+      const final10Questions = await generateFinal10Questions(questions.slice(0, 20), tiebreakerQuestions);
+      
+      // Add final 10 questions to the questions array
+      const extendedQuestions = [...questions, ...final10Questions];
+      setQuestions(extendedQuestions);
+      console.log(`📝 Quiz extended to ${extendedQuestions.length} total questions (20 initial + 10 final)`);
+      
+      // Update session with new questions
+      const session = getCurrentSession();
+      if (session) {
+        session.questions = extendedQuestions.map(q => ({
+          id: q.id,
+          originalId: (q as any).originalId || `P${q.id}`,
+          text: q.question,
+          axis: q.axis,
+          agreeDir: q.agreeDir || 1,
+          phase: 1,
+          qType: q.boundary ? 'tiebreaker' : 'core',
+          boundary: q.boundary
+        } as QuizQuestion));
+        saveQuizSession(session);
       }
       
       setTiebreakerChecked(true);
       
-      // Save Phase 1 scores to session (governance is authority, no cultural yet)
-      // The boundaries are computed inside adjustForTiebreakers
+      // Save Phase 1 scores to session
       updateSessionPhase1Results({
         economic: scores.economic,
         authority: scores.governance,
         cultural: 0  // Not calculated at this point
-      }, '', []);
+      }, '', boundaries);
     }
     
-    // Load Phase 2 questions when completing screen 5 (the last screen of Phase 1)  
-    console.log(`🔍 Phase 2 Check: screen=${screen}, quizType=${quizType}, phase2Loaded=${phase2QuestionsLoaded}, questions=${questions.length}`);
-    if (screen === 5 && quizType === 'long' && !phase2QuestionsLoaded && questions.length === 30) {
+    // Load Phase 2 questions when completing the last screen of Phase 1
+    console.log(`🔍 Phase 2 Check: screen=${screen}, quizType=${quizType}, phase2Loaded=${phase2QuestionsLoaded}, questions=${questions.length}, answers=${Object.keys(answers).length}`);
+    // We're on screen 5 (questions 26-30) and all current questions are answered
+    const isLastPhase1Screen = screen === 5 && quizType === 'long' && !phase2QuestionsLoaded;
+    const allCurrentAnswered = currentScreenQuestions.every(q => answers[q.id] !== undefined);
+    
+    if (isLastPhase1Screen && allCurrentAnswered) {
       console.log('🚀 Phase 1 complete - Loading Phase 2 questions...');
       
       const scores = calculateCurrentScores();
@@ -365,21 +447,15 @@ export default function QuizPageClient() {
       }
     }
     
-    // Check if we should proceed to next screen
-    const canProceed = screen < TOTAL_SCREENS - 1;
-    const justLoadedPhase2 = screen === 5 && quizType === 'long' && phase2QuestionsLoaded;
-    const willLoadPhase2 = screen === 5 && quizType === 'long' && !phase2QuestionsLoaded && questions.length === 30;
+    // Always proceed to next screen (we handle button visibility separately now)
+    setScreen(screen + 1);
     
-    if (canProceed || justLoadedPhase2 || willLoadPhase2) {
-      setScreen(screen + 1);
-      
-      // Ensure scroll to top after screen change
+    // Ensure scroll to top after screen change
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
-    }
+    });
   };
 
   const handleBack = () => {
@@ -397,25 +473,24 @@ export default function QuizPageClient() {
     console.log('🏁 Quiz Complete!');
     console.log(`📊 Final Quiz: ${questions.length} questions answered (${quizType === 'long' ? 'Phase 1: 30, Phase 2: 20' : 'Short quiz: 10'})`);
     
-    // Complete the session
+    // Mark session as complete locally (for cleanup)
     completeSession();
     
-    // Get session ID for results
-    const session = getCurrentSession();
-    if (session) {
-      // Pass session ID to results page
-      router.push(`/quiz/results?sessionId=${session.sessionId}&type=${quizType}`);
-    } else {
-      // Fallback: Create encoded data if no session
-      const questionData = questions.map(q => ({
-        id: q.id,
-        axis: q.axis,
-        agreeDir: q.agreeDir || 1,
-        answer: answers[q.id] !== undefined ? answers[q.id] : 0.5
-      }));
-      const encodedData = btoa(JSON.stringify(questionData));
-      router.push(`/quiz/results?data=${encodeURIComponent(encodedData)}&type=${quizType}`);
-    }
+    // Prepare data for results page
+    // For now, still use the encoded data approach but we'll save to Firebase on the results page
+    const questionData = questions.map(q => ({
+      id: q.id,
+      axis: q.axis,
+      agreeDir: q.agreeDir || 1,
+      answer: answers[q.id] !== undefined ? answers[q.id] : 0.5,
+      // Include supplementAxis for Phase 2 questions
+      supplementAxis: (q as any).supplementAxis
+    }));
+    const encodedData = btoa(JSON.stringify(questionData));
+    
+    // Navigate to results with encoded data
+    // The results page will save to Firebase and get the docId
+    router.push(`/quiz/results?data=${encodeURIComponent(encodedData)}&type=${quizType}`);
   };
 
   const startIdx = screen * QUESTIONS_PER_SCREEN;
@@ -424,8 +499,62 @@ export default function QuizPageClient() {
 
   const numAnswered = Object.keys(answers).length;
   const isScreenComplete = currentQuestions.every(q => answers[q.id] !== undefined);
-  const isComplete = numAnswered === questions.length;
-  const progress = (numAnswered / questions.length) * 100;
+  
+  // Total expected questions for each quiz type
+  const totalExpectedQuestions = quizType === 'long' ? 50 : 10; // 30 Phase 1 + 20 Phase 2 for long
+  const isComplete = numAnswered === totalExpectedQuestions;
+  
+  // Progress should always be out of expected total
+  const progress = (numAnswered / totalExpectedQuestions) * 100;
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-primary/25 p-4 md:p-8 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-xl text-foreground">Loading quiz questions...</p>
+          <p className="text-sm text-gray-600">This may take a moment on mobile devices</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-primary/25 p-4 md:p-8 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-lg">
+          <p className="text-xl text-red-600 font-semibold">Failed to Load Quiz</p>
+          <p className="text-gray-700">{loadError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Try Again
+          </button>
+          <p className="text-sm text-gray-600 mt-4">If this problem persists, please try using a different browser or clearing your cache.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no questions loaded
+  if (!isLoading && questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-primary/25 p-4 md:p-8 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-xl text-gray-700">No questions available</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/25 p-4 md:p-8">
@@ -535,7 +664,9 @@ export default function QuizPageClient() {
           >
             Back
           </button>
-          {screen < TOTAL_SCREENS - 1 || (screen === 5 && quizType === 'long' && !phase2QuestionsLoaded && questions.length === 30) ? (
+          {/* For long quiz: expect 10 screens (50 questions / 5 per screen) */}
+          {/* For short quiz: expect 2 screens (10 questions / 5 per screen) */}
+          {(quizType === 'long' && screen < 9) || (quizType === 'short' && screen < 1) ? (
             <button
               onClick={handleNext}
               disabled={!isScreenComplete}

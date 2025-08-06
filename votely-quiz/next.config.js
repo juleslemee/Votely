@@ -12,6 +12,21 @@ const nextConfig = {
 
     return config;
   },
+  async headers() {
+    return [
+      {
+        // Cache TSV files for 1 year since they don't change
+        // This prevents excessive edge requests
+        source: '/:path*.tsv',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig; 

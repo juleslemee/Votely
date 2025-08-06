@@ -22,10 +22,26 @@ export async function fetchTSVWithCache(url: string): Promise<string> {
 
   // Create a new fetch promise
   console.log(`🌐 Fetching ${url} (not in cache)`);
-  const fetchPromise = fetch(url)
+  
+  // Safari iOS has issues with certain fetch configurations
+  // But we still want browser caching to work to prevent excessive requests
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const fetchOptions: RequestInit = isIOS 
+    ? {
+        // Use browser cache for iOS to prevent excessive requests
+        cache: 'default'
+      }
+    : {
+        // For other browsers, use immutable cache since TSV files don't change
+        cache: 'force-cache', // Changed from 'no-cache' to use browser cache
+        mode: 'cors',
+        credentials: 'same-origin'
+      };
+  
+  const fetchPromise = fetch(url, fetchOptions)
     .then(response => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} for ${url}`);
       }
       return response.text();
     })

@@ -29,9 +29,8 @@ export interface QuizSession {
   completedAt?: number;
 }
 
-// Store session in localStorage (client-side) or sessionStorage (tab-specific)
+// Store session in sessionStorage only (tab-specific, ephemeral)
 const STORAGE_KEY = 'votely_quiz_session';
-const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 export function generateSessionId(): string {
   return `quiz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -41,14 +40,16 @@ export function saveQuizSession(session: QuizSession): void {
   if (typeof window === 'undefined') return;
   
   try {
-    // Store in sessionStorage for current tab
+    // Only store in sessionStorage for current tab/session
+    // No localStorage persistence - each visit is a fresh start
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     
-    // Also store in localStorage for persistence
+    // Also store in localStorage but ONLY for results page access
+    // This allows sharing results but not resuming quizzes
     const allSessions = getAllSessions();
     allSessions[session.sessionId] = session;
     
-    // Clean up old sessions
+    // Keep only recent completed sessions for results viewing
     cleanupOldSessions(allSessions);
     
     localStorage.setItem(STORAGE_KEY + '_all', JSON.stringify(allSessions));
@@ -123,11 +124,27 @@ function getAllSessions(): Record<string, QuizSession> {
 }
 
 function cleanupOldSessions(sessions: Record<string, QuizSession>): void {
-  const now = Date.now();
+  // Remove incomplete sessions only - keep ALL completed sessions for debugging
   Object.keys(sessions).forEach(id => {
-    if (now - sessions[id].createdAt > SESSION_EXPIRY) {
+    const session = sessions[id];
+    const isIncomplete = !session.completedAt;
+    
+    if (isIncomplete) {
       delete sessions[id];
     }
+  });
+  
+  // Keep up to 100 completed sessions (reasonable limit for localStorage)
+  // This allows plenty of history for debugging while preventing storage bloat
+  const sortedSessions = Object.entries(sessions)
+    .filter(([_, s]) => s.completedAt)
+    .sort((a, b) => b[1].completedAt! - a[1].completedAt!)
+    .slice(0, 100);
+  
+  // Clear and rebuild with only kept sessions
+  Object.keys(sessions).forEach(key => delete sessions[key]);
+  sortedSessions.forEach(([id, session]) => {
+    sessions[id] = session;
   });
 }
 

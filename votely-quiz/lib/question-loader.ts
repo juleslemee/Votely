@@ -60,7 +60,7 @@ export async function loadAllQuestions(): Promise<Map<string, Question>> {
       // Create question object
       const question: Question = {
         id: row.id.startsWith('P') ? parseInt(row.id.substring(1)) : 
-            row.id.startsWith('TB') ? 1000 + i : // Tiebreakers get high IDs
+            (row.id.startsWith('TB') || row.id.startsWith('TBE-') || row.id.startsWith('TBA-')) ? 1000 + i : // Tiebreakers get high IDs
             2000 + i, // Phase 2 gets even higher IDs
         originalId: row.id,
         text: row.text,
@@ -78,6 +78,14 @@ export async function loadAllQuestions(): Promise<Map<string, Question>> {
       
       questions.set(row.id, question);
     }
+    
+    // Debug: log what we loaded
+    console.log(`📦 Question loader summary: ${questions.size} total questions loaded`);
+    let typeCount: Record<string, number> = {};
+    for (const [id, q] of questions) {
+      typeCount[q.qType] = (typeCount[q.qType] || 0) + 1;
+    }
+    console.log(`📊 By type:`, typeCount);
     
     questionsCache = questions;
     return questions;
@@ -108,11 +116,22 @@ export async function getTiebreakerQuestions(boundaries: string[]): Promise<Ques
   const allQuestions = await loadAllQuestions();
   const tiebreakers = [];
   
+  // Debug: Count all tiebreaker questions
+  let allTiebreakerCount = 0;
+  for (const [id, question] of allQuestions) {
+    if (question.qType === 'tiebreaker') {
+      allTiebreakerCount++;
+      console.log(`🔍 Found tiebreaker: ${id} - boundary: ${question.boundary}`);
+    }
+  }
+  console.log(`📊 Total tiebreaker questions in TSV: ${allTiebreakerCount}`);
+  
   for (const [id, question] of allQuestions) {
     if (question.qType === 'tiebreaker' && 
         question.boundary && 
         boundaries.includes(question.boundary)) {
       tiebreakers.push(question);
+      console.log(`✅ Including tiebreaker for ${question.boundary}: ${id}`);
     }
   }
   

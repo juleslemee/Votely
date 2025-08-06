@@ -24,8 +24,8 @@ P22	Society should accept people's gender identities, even if they differ from t
 P23	Immigration into our country should be strictly limited to protect our national culture and economy.	soc	1	core	ALL	1	immigration	1	core	Immigration restriction
 P24	It is more important to preserve traditional values and ways of life than to adopt new social changes.	soc	1	core	ALL	1	tradition	1	core	Traditional values priority
 P25	High-income earners should pay a much larger percentage of their income in taxes than everyone else.	econ	1	core	ALL	-1	taxation	1	core	Progressive taxation
-P26	Government regulation of business is necessary to protect workers and consumers from exploitation.	econ	1	core	ALL	-1	regulation	1	core	Pro-regulation
-P27	Mandatory military or national service violates individual freedom and should not be required.	auth	1	core	ALL	-1	service	1	core	Anti-conscription
+P26	Too much government regulation of business stifles economic growth and innovation.	econ	1	core	ALL	1	regulation	1	core	Regulation burden
+P27	Every citizen should be required to serve in the military or perform national service for at least a year.	auth	1	core	ALL	1	service	1	core	National service
 P28	Local communities should have more power to govern themselves with less central oversight.	auth	1	core	ALL	-1	decentralization	1	core	Decentralization
 P29	Patriotism and national pride should be actively promoted in schools and public life.	soc	1	core	ALL	1	patriotism	1	core	National identity promotion
 P30	Schools should teach students about historical injustices committed by our country.	soc	1	core	ALL	-1	history	1	core	Historical awareness

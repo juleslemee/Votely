@@ -55,7 +55,7 @@ const UnifiedShareModal = lazy(() => import('../../../components/UnifiedShareMod
 import AboutCreator from '../../../components/AboutCreator';
 import SupplementAxes from '../../../components/SupplementAxes';
 import { loadSupplementAxes, calculateSupplementScores } from '@/lib/supplement-axes-loader';
-import { saveQuizResult, getCoordinateRangePercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
+import { saveQuizResult, getQuizResultById, getCoordinateRangePercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
 import { loadPhase2QuestionData } from '@/lib/phase2-question-loader';
 
 // SVGs to preload for next steps
@@ -358,6 +358,7 @@ function getOrdinalSuffix(n: number): string {
 export default function ResultsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const firebaseId = searchParams.get('id'); // Firebase document ID
   const sessionIdParam = searchParams.get('sessionId');
   const dataParam = searchParams.get('data');
   const answersParam = searchParams.get('answers');
@@ -367,7 +368,7 @@ export default function ResultsClient() {
   const isDebugMode = searchParams.get('debug') === 'true';
   const graphRef = useRef<HTMLDivElement>(null);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
-  const [docId, setDocId] = useState<string | null>(null);
+  const [docId, setDocId] = useState<string | null>(firebaseId);
   const hasSaved = useRef(false);
   const [view3D, setView3D] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -376,6 +377,7 @@ export default function ResultsClient() {
   const [supplementAxes, setSupplementAxes] = useState<any[]>([]);
   const [supplementScores, setSupplementScores] = useState<Record<string, number>>({});
   const hasLoadedAnalytics = useRef(false);
+  const [isLoadingFirebase, setIsLoadingFirebase] = useState(false);
   
   // Store calculated scores
   const [scores, setScores] = useState<{
@@ -391,11 +393,63 @@ export default function ResultsClient() {
   const [questionData, setQuestionData] = useState<any[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   
-  // Parse question data from session or URL params
+  // Parse question data from Firebase, session or URL params
   useEffect(() => {
     let parsedAnswers: number[] = [];
     let parsedQuestionIds: number[] = [];
     let parsedQuestionData: any[] = [];
+    
+    // First priority: Load from Firebase if ID provided
+    if (firebaseId) {
+      console.log('🔥 Loading result from Firebase:', firebaseId);
+      setIsLoadingFirebase(true);
+      
+      getQuizResultById(firebaseId)
+        .then(data => {
+          if (data) {
+            console.log('✅ Loaded from Firebase:', data);
+            
+            // Set the pre-calculated scores directly
+            if (data.result) {
+              setScores({
+                economic: data.result.economicScore,
+                social: data.result.socialScore,
+                progressive: data.result.progressiveScore || 0,
+                supplementary: data.result.supplementaryScores || {}
+              });
+              
+              // Set ideology data if available
+              if (data.result.alignmentLabel) {
+                // The ideology is already calculated, just display it
+                setIdeologyData({
+                  ideology: data.result.alignmentLabel,
+                  explanation: data.result.alignmentDescription,
+                  friendlyLabel: data.result.alignmentLabel
+                } as any);
+              }
+            }
+            
+            // Set answers if we need them for the graph
+            if (data.answers) {
+              setAnswers(data.answers);
+              setDataLoaded(true);
+            }
+            
+            // Mark as already saved
+            hasSaved.current = true;
+          } else {
+            console.error('No data found for Firebase ID:', firebaseId);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading from Firebase:', error);
+        })
+        .finally(() => {
+          setIsLoadingFirebase(false);
+        });
+      
+      return; // Skip other loading methods
+    }
     
     if (sessionIdParam) {
       console.log('🔍 Attempting to load session:', sessionIdParam);
@@ -614,16 +668,42 @@ export default function ResultsClient() {
     
     saveQuizResult({
       answers,
+      quizType: quizType as 'short' | 'long',
+      questionData: questionData.length > 0 ? questionData : undefined,
       result: {
         economicScore: economic,
         socialScore: social,
+        progressiveScore: progressive,
         alignmentLabel: ideologyData?.ideology || ideologyData?.friendlyLabel || alignment.label,
         alignmentDescription: ideologyData?.explanation || alignment.description,
+        macroCellCode: ideologyData?.macroCellCode,
+        supplementaryScores: scores?.supplementary && Object.keys(scores.supplementary).length > 0 
+          ? scores.supplementary 
+          : undefined,
+        gridPosition: {
+          economic: economic,
+          social: social
+        }
       },
+      phase: quizType === 'long' && scores?.supplementary && Object.keys(scores.supplementary).length > 0 ? 2 : 1
     })
       .then(id => {
         console.log('Quiz result saved successfully with ID:', id);
         setDocId(id);
+        
+        // Update URL to use Firebase ID for permanent access
+        if (id && !firebaseId) {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('id', id);
+          // Remove temporary params
+          newUrl.searchParams.delete('data');
+          newUrl.searchParams.delete('sessionId');
+          newUrl.searchParams.delete('answers');
+          newUrl.searchParams.delete('questionIds');
+          
+          // Update URL without reload
+          window.history.replaceState({}, '', newUrl.toString());
+        }
       })
       .catch(error => {
         console.error('Failed to save quiz result:', error);
@@ -740,6 +820,18 @@ export default function ResultsClient() {
     </div>;
   }
   
+  // Show loading state while fetching from Firebase
+  if (isLoadingFirebase) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-xl text-foreground">Loading your results...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 relative overflow-hidden">
       {/* Star background */}

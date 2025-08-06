@@ -5,12 +5,28 @@ import { findVisionAlignment, alignments, toVisionScale } from '../app/quiz/resu
 
 export type QuizResult = {
   answers: number[];
+  quizType?: 'short' | 'long';
+  questionData?: Array<{
+    id: number;
+    axis: string;
+    agreeDir: number;
+    answer: number;
+    supplementAxis?: string;
+  }>;
   result: {
     economicScore: number;
     socialScore: number;
+    progressiveScore?: number; // Cultural axis score
     alignmentLabel: string;
     alignmentDescription: string;
+    macroCellCode?: string; // e.g., "EM-GM"
+    supplementaryScores?: Record<string, number>; // Phase 2 scores
+    gridPosition?: { // For 3x3 or 9x9 grid
+      economic: number;
+      social: number;
+    };
   };
+  phase?: 1 | 2; // Which phase was completed
   timestamp: Timestamp;
   userId?: string | null;
 };
@@ -26,12 +42,29 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
       console.log('Already signed in, uid:', auth.currentUser.uid);
     }
 
-    const dataToSave = {
+    const dataToSave: any = {
       answers: result.answers,
       result: result.result,
       timestamp: serverTimestamp(),
       userId: auth.currentUser?.uid || null,
     };
+    
+    // Only add optional fields if they have values
+    if (result.quizType) dataToSave.quizType = result.quizType;
+    if (result.phase) dataToSave.phase = result.phase;
+    if (result.questionData && result.questionData.length > 0) {
+      // Filter out any undefined supplementAxis values
+      dataToSave.questionData = result.questionData.map(q => {
+        const cleaned: any = { 
+          id: q.id,
+          axis: q.axis,
+          agreeDir: q.agreeDir,
+          answer: q.answer
+        };
+        if (q.supplementAxis) cleaned.supplementAxis = q.supplementAxis;
+        return cleaned;
+      });
+    }
     
     console.log('Attempting to save quiz result to Firestore...', {
       dataStructure: Object.keys(dataToSave),
@@ -140,6 +173,24 @@ export async function testFirebaseConnection(): Promise<boolean> {
   } catch (error) {
     console.error('Firebase connection failed:', error);
     return false;
+  }
+}
+
+// Load quiz result from Firebase by document ID
+export async function getQuizResultById(docId: string): Promise<any | null> {
+  try {
+    const docRef = doc(db, 'quizResponses', docId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    } else {
+      console.error(`No quiz result found with ID: ${docId}`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error loading quiz result:', error);
+    return null;
   }
 }
 

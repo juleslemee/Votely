@@ -141,6 +141,8 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
   const culturalProg = p1Questions.filter(q => q.axis === 'cultural' && q.agreeDir === -1);
   const culturalTrad = p1Questions.filter(q => q.axis === 'cultural' && q.agreeDir === 1);
   
+  console.log(`📋 Generating first 20 questions from ${p1Questions.length} available Phase 1 questions`);
+  
   // Shuffle each subcategory
   const shuffledEconLeft = shuffleArray(economicLeft);
   const shuffledEconRight = shuffleArray(economicRight);
@@ -149,7 +151,35 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
   const shuffledCultProg = shuffleArray(culturalProg);
   const shuffledCultTrad = shuffleArray(culturalTrad);
   
-  console.log(`📊 Distribution - Econ: ${economicLeft.length}L/${economicRight.length}R, Auth: ${authorityLib.length}L/${authorityAuth.length}A, Cult: ${culturalProg.length}P/${culturalTrad.length}T`);
+  console.log(`📊 Available questions - Econ: ${economicLeft.length}L/${economicRight.length}R, Auth: ${authorityLib.length}L/${authorityAuth.length}A, Cult: ${culturalProg.length}P/${culturalTrad.length}T`);
+  console.log(`🎯 Target for first 20: 7 econ (4L,3R), 7 auth (3L,4A), 6 cultural (3P,3T)`);
+  
+  // Check if we have enough questions for first 20 (4 screens)
+  // Distribution: 7 econ (4L, 3R), 7 auth (3L, 4A), 6 cultural (3P, 3T)
+  const requiredCounts = {
+    econLeft: 4, econRight: 3,
+    authLib: 3, authAuth: 4,
+    cultProg: 3, cultTrad: 3
+  };
+  
+  if (economicLeft.length < requiredCounts.econLeft) {
+    console.warn(`⚠️ Not enough economic left questions: ${economicLeft.length}/${requiredCounts.econLeft}`);
+  }
+  if (economicRight.length < requiredCounts.econRight) {
+    console.warn(`⚠️ Not enough economic right questions: ${economicRight.length}/${requiredCounts.econRight}`);
+  }
+  if (authorityLib.length < requiredCounts.authLib) {
+    console.warn(`⚠️ Not enough authority libertarian questions: ${authorityLib.length}/${requiredCounts.authLib}`);
+  }
+  if (authorityAuth.length < requiredCounts.authAuth) {
+    console.warn(`⚠️ Not enough authority authoritarian questions: ${authorityAuth.length}/${requiredCounts.authAuth}`);
+  }
+  if (culturalProg.length < requiredCounts.cultProg) {
+    console.warn(`⚠️ Not enough cultural progressive questions: ${culturalProg.length}/${requiredCounts.cultProg}`);
+  }
+  if (culturalTrad.length < requiredCounts.cultTrad) {
+    console.warn(`⚠️ Not enough cultural traditional questions: ${culturalTrad.length}/${requiredCounts.cultTrad}`);
+  }
   
   // Track indices for pulling from each subcategory
   const indices = {
@@ -161,21 +191,18 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
   // Build questions for each screen with balanced distribution
   const finalQuestions: Question[] = [];
   
-  // SCREEN-BY-SCREEN DISTRIBUTION PLAN
-  // First 4 screens (20 questions): Must balance axis AND direction
+  // SCREEN-BY-SCREEN DISTRIBUTION PLAN - FIRST 4 SCREENS ONLY (20 questions)
+  // Distribution: 7 econ (4L, 3R), 7 auth (4A, 3L), 6 cultural (3P, 3T)
   const screenPlans = [
     // Screen 1 (Q1-5): 2E(1L,1R), 2A(1L,1A), 1C(P)
     { econLeft: 1, econRight: 1, authLib: 1, authAuth: 1, cultProg: 1, cultTrad: 0 },
     // Screen 2 (Q6-10): 2E(1L,1R), 2A(1L,1A), 1C(T)
     { econLeft: 1, econRight: 1, authLib: 1, authAuth: 1, cultProg: 0, cultTrad: 1 },
-    // Screen 3 (Q11-15): 2E(1L,1R), 1A(L), 2C(1P,1T)
-    { econLeft: 1, econRight: 1, authLib: 1, authAuth: 0, cultProg: 1, cultTrad: 1 },
-    // Screen 4 (Q16-20): 1E(R), 2A(2A), 2C(1P,1T)
-    { econLeft: 0, econRight: 1, authLib: 0, authAuth: 2, cultProg: 1, cultTrad: 1 },
-    // Screen 5 (Q21-25): 2E(1L,1R), 1A(A), 2C(1P,1T)
-    { econLeft: 1, econRight: 1, authLib: 0, authAuth: 1, cultProg: 1, cultTrad: 1 },
-    // Screen 6 (Q26-30): 1E(R), 2A(2A), 2C(1P,1T)
-    { econLeft: 0, econRight: 1, authLib: 0, authAuth: 2, cultProg: 1, cultTrad: 1 }
+    // Screen 3 (Q11-15): 2E(2L,0R), 2A(0L,2A), 1C(P)
+    { econLeft: 2, econRight: 0, authLib: 0, authAuth: 2, cultProg: 1, cultTrad: 0 },
+    // Screen 4 (Q16-20): 1E(0L,1R), 1A(1L,0A), 3C(1P,2T)
+    { econLeft: 0, econRight: 1, authLib: 1, authAuth: 0, cultProg: 1, cultTrad: 2 }
+    // Total: 7 econ (4L, 3R), 7 auth (3L, 4A), 6 cultural (3P, 3T)
   ];
   
   // Generate questions for each screen
@@ -221,8 +248,8 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
   }
   
   // Log distribution per screen for verification
-  console.log(`📝 Phase 1: ${finalQuestions.length} questions with balanced distribution`);
-  for (let i = 0; i < 6; i++) {
+  console.log(`📝 Phase 1 Initial: ${finalQuestions.length} questions (first 4 screens only)`);
+  for (let i = 0; i < Math.ceil(finalQuestions.length / 5); i++) {
     const screenQuestions = finalQuestions.slice(i * 5, (i + 1) * 5);
     const e = screenQuestions.filter(q => q.axis === 'economic').length;
     const a = screenQuestions.filter(q => q.axis === 'authority').length;
@@ -232,12 +259,77 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
     console.log(`Screen ${i + 1}: E:${e} A:${a} C:${c} | L:${left} R:${right}`);
   }
   
-  // Overall balance check
+  // Overall balance check for first 20 questions
+  const totalEcon = finalQuestions.filter(q => q.axis === 'economic').length;
+  const totalAuth = finalQuestions.filter(q => q.axis === 'authority').length;
+  const totalCult = finalQuestions.filter(q => q.axis === 'cultural').length;
   const totalLeft = finalQuestions.filter(q => q.agreeDir === -1).length;
   const totalRight = finalQuestions.filter(q => q.agreeDir === 1).length;
-  console.log(`✅ Overall balance: ${totalLeft} left-leaning, ${totalRight} right-leaning`);
+  console.log(`✅ First 20 questions generated: ${totalEcon} econ, ${totalAuth} auth, ${totalCult} cultural`);
+  console.log(`✅ Direction balance: ${totalLeft} left-leaning, ${totalRight} right-leaning`);
   
   return finalQuestions;
+}
+
+// Generate the final 10 questions (screens 5-6) after tiebreaker evaluation
+export async function generateFinal10Questions(
+  usedQuestions: Question[], // Questions already used in first 20
+  tiebreakerQuestions: Question[] = []
+): Promise<Question[]> {
+  console.log('🎯 Generating final 10 questions (screens 5-6) after tiebreaker evaluation...');
+  
+  // Get all Phase 1 questions
+  const allP1Questions = await getPhase1QuestionsAsync();
+  
+  // Get remaining unused questions
+  const usedIds = new Set(usedQuestions.map(q => q.id));
+  const unusedQuestions = allP1Questions.filter(q => !usedIds.has(q.id));
+  
+  console.log(`📋 ${unusedQuestions.length} unused questions remaining for screens 5-6`);
+  
+  // Separate remaining questions by axis and direction
+  const remainingEconLeft = unusedQuestions.filter(q => q.axis === 'economic' && q.agreeDir === -1);
+  const remainingEconRight = unusedQuestions.filter(q => q.axis === 'economic' && q.agreeDir === 1);
+  const remainingAuthLib = unusedQuestions.filter(q => q.axis === 'authority' && q.agreeDir === -1);
+  const remainingAuthAuth = unusedQuestions.filter(q => q.axis === 'authority' && q.agreeDir === 1);
+  const remainingCultProg = unusedQuestions.filter(q => q.axis === 'cultural' && q.agreeDir === -1);
+  const remainingCultTrad = unusedQuestions.filter(q => q.axis === 'cultural' && q.agreeDir === 1);
+  
+  console.log(`📊 Remaining - EL:${remainingEconLeft.length} ER:${remainingEconRight.length} AL:${remainingAuthLib.length} AA:${remainingAuthAuth.length} CP:${remainingCultProg.length} CT:${remainingCultTrad.length}`);
+  
+  // Shuffle remaining questions
+  const shuffledRemaining = [
+    ...shuffleArray(remainingEconLeft),
+    ...shuffleArray(remainingEconRight),
+    ...shuffleArray(remainingAuthLib),
+    ...shuffleArray(remainingAuthAuth),
+    ...shuffleArray(remainingCultProg),
+    ...shuffleArray(remainingCultTrad)
+  ];
+  
+  // Take first 10 questions (or however many we have)
+  let final10 = shuffledRemaining.slice(0, 10);
+  
+  // Replace some questions with tiebreakers if provided
+  if (tiebreakerQuestions.length > 0) {
+    const maxReplacements = Math.min(tiebreakerQuestions.length, 4); // Max 4 tiebreakers
+    console.log(`🔄 Replacing ${maxReplacements} questions with tiebreakers`);
+    
+    // Replace cultural questions first (they're least important for macro positioning)
+    for (let i = 0; i < maxReplacements && i < final10.length; i++) {
+      const culturalIndex = final10.findIndex(q => q.axis === 'cultural');
+      if (culturalIndex >= 0 && i < tiebreakerQuestions.length) {
+        final10[culturalIndex] = tiebreakerQuestions[i];
+        console.log(`✅ Replaced cultural question with tiebreaker: "${tiebreakerQuestions[i].question.substring(0, 50)}..."`);
+      }
+    }
+  }
+  
+  // Final shuffle
+  final10 = shuffleArray(final10);
+  
+  console.log(`✅ Generated ${final10.length} questions for screens 5-6`);
+  return final10;
 }
 
 // Function to adjust final questions based on tiebreaker needs (called after screen 4)

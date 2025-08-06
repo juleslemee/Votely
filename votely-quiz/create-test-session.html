@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test Session for Quiz Results</title>
+    <style>
+        body { font-family: monospace; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        button { padding: 10px 20px; background: #6b46c1; color: white; border: none; cursor: pointer; margin: 5px; }
+        button:hover { background: #553c9a; }
+        .url-box { background: #f0f0f0; padding: 15px; margin: 20px 0; word-break: break-all; border: 2px solid #6b46c1; }
+        .info { background: #e8f4f8; padding: 15px; margin: 10px 0; border-left: 4px solid #0ea5e9; }
+        .success { background: #d4edda; padding: 15px; margin: 10px 0; border-left: 4px solid #28a745; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Create Test Session for Quiz Results</h1>
+    
+    <div class="info">
+        <strong>This tool will:</strong>
+        <ol>
+            <li>Create a complete quiz session with all 50 questions properly mapped</li>
+            <li>Include Phase 1 questions (30) with proper axes and agreeDir</li>
+            <li>Include Phase 2 questions (20) with supplementary axes for EM-GM (center) macro cell</li>
+            <li>Use your answer values from the legacy URL</li>
+            <li>Store it in browser storage</li>
+            <li>Generate a session-based URL for testing</li>
+        </ol>
+    </div>
+
+    <button onclick="createSession()">Create Test Session</button>
+    <button onclick="clearSessions()">Clear All Sessions</button>
+    <button onclick="viewSessions()">View Stored Sessions</button>
+
+    <div id="result"></div>
+    <div id="sessions"></div>
+
+    <script>
+        // Your answer values from the legacy URL
+        const answerValues = [
+            0.54, 0.26, 0.65, 0.63, 1.00, 0.02, 0.68, 0.23, 0.97, 0.99,
+            0.98, 0.66, 0.37, 0.51, 0.56, 0.51, 0.02, 0.76, 0.90, 0.76,
+            0.63, 0.64, 0.53, 0.66, 0.50, 0.76, 0.75, 0.58, 0.74, 0.99,
+            // Phase 2 answers (last 20)
+            0.65, 0.57, 0.72, 0.24, 0.63, 0.64, 0.65, 0.60, 0.73, 0.57,
+            0.98, 0.50, 0.71, 0.63, 0.72, 0.73, 0.74, 0.72, 0.99, 0.60
+        ];
+
+        function createSession() {
+            const sessionId = `quiz_${Date.now()}_test`;
+            
+            // Phase 1 questions (30) - using the default order
+            const phase1Questions = [
+                { id: 1, originalId: 'P01', text: 'The government should actively redistribute wealth from the rich to the poor to create a more equal society.', axis: 'economic', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 9, originalId: 'P09', text: 'Government surveillance of citizens\' communications is acceptable if it prevents crime and terrorism.', axis: 'authority', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 17, originalId: 'P17', text: 'Children are best off when raised by a married mother and father in the same household.', axis: 'cultural', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 2, originalId: 'P02', text: 'Lowering taxes for businesses and individuals is the best way to encourage economic growth.', axis: 'economic', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 10, originalId: 'P10', text: 'The government should have as little involvement in citizens\' lives as possible.', axis: 'authority', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 18, originalId: 'P18', text: 'A diverse society with many cultures, religions, and identities is a strength for a nation.', axis: 'cultural', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 3, originalId: 'P03', text: 'Free-market capitalism is the best economic system, despite any imperfections.', axis: 'economic', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 11, originalId: 'P11', text: 'The government should be able to censor speech or media that it considers dangerous or extremist.', axis: 'authority', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 19, originalId: 'P19', text: 'Women should have the right to choose an abortion without government interference.', axis: 'cultural', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 4, originalId: 'P04', text: 'Military and defense spending should be prioritized over social welfare programs.', axis: 'economic', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 12, originalId: 'P12', text: 'Individuals should be free to make their own lifestyle choices as long as they do not harm others.', axis: 'authority', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 20, originalId: 'P20', text: 'Political correctness has gone too far, to the point where people are afraid to speak their minds.', axis: 'cultural', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 5, originalId: 'P05', text: 'Healthcare should be provided free of charge by the government to all people.', axis: 'economic', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 13, originalId: 'P13', text: 'In a national emergency, it is acceptable for the government to suspend some normal legal rights.', axis: 'authority', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 21, originalId: 'P21', text: 'Laws and policies should not be influenced by any religion; the government needs to stay secular.', axis: 'cultural', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 6, originalId: 'P06', text: 'Generous social welfare programs can reduce people\'s incentive to work.', axis: 'economic', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 14, originalId: 'P14', text: 'Police and law enforcement should have expanded powers to maintain public order.', axis: 'authority', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 22, originalId: 'P22', text: 'Society should accept people\'s gender identities, even if they differ from their birth sex.', axis: 'cultural', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 7, originalId: 'P07', text: 'Labor unions are necessary to protect workers\' rights and should be supported.', axis: 'economic', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 15, originalId: 'P15', text: 'A strong, centralized government is necessary to maintain order in society.', axis: 'authority', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 23, originalId: 'P23', text: 'Immigration into our country should be strictly limited to protect our national culture and economy.', axis: 'cultural', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 8, originalId: 'P08', text: 'Private companies can provide services like healthcare and education more efficiently than the government.', axis: 'economic', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 16, originalId: 'P16', text: 'Law-abiding citizens should be able to own firearms without heavy restrictions.', axis: 'authority', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 24, originalId: 'P24', text: 'It is more important to preserve traditional values and ways of life than to adopt new social changes.', axis: 'cultural', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 25, originalId: 'P25', text: 'High-income earners should pay a much larger percentage of their income in taxes than everyone else.', axis: 'economic', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 27, originalId: 'P27', text: 'Every citizen should be required to serve in the military or perform national service for at least a year.', axis: 'authority', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 29, originalId: 'P29', text: 'Patriotism and national pride should be actively promoted in schools and public life.', axis: 'cultural', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 26, originalId: 'P26', text: 'Too much government regulation of business stifles economic growth and innovation.', axis: 'economic', agreeDir: 1, phase: 1, qType: 'core' },
+                { id: 28, originalId: 'P28', text: 'Local communities should have more power to govern themselves with less central oversight.', axis: 'authority', agreeDir: -1, phase: 1, qType: 'core' },
+                { id: 30, originalId: 'P30', text: 'Schools should teach students about historical injustices committed by our country.', axis: 'cultural', agreeDir: -1, phase: 1, qType: 'core' }
+            ];
+
+            // Phase 2 questions for EM-GM (center) macro cell with proper supplementary axes
+            const phase2Questions = [
+                // EMGM-A: Market Freedom (5 questions)
+                { id: 1001, originalId: 'EMGM-A-01', text: 'Competition naturally eliminates inferior businesses and products.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-A' },
+                { id: 1002, originalId: 'EMGM-A-02', text: 'Price controls cause more problems than they solve.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-A' },
+                { id: 1003, originalId: 'EMGM-A-03', text: 'Occupational licensing requirements often protect established businesses more than consumers.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-A' },
+                { id: 1004, originalId: 'EMGM-A-04', text: 'Minimum wage laws reduce job opportunities for low-skilled workers.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-A' },
+                { id: 1005, originalId: 'EMGM-A-05', text: 'Environmental regulations should consider economic impact on businesses.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-A' },
+                
+                // EMGM-B: Welfare Commitment (5 questions)
+                { id: 1006, originalId: 'EMGM-B-01', text: 'Universal basic income would reduce poverty more effectively than current welfare systems.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-B' },
+                { id: 1007, originalId: 'EMGM-B-02', text: 'Public education should be free through college.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-B' },
+                { id: 1008, originalId: 'EMGM-B-03', text: 'Paid family leave should be guaranteed by law.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-B' },
+                { id: 1009, originalId: 'EMGM-B-04', text: 'Housing is a human right that government should guarantee.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-B' },
+                { id: 1010, originalId: 'EMGM-B-05', text: 'Unemployment benefits should be time-limited to encourage job-seeking.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-B' },
+                
+                // EMGM-C: Globalism vs Domestic (5 questions)
+                { id: 1011, originalId: 'EMGM-C-01', text: 'Free trade agreements benefit most people in participating countries.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-C' },
+                { id: 1012, originalId: 'EMGM-C-02', text: 'Domestic industries need protection from unfair foreign competition.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-C' },
+                { id: 1013, originalId: 'EMGM-C-03', text: 'International cooperation is essential for solving global problems.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-C' },
+                { id: 1014, originalId: 'EMGM-C-04', text: 'National sovereignty should not be compromised for international agreements.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-C' },
+                { id: 1015, originalId: 'EMGM-C-05', text: 'Immigration enriches our economy and culture.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-C' },
+                
+                // EMGM-D: Democracy Model (5 questions)  
+                { id: 1016, originalId: 'EMGM-D-01', text: 'Direct democracy through referendums is preferable to representative democracy.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-D' },
+                { id: 1017, originalId: 'EMGM-D-02', text: 'Experts should have more influence on policy than popular opinion.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-D' },
+                { id: 1018, originalId: 'EMGM-D-03', text: 'Political parties are essential for democratic governance.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-D' },
+                { id: 1019, originalId: 'EMGM-D-04', text: 'Term limits prevent corruption and encourage fresh ideas.', axis: 'cultural', agreeDir: -1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-D' },
+                { id: 1020, originalId: 'EMGM-D-05', text: 'Voting should be mandatory to ensure democratic legitimacy.', axis: 'cultural', agreeDir: 1, phase: 2, qType: 'refine', supplementAxis: 'EMGM-D' }
+            ];
+
+            // Combine all questions
+            const allQuestions = [...phase1Questions, ...phase2Questions];
+
+            // Create answers object
+            const answers = {};
+            allQuestions.forEach((q, index) => {
+                answers[q.id] = answerValues[index];
+            });
+
+            // Create session object
+            const session = {
+                sessionId: sessionId,
+                type: 'long',
+                questions: allQuestions,
+                answers: answers,
+                phase1Scores: {
+                    economic: 5.2,  // Slightly right
+                    authority: 8.7, // Slightly authoritarian
+                    cultural: -2.1  // Nearly neutral
+                },
+                macroCellCode: 'EM-GM', // Center macro cell
+                tiebreakerBoundaries: [],
+                createdAt: Date.now()
+            };
+
+            // Store in sessionStorage and localStorage
+            sessionStorage.setItem('votely_quiz_session', JSON.stringify(session));
+            
+            const allSessions = JSON.parse(localStorage.getItem('votely_quiz_session_all') || '{}');
+            allSessions[sessionId] = session;
+            localStorage.setItem('votely_quiz_session_all', JSON.stringify(allSessions));
+
+            // Generate URL
+            const url = `http://localhost:3000/quiz/results?sessionId=${sessionId}&type=long`;
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">
+                    <h2>✅ Session Created Successfully!</h2>
+                    <p><strong>Session ID:</strong> ${sessionId}</p>
+                    <p><strong>Questions:</strong> ${allQuestions.length} (30 Phase 1 + 20 Phase 2)</p>
+                    <p><strong>Macro Cell:</strong> EM-GM (Mixed-Economy Liberal Center)</p>
+                </div>
+                <div class="url-box">
+                    <strong>Test URL:</strong><br>
+                    <a href="${url}" target="_blank">${url}</a>
+                </div>
+                <button onclick="window.open('${url}', '_blank')">Open Results Page</button>
+                <details>
+                    <summary>View Session Data</summary>
+                    <pre>${JSON.stringify(session, null, 2)}</pre>
+                </details>
+            `;
+        }
+
+        function clearSessions() {
+            sessionStorage.clear();
+            localStorage.removeItem('votely_quiz_session_all');
+            alert('All sessions cleared!');
+            viewSessions();
+        }
+
+        function viewSessions() {
+            const allSessions = JSON.parse(localStorage.getItem('votely_quiz_session_all') || '{}');
+            const sessionCount = Object.keys(allSessions).length;
+            
+            let html = `<h2>Stored Sessions (${sessionCount})</h2>`;
+            if (sessionCount === 0) {
+                html += '<p>No sessions stored.</p>';
+            } else {
+                Object.entries(allSessions).forEach(([id, session]) => {
+                    const date = new Date(session.createdAt).toLocaleString();
+                    html += `
+                        <div class="info">
+                            <strong>${id}</strong><br>
+                            Created: ${date}<br>
+                            Type: ${session.type}<br>
+                            Questions: ${session.questions.length}<br>
+                            <a href="http://localhost:3000/quiz/results?sessionId=${id}&type=${session.type}" target="_blank">Open Results</a>
+                        </div>
+                    `;
+                });
+            }
+            
+            document.getElementById('sessions').innerHTML = html;
+        }
+        
+        // Show sessions on load
+        viewSessions();
+    </script>
+</body>
+</html>

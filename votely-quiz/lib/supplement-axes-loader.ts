@@ -1,3 +1,5 @@
+import { fetchTSVWithCache } from './tsv-cache';
+
 export interface SupplementAxis {
   macroCell: string;
   code: string;
@@ -8,8 +10,8 @@ export interface SupplementAxis {
 
 export async function loadSupplementAxes(): Promise<Map<string, SupplementAxis[]>> {
   try {
-    const response = await fetch('/supplement-axes.tsv');
-    const text = await response.text();
+    // Use cached fetch to avoid repeated requests
+    const text = await fetchTSVWithCache('/supplement-axes.tsv');
     const lines = text.trim().split('\n');
     
     // Skip header

@@ -2,8 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { shortQuestions, longQuestions, Question, Phase2Question, generateShortQuizQuestions, generateLongQuizQuestions, adjustForTiebreakers, getPhase2Questions } from './questions';
-import { QUESTION_CONFIG } from './results/types';
+import { Question, Phase2Question, generateShortQuizQuestions, generateLongQuizQuestions, adjustForTiebreakers, getPhase2Questions } from './questions';
+import { 
+  generateSessionId, 
+  saveQuizSession, 
+  getCurrentSession,
+  updateSessionAnswers,
+  updateSessionPhase1Results,
+  addPhase2Questions,
+  completeSession,
+  QuizSession,
+  QuizQuestion 
+} from '@/lib/quiz-session';
 
 // Continuous answer value (0.0 to 1.0)
 type AnswerValue = number;
@@ -53,22 +63,62 @@ export default function QuizPageClient() {
   const [hoveredQuestion, setHoveredQuestion] = useState<number | null>(null);
   const [tiebreakerChecked, setTiebreakerChecked] = useState(false);
   
-  // Initialize randomized questions
+  // Initialize randomized questions and session
   useEffect(() => {
-    const randomizedQuestions = quizType === 'long' 
-      ? generateLongQuizQuestions()
-      : generateShortQuizQuestions();
-    setQuestions(randomizedQuestions);
-    setOriginalQuestions([...randomizedQuestions]);
-    console.log(`🎮 Quiz initialized with ${randomizedQuestions.length} questions`);
+    const loadQuestions = async () => {
+      // Check if we have an existing session
+      const existingSession = getCurrentSession();
+      if (existingSession && existingSession.type === quizType && !existingSession.completedAt) {
+        // Resume existing session
+        console.log('📂 Resuming existing session:', existingSession.sessionId);
+        setQuestions(existingSession.questions as any[]);
+        setAnswers(existingSession.answers);
+        // Calculate which screen we should be on
+        const answeredCount = Object.keys(existingSession.answers).length;
+        const resumeScreen = Math.floor(answeredCount / QUESTIONS_PER_SCREEN);
+        setScreen(resumeScreen);
+        return;
+      }
+      
+      // Create new session
+      const randomizedQuestions = quizType === 'long' 
+        ? await generateLongQuizQuestions()
+        : await generateShortQuizQuestions();
+      setQuestions(randomizedQuestions);
+      setOriginalQuestions([...randomizedQuestions]);
+      
+      // Save session
+      const session: QuizSession = {
+        sessionId: generateSessionId(),
+        type: quizType as 'short' | 'long',
+        questions: randomizedQuestions.map(q => ({
+          id: q.id,
+          originalId: (q as any).originalId || `P${q.id}`,
+          text: q.question,
+          axis: q.axis,
+          agreeDir: q.agreeDir || 1,
+          phase: 1,
+          qType: 'core'
+        } as QuizQuestion)),
+        answers: {},
+        createdAt: Date.now()
+      };
+      saveQuizSession(session);
+      console.log(`🎮 New quiz session created: ${session.sessionId}`);
+      console.log(`📋 ${randomizedQuestions.length} questions loaded`);
+    };
+    loadQuestions();
   }, [quizType]);
 
 
   const handleAnswerSelect = (questionId: number, value: AnswerValue) => {
-    setAnswers(prev => ({
-      ...prev,
+    const newAnswers = {
+      ...answers,
       [questionId]: value
-    }));
+    };
+    setAnswers(newAnswers);
+    // Update session
+    updateSessionAnswers({ [questionId]: value });
   };
 
   const handleSliderInteraction = (questionId: number, event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -83,10 +133,18 @@ export default function QuizPageClient() {
     const relativeX = clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
     
-    // Store the value immediately to prevent visual flickering
-    requestAnimationFrame(() => {
+    // Apply dead zone for small movements near neutral position
+    const currentValue = answers[questionId] ?? 0.5;
+    const delta = Math.abs(percentage - 0.5);
+    const deadZone = 0.03; // 3% dead zone around center
+    
+    // If the movement is very small and near center, snap to center
+    if (delta < deadZone && Math.abs(currentValue - 0.5) < deadZone) {
+      handleAnswerSelect(questionId, 0.5);
+    } else {
+      // Store the value immediately to prevent visual flickering
       handleAnswerSelect(questionId, percentage);
-    });
+    }
   };
 
   const handleSliderMouseDown = (questionId: number, event: React.MouseEvent<HTMLDivElement>) => {
@@ -128,10 +186,18 @@ export default function QuizPageClient() {
         const relativeX = event.touches[0].clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
         
-        // Use requestAnimationFrame for smoother updates
-        requestAnimationFrame(() => {
+        // Apply dead zone for small movements near neutral position
+        const currentValue = answers[dragState.questionId] ?? 0.5;
+        const delta = Math.abs(percentage - 0.5);
+        const deadZone = 0.03; // 3% dead zone around center
+        
+        // If the movement is very small and near center, snap to center
+        if (delta < deadZone && Math.abs(currentValue - 0.5) < deadZone) {
+          handleAnswerSelect(dragState.questionId, 0.5);
+        } else {
+          // Use requestAnimationFrame for smoother updates
           handleAnswerSelect(dragState.questionId, percentage);
-        });
+        }
       }
     };
 
@@ -172,14 +238,15 @@ export default function QuizPageClient() {
       if (answer === undefined) return;
       
       const score = convertToScore(answer);
-      const config = QUESTION_CONFIG.find(c => c.id === question.id);
-      if (!config) return;
+      const agreeDir = question.agreeDir || 1;
       
-      if (config.axis === 'economic') {
-        economicScore += config.agreeDirection === 'left' ? -score : score;
+      if (question.axis === 'economic') {
+        // agreeDir -1 means agreeing pushes left (negative), 1 means agreeing pushes right (positive)
+        economicScore += score * agreeDir;
         economicQuestions++;
-      } else if (config.axis === 'authority') {
-        governanceScore += config.agreeDirection === 'authoritarian' ? score : -score;
+      } else if (question.axis === 'authority') {
+        // agreeDir -1 means agreeing pushes libertarian (negative), 1 means agreeing pushes authoritarian (positive)
+        governanceScore += score * agreeDir;
         governanceQuestions++;
       }
     });
@@ -204,16 +271,40 @@ export default function QuizPageClient() {
       
       const scores = calculateCurrentScores();
       const remainingQuestions = questions.slice(20); // Last 10 questions
-      const adjustedQuestions = adjustForTiebreakers(remainingQuestions, scores.economic, scores.governance);
+      const adjustedQuestions = await adjustForTiebreakers(remainingQuestions, scores.economic, scores.governance);
       
       // Update the questions array if tiebreakers were added
       if (adjustedQuestions !== remainingQuestions) {
         const newQuestions = [...questions.slice(0, 20), ...adjustedQuestions];
         setQuestions(newQuestions);
         console.log('📝 Questions updated with tiebreakers');
+        
+        // Update session with new questions
+        const session = getCurrentSession();
+        if (session) {
+          session.questions = newQuestions.map(q => ({
+            id: q.id,
+            originalId: (q as any).originalId || `P${q.id}`,
+            text: q.question,
+            axis: q.axis,
+            agreeDir: q.agreeDir || 1,
+            phase: 1,
+            qType: q.boundary ? 'tiebreaker' : 'core',
+            boundary: q.boundary
+          } as QuizQuestion));
+          saveQuizSession(session);
+        }
       }
       
       setTiebreakerChecked(true);
+      
+      // Save Phase 1 scores to session (governance is authority, no cultural yet)
+      // The boundaries are computed inside adjustForTiebreakers
+      updateSessionPhase1Results({
+        economic: scores.economic,
+        authority: scores.governance,
+        cultural: 0  // Not calculated at this point
+      }, '', []);
     }
     
     // Load Phase 2 questions when completing screen 5 (the last screen of Phase 1)  
@@ -246,6 +337,26 @@ export default function QuizPageClient() {
         const extendedQuestions = [...questions, ...phase2Questions];
         setQuestions(extendedQuestions);
         setPhase2QuestionsLoaded(true);
+        
+        // Add Phase 2 questions to session
+        const phase2SessionQuestions: QuizQuestion[] = phase2Questions.map(q => ({
+          id: q.id,
+          originalId: (q as any).originalId || `P2_${q.id}`,
+          text: q.question,
+          axis: 'cultural', // Phase 2 uses supplementary axes
+          agreeDir: q.agreeDir || 1,
+          phase: 2,
+          qType: 'refine',
+          supplementAxis: (q as any).supplementAxis
+        }));
+        addPhase2Questions(phase2SessionQuestions);
+        
+        // Update session with macro cell
+        updateSessionPhase1Results({
+          economic: scores.economic,
+          authority: scores.governance,
+          cultural: 0  // Not calculated at this point
+        }, macroCellCode);
         
         console.log(`🎯 Quiz extended to ${extendedQuestions.length} total questions (Phase 1: 30, Phase 2: 20)`);
         console.log(`📱 New TOTAL_SCREENS will be: ${Math.ceil(extendedQuestions.length / QUESTIONS_PER_SCREEN)}`);
@@ -286,9 +397,25 @@ export default function QuizPageClient() {
     console.log('🏁 Quiz Complete!');
     console.log(`📊 Final Quiz: ${questions.length} questions answered (${quizType === 'long' ? 'Phase 1: 30, Phase 2: 20' : 'Short quiz: 10'})`);
     
-    const answerArray = questions.map(q => answers[q.id] !== undefined ? answers[q.id] : 0.5); // Default to neutral (0.5) if not answered
-    const formattedAnswers = answerArray.map(val => val.toFixed(2));
-    router.push(`/quiz/results?answers=${formattedAnswers.join(',')}&type=${quizType}`);
+    // Complete the session
+    completeSession();
+    
+    // Get session ID for results
+    const session = getCurrentSession();
+    if (session) {
+      // Pass session ID to results page
+      router.push(`/quiz/results?sessionId=${session.sessionId}&type=${quizType}`);
+    } else {
+      // Fallback: Create encoded data if no session
+      const questionData = questions.map(q => ({
+        id: q.id,
+        axis: q.axis,
+        agreeDir: q.agreeDir || 1,
+        answer: answers[q.id] !== undefined ? answers[q.id] : 0.5
+      }));
+      const encodedData = btoa(JSON.stringify(questionData));
+      router.push(`/quiz/results?data=${encodeURIComponent(encodedData)}&type=${quizType}`);
+    }
   };
 
   const startIdx = screen * QUESTIONS_PER_SCREEN;
@@ -345,7 +472,8 @@ export default function QuizPageClient() {
                         touchAction: 'none',
                         WebkitTouchCallout: 'none',
                         WebkitUserSelect: 'none',
-                        userSelect: 'none'
+                        userSelect: 'none',
+                        WebkitTapHighlightColor: 'transparent'
                       }}
                       data-question-id={question.id}
                       onMouseDown={(e) => handleSliderMouseDown(question.id, e)}
@@ -362,12 +490,13 @@ export default function QuizPageClient() {
                             className={`absolute h-full ${
                               answers[question.id] < 0.5 ? 'rounded-l-full' : 'rounded-r-full'
                             } ${
-                              dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-all duration-150'
+                              dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-all duration-100'
                             }`}
                             style={{
                               backgroundColor: getSliderColor(answers[question.id]),
                               left: answers[question.id] < 0.5 ? `${answers[question.id] * 100}%` : '50%',
-                              right: answers[question.id] >= 0.5 ? `${(1 - answers[question.id]) * 100}%` : '50%'
+                              right: answers[question.id] >= 0.5 ? `${(1 - answers[question.id]) * 100}%` : '50%',
+                              willChange: 'left, right, background-color'
                             }}
                           />
                         )}
@@ -375,17 +504,18 @@ export default function QuizPageClient() {
                         <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-purple-300" />
                         {/* Slider thumb - now with pulsating animation when not set */}
                         <div
-                          className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing hover:scale-110 ${
-                            dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-transform'
+                          className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 md:w-5 md:h-5 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing hover:scale-110 ${
+                            dragState?.questionId === question.id && dragState.isDragging ? '' : 'transition-transform duration-150'
                           }`}
                           style={{
                             left: `${(answers[question.id] ?? 0.5) * 100}%`,
                             transform: 'translateX(-50%) translateY(-50%)',
                             animation: answers[question.id] === undefined ? 'pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
                             WebkitTransform: 'translateX(-50%) translateY(-50%)',
-                            willChange: 'left',
+                            willChange: 'transform, left',
                             WebkitBackfaceVisibility: 'hidden',
-                            backfaceVisibility: 'hidden'
+                            backfaceVisibility: 'hidden',
+                            WebkitTapHighlightColor: 'transparent'
                           }}
                         />
                       </div>

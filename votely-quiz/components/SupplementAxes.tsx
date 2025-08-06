@@ -32,10 +32,10 @@ export default function SupplementAxes({ axes, scores, macroCell, macroCellColor
 
   return (
     <div className="mt-8 pt-8 border-t">
-      <h3 className="text-2xl font-bold text-foreground mb-2">
-        <span className="mr-2">🎯</span>Your Detailed Position
+      <h3 className="text-lg sm:text-2xl font-bold text-foreground mb-2">
+        <span className="mr-1 sm:mr-2">🎯</span><span className="text-base sm:text-2xl">Your Detailed Position</span>
       </h3>
-      <p className="text-sm text-foreground/60 mb-6">
+      <p className="text-xs sm:text-sm text-foreground/60 mb-4 sm:mb-6">
         These axes show nuanced dimensions specific to your ideology grouping
       </p>
       
@@ -50,11 +50,11 @@ export default function SupplementAxes({ axes, scores, macroCell, macroCellColor
               key={axis.code}
               className="relative"
             >
-              <div className="flex justify-between mb-2 gap-4">
-                <span className="text-sm font-medium flex-shrink-0" style={{ color: displayColor }}>
+              <div className="flex justify-between mb-2 gap-1">
+                <span className="text-xs md:text-sm font-medium whitespace-nowrap" style={{ color: displayColor }}>
                   {axis.axis}
                 </span>
-                <span className="text-sm text-foreground/60 text-right whitespace-nowrap">
+                <span className="text-xs md:text-sm text-foreground/60 whitespace-nowrap">
                   {isNegative ? axis.negativeAnchor : axis.positiveAnchor} ({displayScore.toFixed(1)}%)
                 </span>
               </div>

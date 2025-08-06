@@ -35,6 +35,19 @@
   .gradient-bg {
     @apply bg-gradient-to-r from-primary to-secondary;
   }
+  
+  /* Better text wrapping for ideology labels */
+  .ideology-label {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Prevent slider thumb tap highlight on mobile */
+  .slider-thumb {
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
 }
 
 @keyframes pulse-scale {

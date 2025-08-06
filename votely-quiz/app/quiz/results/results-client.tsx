@@ -15,7 +15,8 @@ import {
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
 import { AdaptivePoliticalCompass } from '../../../lib/adaptive-political-compass';
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
-import { loadGridData, findIdeologyByPosition, findDetailedIdeology, GridCellData } from '@/lib/grid-data-loader';
+import { loadGridData, findIdeologyByPosition, findDetailedIdeology, findDetailedIdeologyWithSupplementary, GridCellData } from '@/lib/grid-data-loader';
+import { getSessionById, QuizSession } from '@/lib/quiz-session';
 
 // Macro cell colors from the political compass
 const MACRO_CELL_COLORS = {
@@ -55,6 +56,7 @@ import AboutCreator from '../../../components/AboutCreator';
 import SupplementAxes from '../../../components/SupplementAxes';
 import { loadSupplementAxes, calculateSupplementScores } from '@/lib/supplement-axes-loader';
 import { saveQuizResult, getCoordinateRangePercentage, getTotalQuizCount, getPoliticalGroupMatches, getSurprisingAlignments, testFirebaseConnection, getWaitlistCount } from '@/lib/quiz';
+import { loadPhase2QuestionData } from '@/lib/phase2-question-loader';
 
 // SVGs to preload for next steps
 const NEXT_STEPS_SVGS = [
@@ -75,7 +77,7 @@ function ImagePreloader() {
   return null;
 }
 
-function calculateScores(answers: number[], quizType: string = 'short') {
+async function calculateScores(answers: number[], questionIds: number[], quizType: string = 'short', phase2Data?: Map<number, { supplementAxis: string; agreeDir: -1 | 1 }>, debugMode: boolean = false, questionData?: any[]) {
   let economicScore = 0;
   let socialScore = 0;
   let progressiveScore = 0;
@@ -83,49 +85,138 @@ function calculateScores(answers: number[], quizType: string = 'short') {
   let socialQuestions = 0;
   let progressiveQuestions = 0;
 
+  // Phase 2 scoring for supplementary axes
+  const supplementaryScores: Record<string, { score: number; count: number }> = {};
+
   // Convert continuous values (0-1) to score values (-2 to +2)
   const convertToScore = (value: number): number => {
     return (value - 0.5) * 4; // Maps 0->-2, 0.5->0, 1->2
   };
 
-  // Map question indices to actual question IDs based on quiz type
-  const getQuestionIds = (quizType: string): number[] => {
-    if (quizType === 'long') {
-      // Long quiz uses all 30 Phase 1 core questions - these are the question IDs from our new questions.ts
-      return [
-        1, 9, 17, 2, 10, 18, 3, 11, 19, 4,
-        12, 20, 5, 13, 21, 6, 14, 22, 7, 15,
-        23, 8, 16, 24, 25, 27, 29, 26, 28, 30
-      ];
-    } else {
-      // Short quiz uses priority 2 questions: P01, P02, P03, P04, P09, P10, P11, P12, P17, P18
-      return [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
-    }
-  };
+  // Legacy mode: if no questionIds provided, use hardcoded mapping
+  if (questionIds.length === 0) {
+    // Fallback to legacy hardcoded IDs for backward compatibility
+    const legacyIds = quizType === 'long' 
+      ? [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30]
+      : [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
+    questionIds = legacyIds.slice(0, answers.length);
+  }
 
-  const questionIds = getQuestionIds(quizType);
+  // Load Phase 2 data if needed and not provided
+  if (!phase2Data && questionIds.some(id => id >= 1000)) {
+    phase2Data = await loadPhase2QuestionData();
+  }
 
-  questionIds.forEach((questionId, index) => {
-    if (index >= answers.length) return; // Skip if we don't have an answer
-    
-    const continuousValue = answers[index];
+  if (debugMode) {
+    console.log('🔍 DEBUG MODE - Scoring Details:');
+    console.log(`Quiz Type: ${quizType}`);
+    console.log(`Total Answers: ${answers.length}`);
+    console.log(`Question IDs: ${questionIds.length > 0 ? questionIds.join(', ') : 'Legacy mode'}`);
+  }
+
+  // Process each answer with its corresponding question ID
+  answers.forEach((continuousValue, index) => {
+    if (index >= questionIds.length) return; // Skip if we don't have a question ID
     if (isNaN(continuousValue)) return; // Skip NaN values
     
+    const questionId = questionIds[index];
     const score = convertToScore(continuousValue);
     
-    // Find the config for this question ID
-    const config = QUESTION_CONFIG.find(c => c.id === questionId);
-    if (!config) return; // Skip if config not found
+    // Check if this is a Phase 2 question (ID >= 1000)
+    if (questionId >= 1000) {
+      // Handle Phase 2 supplementary axis questions
+      // First check if we have supplementAxis in questionData (from session)
+      if (questionData && questionData[index] && questionData[index].supplementAxis) {
+        const { supplementAxis, agreeDir } = questionData[index];
+        
+        // Initialize axis if not exists
+        if (!supplementaryScores[supplementAxis]) {
+          supplementaryScores[supplementAxis] = { score: 0, count: 0 };
+        }
+        
+        // Apply agree direction: -1 means agreeing is negative on axis, 1 means agreeing is positive
+        const contribution = (agreeDir || 1) * score;
+        supplementaryScores[supplementAxis].score += contribution;
+        supplementaryScores[supplementAxis].count++;
+        
+        if (debugMode) {
+          console.log(`  Q${questionId} (${supplementAxis}): Answer=${continuousValue.toFixed(2)}, Score=${score.toFixed(2)}, AgreeDir=${agreeDir}, Contribution=${contribution.toFixed(2)}`);
+        }
+      } else if (phase2Data) {
+        // Fallback to phase2Data if available
+        const phase2Question = phase2Data.get(questionId);
+        if (phase2Question) {
+          const { supplementAxis, agreeDir } = phase2Question;
+          
+          // Initialize axis if not exists
+          if (!supplementaryScores[supplementAxis]) {
+            supplementaryScores[supplementAxis] = { score: 0, count: 0 };
+          }
+          
+          // Apply agree direction: -1 means agreeing is negative on axis, 1 means agreeing is positive
+          const contribution = agreeDir * score;
+          supplementaryScores[supplementAxis].score += contribution;
+          supplementaryScores[supplementAxis].count++;
+          
+          if (debugMode) {
+            console.log(`  Q${questionId} (${supplementAxis}): Answer=${continuousValue.toFixed(2)}, Score=${score.toFixed(2)}, AgreeDir=${agreeDir}, Contribution=${contribution.toFixed(2)}`);
+          }
+        } else {
+          console.warn(`Phase 2 question ${questionId} not found in data`);
+        }
+      } else {
+        console.warn(`Phase 2 question ${questionId} has no supplementAxis data`);
+      }
+      return;
+    }
+    
+    // Try to use question data if provided, otherwise fall back to config
+    let config = null;
+    let agreeDir = 1;
+    
+    if (questionData && questionData[index]) {
+      const qData = questionData[index];
+      config = { axis: qData.axis };
+      agreeDir = qData.agreeDir || 1;
+    } else {
+      // Find the config for Phase 1 questions
+      config = QUESTION_CONFIG.find(c => c.id === questionId);
+      if (!config) {
+        console.warn(`No config found for question ID ${questionId}`);
+        return;
+      }
+      // Convert old agreeDirection format to numeric agreeDir
+      if (config.axis === 'economic') {
+        agreeDir = config.agreeDirection === 'left' ? -1 : 1;
+      } else if (config.axis === 'authority') {
+        agreeDir = config.agreeDirection === 'authoritarian' ? 1 : -1;
+      } else if (config.axis === 'cultural') {
+        agreeDir = config.agreeDirection === 'progressive' ? -1 : 1;
+      }
+    }
+
+    let contribution = 0;
+    let axisName = '';
 
     if (config.axis === 'economic') {
-      economicScore += config.agreeDirection === 'left' ? -score : score;
+      contribution = score * agreeDir;
+      economicScore += contribution;
       economicQuestions++;
+      axisName = 'Economic';
     } else if (config.axis === 'authority') {
-      socialScore += config.agreeDirection === 'authoritarian' ? score : -score;
+      contribution = score * agreeDir;
+      socialScore += contribution;
       socialQuestions++;
+      axisName = 'Authority';
     } else if (config.axis === 'cultural') {
-      progressiveScore += config.agreeDirection === 'progressive' ? -score : score;
+      contribution = score * agreeDir;
+      progressiveScore += contribution;
       progressiveQuestions++;
+      axisName = 'Cultural';
+    }
+    
+    if (debugMode) {
+      console.log(`  Q${questionId} (${axisName}): Answer=${continuousValue.toFixed(2)}, Score=${score.toFixed(2)}, AgreeDir=${agreeDir}, Contribution=${contribution.toFixed(2)}`);
     }
   });
 
@@ -139,7 +230,33 @@ function calculateScores(answers: number[], quizType: string = 'short') {
   const social = maxSocialScore > 0 ? normalizeScore(socialScore, maxSocialScore) : 0;
   const progressive = maxProgressiveScore > 0 ? normalizeScore(progressiveScore, maxProgressiveScore) : 0;
 
-  return { economic, social, progressive };
+  // Convert supplementary scores to normalized values
+  const supplementary: Record<string, number> = {};
+  if (debugMode && Object.keys(supplementaryScores).length > 0) {
+    console.log('🔍 Supplementary scores before normalization:', supplementaryScores);
+  }
+  Object.entries(supplementaryScores).forEach(([axis, data]) => {
+    if (data.count > 0) {
+      const maxScore = data.count * 2;
+      supplementary[axis] = normalizeScore(data.score, maxScore);
+    }
+  });
+
+  if (debugMode) {
+    console.log('\n📊 Final Scores:');
+    console.log(`  Economic: ${economic.toFixed(1)} (Raw: ${economicScore}/${maxEconomicScore})`);
+    console.log(`  Authority: ${social.toFixed(1)} (Raw: ${socialScore}/${maxSocialScore})`);
+    console.log(`  Cultural: ${progressive.toFixed(1)} (Raw: ${progressiveScore}/${maxProgressiveScore})`);
+    if (Object.keys(supplementary).length > 0) {
+      console.log('\n  Supplementary Axes:');
+      Object.entries(supplementary).forEach(([axis, score]) => {
+        const rawData = supplementaryScores[axis];
+        console.log(`    ${axis}: ${score.toFixed(1)} (Raw: ${rawData.score}/${rawData.count * 2})`);
+      });
+    }
+  }
+
+  return { economic, social, progressive, supplementary };
 }
 
 
@@ -241,9 +358,13 @@ function getOrdinalSuffix(n: number): string {
 export default function ResultsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const sessionIdParam = searchParams.get('sessionId');
+  const dataParam = searchParams.get('data');
   const answersParam = searchParams.get('answers');
+  const questionIdsParam = searchParams.get('questionIds');
   const quizType = searchParams.get('type') || 'short';
   const isShared = searchParams.get('shared') === 'true';
+  const isDebugMode = searchParams.get('debug') === 'true';
   const graphRef = useRef<HTMLDivElement>(null);
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 });
   const [docId, setDocId] = useState<string | null>(null);
@@ -255,23 +376,129 @@ export default function ResultsClient() {
   const [supplementAxes, setSupplementAxes] = useState<any[]>([]);
   const [supplementScores, setSupplementScores] = useState<Record<string, number>>({});
   const hasLoadedAnalytics = useRef(false);
+  
+  // Store calculated scores
+  const [scores, setScores] = useState<{
+    economic: number;
+    social: number;
+    progressive: number;
+    supplementary: Record<string, number>;
+  } | null>(null);
+
+  // State for parsed data
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [questionIds, setQuestionIds] = useState<number[]>([]);
+  const [questionData, setQuestionData] = useState<any[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Parse question data from session or URL params
+  useEffect(() => {
+    let parsedAnswers: number[] = [];
+    let parsedQuestionIds: number[] = [];
+    let parsedQuestionData: any[] = [];
+    
+    if (sessionIdParam) {
+      console.log('🔍 Attempting to load session:', sessionIdParam);
+      console.log('Window defined?', typeof window !== 'undefined');
+      
+      // Load from session
+      const session = getSessionById(sessionIdParam);
+      console.log('Session loaded?', !!session);
+      
+      if (session) {
+        console.log('📂 Loading results from session:', sessionIdParam);
+        console.log('Session questions:', session.questions?.length || 0);
+        console.log('Session answers:', Object.keys(session.answers || {}).length);
+        
+        // Validate session has required data
+        if (!session.questions || !session.answers) {
+          console.error('Session missing questions or answers:', session);
+          return;
+        }
+        
+        const sessionAnswers = session.answers;
+        parsedAnswers = session.questions.map(q => sessionAnswers[q.id] ?? 0.5);
+        parsedQuestionIds = session.questions.map(q => q.id);
+        parsedQuestionData = session.questions.map(q => ({
+          id: q.id,
+          axis: q.axis,
+          agreeDir: q.agreeDir,
+          answer: sessionAnswers[q.id] ?? 0.5,
+          supplementAxis: q.supplementAxis
+        }));
+        
+        console.log('Parsed answers:', parsedAnswers.length);
+        console.log('Parsed question IDs:', parsedQuestionIds.length);
+      } else {
+        console.error('Session not found:', sessionIdParam);
+        console.log('Checking localStorage directly...');
+        const stored = localStorage.getItem('votely_quiz_session_all');
+        if (stored) {
+          const all = JSON.parse(stored);
+          console.log('Available sessions:', Object.keys(all));
+        }
+      }
+    } else if (dataParam) {
+      // New format: decode base64 question data
+      try {
+        const decoded = JSON.parse(atob(decodeURIComponent(dataParam)));
+        parsedQuestionData = decoded;
+        parsedAnswers = decoded.map((q: any) => q.answer);
+        parsedQuestionIds = decoded.map((q: any) => q.id);
+      } catch (error) {
+        console.error('Failed to decode question data:', error);
+      }
+    } else if (answersParam) {
+      // Legacy format: separate answers and question IDs
+      parsedAnswers = answersParam.split(',').map(val => {
+        const num = parseFloat(val);
+        return isNaN(num) ? 0.5 : num; // Default to neutral if parsing fails
+      });
+      parsedQuestionIds = questionIdsParam ? questionIdsParam.split(',').map(id => parseInt(id)) : [];
+      
+      // For legacy URLs with 50 answers but no question IDs, try to reconstruct
+      if (parsedAnswers.length === 50 && parsedQuestionIds.length === 0 && quizType === 'long') {
+        console.log('⚠️ Reconstructing quiz from legacy URL with 50 answers');
+        // Phase 1: 30 questions with standard IDs
+        const phase1Ids = [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30];
+        // Phase 2: 20 questions with high IDs (we'll assign generic ones)
+        const phase2Ids = Array.from({length: 20}, (_, i) => 1000 + i);
+        parsedQuestionIds = [...phase1Ids, ...phase2Ids];
+        console.log('🔄 Using reconstructed question IDs for scoring');
+      }
+    }
+    
+    setAnswers(parsedAnswers);
+    setQuestionIds(parsedQuestionIds);
+    setQuestionData(parsedQuestionData);
+    setDataLoaded(true);
+    console.log('Data loaded:', { answers: parsedAnswers.length, questionIds: parsedQuestionIds.length });
+  }, [sessionIdParam, dataParam, answersParam, questionIdsParam, quizType]);
 
   useEffect(() => {
     if (!graphRef.current) return;
     const rect = graphRef.current.getBoundingClientRect();
     setGraphSize({ width: rect.width, height: rect.height });
   }, []);
-
-  if (!answersParam) {
-    return <div>No results found. Please take the quiz first.</div>;
-  }
-
-  const answers = answersParam.split(',').map(val => {
-    const num = parseFloat(val);
-    return isNaN(num) ? 0.5 : num; // Default to neutral if parsing fails
-  });
   
-  const { economic, social, progressive } = calculateScores(answers, quizType);
+  // Calculate scores when data is loaded
+  useEffect(() => {
+    // Wait for data to be loaded and check if we have answers
+    if (!dataLoaded || answers.length === 0) return;
+    
+    async function computeScores() {
+      console.log('Computing scores with:', { answers: answers.length, questionIds: questionIds.length });
+      const result = await calculateScores(answers, questionIds, quizType, undefined, isDebugMode, questionData);
+      setScores(result);
+      setSupplementScores(result.supplementary);
+    }
+    computeScores();
+  }, [dataLoaded, answers, questionIds, questionData, quizType, isDebugMode]);
+  
+  // Extract scores safely
+  const economic = scores?.economic || 0;
+  const social = scores?.social || 0;
+  const progressive = scores?.progressive || 0;
 
   // Load grid data and find matching ideology
   useEffect(() => {
@@ -280,9 +507,23 @@ export default function ResultsClient() {
         const data = await loadGridData(quizType as 'short' | 'long');
         setGridData(data);
         
-        const ideology = quizType === 'long' 
-          ? findDetailedIdeology(data, economic, social, progressive)
-          : findIdeologyByPosition(data, economic, social);
+        let ideology;
+        if (quizType === 'long' && Object.keys(supplementScores).length > 0) {
+          // Use weighted distance calculation with supplementary scores
+          ideology = await findDetailedIdeologyWithSupplementary(
+            data, 
+            economic, 
+            social, 
+            supplementScores
+          );
+        } else if (quizType === 'long') {
+          // Long quiz but no supplementary scores yet - use Phase 1 only
+          ideology = findDetailedIdeology(data, economic, social, progressive);
+        } else {
+          // Short quiz
+          ideology = findIdeologyByPosition(data, economic, social);
+        }
+        
         setIdeologyData(ideology);
         
         // Load supplement axes for long quiz
@@ -290,10 +531,6 @@ export default function ResultsClient() {
           const axesMap = await loadSupplementAxes();
           const macroAxes = axesMap.get(ideology.macroCellCode) || [];
           setSupplementAxes(macroAxes);
-          
-          // Calculate scores for these axes
-          const scores = calculateSupplementScores(answers, ideology.macroCellCode, macroAxes);
-          setSupplementScores(scores);
         }
       } catch (error) {
         console.error('Error loading ideology data:', error);
@@ -301,7 +538,7 @@ export default function ResultsClient() {
     }
     
     loadIdeologyData();
-  }, [economic, social, progressive, quizType, answers]);
+  }, [economic, social, progressive, quizType, scores, supplementScores]);
   
   // Calculate display coordinates - for long quiz, adjust to cell position; for short quiz, use actual coordinates
   let displayX = economic;
@@ -364,9 +601,15 @@ export default function ResultsClient() {
   const z = toVisionScale(displayProgressive);
   const alignment = findVisionAlignment(x, y, z);
 
-  // Save the quiz result (skip if this is a shared result)
+  // Save the quiz result (skip if this is a shared result or debug mode)
   useEffect(() => {
-    if (hasSaved.current || isShared) return;
+    if (hasSaved.current || isShared || isDebugMode) {
+      if (isDebugMode && !hasSaved.current) {
+        console.log('🐛 DEBUG MODE: Skipping Firebase save');
+        hasSaved.current = true;
+      }
+      return;
+    }
     hasSaved.current = true;
     
     saveQuizResult({
@@ -443,6 +686,60 @@ export default function ResultsClient() {
   const [surprisingAlignments, setSurprisingAlignments] = useState<Array<{group: string, commonGround: string}>>([]);
   const [waitlistCount, setWaitlistCount] = useState<number>(0);
 
+  // Handle error states within the component return
+  if (!answersParam && !sessionIdParam && !dataParam) {
+    return <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-foreground mb-4">No results found</h1>
+        <p className="text-foreground/60">Please take the quiz first.</p>
+      </div>
+    </div>;
+  }
+  
+  // Check if data is still loading
+  if (!dataLoaded) {
+    return <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-foreground mb-4">Loading quiz data...</h1>
+        <div className="animate-pulse">
+          <div className="w-16 h-16 mx-auto bg-purple-600 rounded-full"></div>
+        </div>
+      </div>
+    </div>;
+  }
+  
+  // Check if we have valid data after loading
+  if (dataLoaded && answers.length === 0) {
+    return <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-foreground mb-4">Invalid quiz data</h1>
+        <p className="text-foreground/60">Unable to load quiz results. Please try taking the quiz again.</p>
+        {sessionIdParam && (
+          <p className="text-sm text-muted-foreground mt-2">Session ID: {sessionIdParam}</p>
+        )}
+        <a href="/quiz" className="text-primary hover:underline mt-4 inline-block">Start New Quiz →</a>
+      </div>
+    </div>;
+  }
+  
+  if (!scores) {
+    return <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-foreground mb-4">Calculating results...</h1>
+        <div className="animate-pulse">
+          <div className="w-16 h-16 mx-auto bg-purple-600 rounded-full"></div>
+        </div>
+        {answersParam && !sessionIdParam && answers.length === 50 && (
+          <div className="mt-8 text-sm text-muted-foreground max-w-md mx-auto px-4">
+            <p className="mb-2">⚠️ Using approximate scoring from legacy URL.</p>
+            <p>For accurate results with proper question tracking, please complete the quiz from the beginning.</p>
+            <a href="/quiz?type=long" className="text-primary hover:underline mt-4 inline-block">Start New Quiz →</a>
+          </div>
+        )}
+      </div>
+    </div>;
+  }
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 relative overflow-hidden">
       {/* Star background */}
@@ -465,6 +762,19 @@ export default function ResultsClient() {
       
       {/* Main content */}
       <div className="max-w-6xl mx-auto relative z-10">
+        {/* Debug Mode Banner */}
+        {isDebugMode && (
+          <div className="mb-6 p-4 bg-yellow-100 border-2 border-yellow-400 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🐛</span>
+              <span className="font-bold text-yellow-800">DEBUG MODE - Results not saved to database</span>
+            </div>
+            <p className="text-sm text-yellow-700 mt-1">
+              Check the browser console for detailed scoring calculations
+            </p>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="text-center mb-8">
           {isShared ? (
@@ -605,7 +915,7 @@ export default function ResultsClient() {
           <div className="flex flex-col gap-6 contents lg:flex lg:flex-col lg:h-full">
             {/* User Results - Single card containing everything */}
             <div className="bg-background rounded-2xl shadow-lg p-8 pb-12 flex flex-col h-full order-2 lg:order-none">
-              <h2 className="text-3xl font-bold text-purple-600 mb-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-purple-600 mb-2 break-words hyphens-auto">
                 {quizType === 'short' ? (ideologyData?.macroCellLabel || alignment.label) : (ideologyData?.ideology || alignment.label)}
               </h2>
               <p className="text-sm text-foreground/60 mb-4">{resultPercentage !== null ? `${resultPercentage}% of quiz takers get this result` : 'Loading percentage...'}</p>
@@ -622,9 +932,9 @@ export default function ResultsClient() {
               {/* Score Bars */}
               <div className="space-y-6">
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Economic Score</span>
-                    <span className="text-sm text-foreground/60">{displayX < 0 ? 'Left' : 'Right'} ({Math.abs(displayX).toFixed(1)}%)</span>
+                  <div className="flex justify-between mb-2 flex-wrap gap-1">
+                    <span className="text-xs md:text-sm font-medium text-purple-600">Economic Score</span>
+                    <span className="text-xs md:text-sm text-foreground/60">{displayX < 0 ? 'Left' : 'Right'} ({Math.abs(displayX).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
@@ -643,9 +953,9 @@ export default function ResultsClient() {
                 </div>
                 
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Governance Score</span>
-                    <span className="text-sm text-foreground/60">{displayY > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(displayY).toFixed(1)}%)</span>
+                  <div className="flex justify-between mb-2 flex-wrap gap-1">
+                    <span className="text-xs md:text-sm font-medium text-purple-600">Governance Score</span>
+                    <span className="text-xs md:text-sm text-foreground/60">{displayY > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(displayY).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
@@ -664,9 +974,9 @@ export default function ResultsClient() {
                 </div>
                 
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-600">Social Score</span>
-                    <span className="text-sm text-foreground/60">{displayProgressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(displayProgressive).toFixed(1)}%)</span>
+                  <div className="flex justify-between mb-2 flex-wrap gap-1">
+                    <span className="text-xs md:text-sm font-medium text-purple-600">Social Score</span>
+                    <span className="text-xs md:text-sm text-foreground/60">{displayProgressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(displayProgressive).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
@@ -730,7 +1040,7 @@ export default function ResultsClient() {
                             boxShadow: `inset 4px 0 0 ${alignmentColor}, 0 1px 3px rgba(0,0,0,0.05)`
                           }}
                         >
-                          <h4 className="font-semibold text-foreground">{alignmentLabel}</h4>
+                          <h4 className="font-semibold text-foreground break-words hyphens-auto">{alignmentLabel}</h4>
                           <p className="text-sm text-foreground/60">{ideologyData.alignIdeology1Text}</p>
                         </div>
                       );
@@ -769,7 +1079,7 @@ export default function ResultsClient() {
                               boxShadow: `inset 4px 0 0 ${surpriseColor}, 0 1px 3px rgba(0,0,0,0.05)`
                             }}
                           >
-                            <h5 className="font-medium text-foreground">{surpriseLabel}</h5>
+                            <h5 className="font-medium text-foreground break-words hyphens-auto">{surpriseLabel}</h5>
                             <p className="text-sm text-foreground/70">{ideologyData.surpriseIdeology1Text}</p>
                           </div>
                         );

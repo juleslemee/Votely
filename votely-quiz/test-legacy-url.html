@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Legacy URL Reconstruction</title>
+    <style>
+        body { font-family: monospace; padding: 20px; line-height: 1.6; }
+        .url { background: #f0f0f0; padding: 10px; word-break: break-all; margin: 10px 0; }
+        button { padding: 10px 20px; background: #6b46c1; color: white; border: none; cursor: pointer; margin: 5px; }
+        button:hover { background: #553c9a; }
+        .warning { background: #fff3cd; padding: 10px; border: 1px solid #ffc107; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Test Legacy URL Reconstruction</h1>
+    
+    <div class="warning">
+        <strong>⚠️ Legacy URL Issue:</strong> Your URL has 50 answers but no question IDs. This means:
+        <ul>
+            <li>We don't know which specific questions were asked</li>
+            <li>We don't know if tiebreakers were used</li>
+            <li>We don't know which Phase 2 questions were shown</li>
+            <li>We can only approximate the scoring</li>
+        </ul>
+    </div>
+    
+    <h2>Your Legacy URL (50 answers, no question IDs):</h2>
+    <div class="url">
+    http://localhost:3000/quiz/results?answers=0.54,0.26,0.65,0.63,1.00,0.02,0.68,0.23,0.97,0.99,0.98,0.66,0.37,0.51,0.56,0.51,0.02,0.76,0.90,0.76,0.63,0.64,0.53,0.66,0.50,0.76,0.75,0.58,0.74,0.99,0.65,0.57,0.72,0.24,0.63,0.64,0.65,0.60,0.73,0.57,0.98,0.50,0.71,0.63,0.72,0.73,0.74,0.72,0.99,0.60&type=long&shared=true
+    </div>
+    
+    <h2>Options:</h2>
+    
+    <button onclick="testWithDebug()">Test with Debug Mode</button>
+    <button onclick="testWithReconstruction()">Test with Reconstruction</button>
+    <button onclick="startNewQuiz()">Start Fresh Quiz</button>
+    
+    <h2>What the System Will Do:</h2>
+    <ol>
+        <li><strong>Phase 1 (first 30 answers):</strong> Will use default question order for scoring</li>
+        <li><strong>Phase 2 (last 20 answers):</strong> Will assign generic supplementary axis IDs</li>
+        <li><strong>Result:</strong> Approximate positioning, may not match original quiz exactly</li>
+    </ol>
+    
+    <h2>Recommended Solution:</h2>
+    <p>Complete a new quiz from the beginning. The new system will:</p>
+    <ul>
+        <li>✅ Track all questions and their properties</li>
+        <li>✅ Save session data for accurate scoring</li>
+        <li>✅ Handle tiebreakers and Phase 2 properly</li>
+        <li>✅ Generate shareable URLs that preserve full context</li>
+    </ul>
+    
+    <script>
+        function testWithDebug() {
+            const url = 'http://localhost:3000/quiz/results?answers=0.54,0.26,0.65,0.63,1.00,0.02,0.68,0.23,0.97,0.99,0.98,0.66,0.37,0.51,0.56,0.51,0.02,0.76,0.90,0.76,0.63,0.64,0.53,0.66,0.50,0.76,0.75,0.58,0.74,0.99,0.65,0.57,0.72,0.24,0.63,0.64,0.65,0.60,0.73,0.57,0.98,0.50,0.71,0.63,0.72,0.73,0.74,0.72,0.99,0.60&type=long&shared=true&debug=true';
+            window.open(url, '_blank');
+        }
+        
+        function testWithReconstruction() {
+            // The system will automatically detect 50 answers with no IDs and reconstruct
+            const url = 'http://localhost:3000/quiz/results?answers=0.54,0.26,0.65,0.63,1.00,0.02,0.68,0.23,0.97,0.99,0.98,0.66,0.37,0.51,0.56,0.51,0.02,0.76,0.90,0.76,0.63,0.64,0.53,0.66,0.50,0.76,0.75,0.58,0.74,0.99,0.65,0.57,0.72,0.24,0.63,0.64,0.65,0.60,0.73,0.57,0.98,0.50,0.71,0.63,0.72,0.73,0.74,0.72,0.99,0.60&type=long&shared=true';
+            window.open(url, '_blank');
+        }
+        
+        function startNewQuiz() {
+            window.open('http://localhost:3000/quiz?type=long', '_blank');
+        }
+    </script>
+</body>
+</html>

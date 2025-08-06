@@ -61,7 +61,7 @@ export default function AboutCreator() {
   };
 
   return (
-    <div className="bg-background rounded-2xl shadow-lg p-6 flex flex-col">
+    <div className="bg-background rounded-2xl shadow-lg p-6 flex flex-col h-full">
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
         <div className="flex-shrink-0">
           <div className="relative w-28 h-28">
@@ -93,16 +93,17 @@ export default function AboutCreator() {
 
       <div className="pt-4 flex-grow flex flex-col">
         <h3 className="text-lg font-semibold text-foreground mb-3">Have feedback or ideas?</h3>
-        <form onSubmit={handleSubmit} className="space-y-4 flex-grow flex flex-col">
-          <div>
+        <form onSubmit={handleSubmit} className="flex-grow flex flex-col gap-4">
+          <div className="flex-grow flex">
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="Share your thoughts, suggestions, or feature ideas..."
-              className="w-full min-h-[80px] p-3 border border-gray-300 rounded-lg resize-y
+              className="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg resize-none
                        bg-white text-foreground placeholder-gray-400
                        focus:ring-2 focus:ring-primary focus:border-transparent
-                       transition-all"
+                       transition-all flex-grow"
+              style={{ height: 'auto' }}
               required
             />
           </div>

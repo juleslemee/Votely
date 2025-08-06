@@ -1,3 +1,12 @@
+// Import unified question loader
+import { 
+  getPhase1Questions, 
+  getTiebreakerQuestions,
+  Question as TSVQuestion,
+  loadAllQuestions 
+} from '../../lib/question-loader';
+import { fetchTSVWithCache } from '@/lib/tsv-cache';
+
 type PoliticalAxis = 'economic' | 'authority' | 'cultural';
 
 export interface Question {
@@ -5,232 +14,77 @@ export interface Question {
   question: string;
   axis: PoliticalAxis;
   agreeDir?: -1 | 1; // Direction that "agree" pushes the score
+  boundary?: 'LEFT_CENTER' | 'CENTER_RIGHT' | 'LIB_CENTER' | 'CENTER_AUTH'; // For tiebreakers
+  originalId?: string; // Keep track of original TSV ID
 }
 
-// New phase-based political questions from TSV
-// 30 core questions for balanced assessment
+// Cache for loaded questions
+let cachedPhase1: Question[] | null = null;
+let cachedTiebreakers: Question[] | null = null;
+let cachedAll: Question[] | null = null;
+
+// Convert TSV question to app Question format
+function convertQuestion(q: TSVQuestion): Question {
+  return {
+    id: q.id,
+    question: q.text,
+    axis: q.axis,
+    agreeDir: q.agreeDir,
+    boundary: q.boundary,
+    originalId: q.originalId,
+    text: q.text // Also include text property for compatibility
+  } as Question;
+}
+
+// Load all questions from TSV (replaces hardcoded array)
 export const allQuestions: Question[] = [
-  // ECONOMIC QUESTIONS
-  {
-    id: 1,
-    question: "The government should actively redistribute wealth from the rich to the poor to create a more equal society.",
-    axis: 'economic',
-    agreeDir: -1
-  },
-  {
-    id: 2,
-    question: "Lowering taxes for businesses and individuals is the best way to encourage economic growth.",
-    axis: 'economic',
-    agreeDir: 1
-  },
-  {
-    id: 3,
-    question: "Free-market capitalism is the best economic system, despite any imperfections.",
-    axis: 'economic',
-    agreeDir: 1
-  },
-  {
-    id: 4,
-    question: "Strong government regulation of businesses is necessary to protect consumers and workers.",
-    axis: 'economic',
-    agreeDir: -1
-  },
-  {
-    id: 5,
-    question: "Healthcare should be provided free of charge by the government to all people.",
-    axis: 'economic',
-    agreeDir: -1
-  },
-  {
-    id: 6,
-    question: "Generous social welfare programs can reduce people's incentive to work.",
-    axis: 'economic',
-    agreeDir: 1
-  },
-  {
-    id: 7,
-    question: "Labor unions are necessary to protect workers' rights and should be supported.",
-    axis: 'economic',
-    agreeDir: -1
-  },
-  {
-    id: 8,
-    question: "Private companies can provide services like healthcare and education more efficiently than the government.",
-    axis: 'economic',
-    agreeDir: 1
-  },
-  {
-    id: 25,
-    question: "High-income earners should pay a much larger percentage of their income in taxes than everyone else.",
-    axis: 'economic',
-    agreeDir: -1
-  },
-  {
-    id: 26,
-    question: "Too much government regulation of business stifles economic growth and innovation.",
-    axis: 'economic',
-    agreeDir: 1
-  },
-
-  // AUTHORITY QUESTIONS
-  {
-    id: 9,
-    question: "Government surveillance of citizens' communications is acceptable if it prevents crime and terrorism.",
-    axis: 'authority',
-    agreeDir: 1
-  },
-  {
-    id: 10,
-    question: "The government should have as little involvement in citizens' lives as possible.",
-    axis: 'authority',
-    agreeDir: -1
-  },
-  {
-    id: 11,
-    question: "The government should be able to censor speech or media that it considers dangerous or extremist.",
-    axis: 'authority',
-    agreeDir: 1
-  },
-  {
-    id: 12,
-    question: "Individuals should be free to make their own lifestyle choices as long as they do not harm others.",
-    axis: 'authority',
-    agreeDir: -1
-  },
-  {
-    id: 13,
-    question: "In a national emergency, it is acceptable for the government to suspend some normal legal rights.",
-    axis: 'authority',
-    agreeDir: 1
-  },
-  {
-    id: 14,
-    question: "People have the right to disobey laws they find unjust.",
-    axis: 'authority',
-    agreeDir: -1
-  },
-  {
-    id: 15,
-    question: "A strong, centralized government is necessary to maintain order in society.",
-    axis: 'authority',
-    agreeDir: 1
-  },
-  {
-    id: 16,
-    question: "Law-abiding citizens should be able to own firearms without heavy restrictions.",
-    axis: 'authority',
-    agreeDir: -1
-  },
-  {
-    id: 27,
-    question: "Every citizen should be required to serve in the military or perform national service for at least a year.",
-    axis: 'authority',
-    agreeDir: 1
-  },
-  {
-    id: 28,
-    question: "Local communities should have more power to govern themselves with less central oversight.",
-    axis: 'authority',
-    agreeDir: -1
-  },
-
-  // CULTURAL/SOCIAL QUESTIONS
-  {
-    id: 17,
-    question: "Children are best off when raised by a married mother and father in the same household.",
-    axis: 'cultural',
-    agreeDir: 1
-  },
-  {
-    id: 18,
-    question: "A diverse society with many cultures, religions, and identities is a strength for a nation.",
-    axis: 'cultural',
-    agreeDir: -1
-  },
-  {
-    id: 19,
-    question: "Women should have the right to choose an abortion without government interference.",
-    axis: 'cultural',
-    agreeDir: -1
-  },
-  {
-    id: 20,
-    question: "Political correctness has gone too far, to the point where people are afraid to speak their minds.",
-    axis: 'cultural',
-    agreeDir: 1
-  },
-  {
-    id: 21,
-    question: "Laws and policies should not be influenced by any religion; the government needs to stay secular.",
-    axis: 'cultural',
-    agreeDir: -1
-  },
-  {
-    id: 22,
-    question: "Society should accept people's gender identities, even if they differ from their birth sex.",
-    axis: 'cultural',
-    agreeDir: -1
-  },
-  {
-    id: 23,
-    question: "Immigration into our country should be strictly limited to protect our national culture and economy.",
-    axis: 'cultural',
-    agreeDir: 1
-  },
-  {
-    id: 24,
-    question: "It is more important to preserve traditional values and ways of life than to adopt new social changes.",
-    axis: 'cultural',
-    agreeDir: 1
-  },
-  {
-    id: 29,
-    question: "Society has become too permissive and would benefit from traditional moral standards.",
-    axis: 'cultural',
-    agreeDir: 1
-  },
-  {
-    id: 30,
-    question: "Schools should teach students about historical injustices committed by our country.",
-    axis: 'cultural',
-    agreeDir: -1
-  },
-
-  // TIEBREAKER QUESTIONS (for when scores are close to center)
-  {
-    id: 31,
-    question: "Protecting the environment should be prioritized even at the cost of economic growth.",
-    axis: 'economic',
-    agreeDir: -1
-  },
-  {
-    id: 32,
-    question: "Tariffs and import restrictions are necessary to protect domestic industries.",
-    axis: 'economic',
-    agreeDir: 1
-  },
-  {
-    id: 33,
-    question: "Government policy should follow the advice of qualified experts, even if it goes against popular opinion.",
-    axis: 'authority',
-    agreeDir: 1
-  },
-  {
-    id: 34,
-    question: "If government violates rights, citizens should resist through civil disobedience.",
-    axis: 'authority',
-    agreeDir: -1
-  }
+  // This array will be populated from TSV on first use
+  // Keeping as empty array for now to maintain backwards compatibility
 ];
+
+// Async function to get Phase 1 questions from TSV
+export async function getPhase1QuestionsAsync(): Promise<Question[]> {
+  if (cachedPhase1) return cachedPhase1;
+  const tsvQuestions = await getPhase1Questions();
+  cachedPhase1 = tsvQuestions.map(convertQuestion);
+  return cachedPhase1;
+}
+
+// Async function to get tiebreaker questions from TSV
+export async function getTiebreakerQuestionsAsync(boundaries?: string[]): Promise<Question[]> {
+  if (cachedTiebreakers && !boundaries) return cachedTiebreakers;
+  const tsvQuestions = boundaries 
+    ? await getTiebreakerQuestions(boundaries)
+    : await getTiebreakerQuestions(['LEFT_CENTER', 'CENTER_RIGHT', 'LIB_CENTER', 'CENTER_AUTH']);
+  const converted = tsvQuestions.map(convertQuestion);
+  if (!boundaries) cachedTiebreakers = converted;
+  return converted;
+}
+
+// Get all questions (phase 1 + tiebreakers)
+export async function getAllQuestionsAsync(): Promise<Question[]> {
+  if (cachedAll) return cachedAll;
+  const [phase1, tiebreakers] = await Promise.all([
+    getPhase1QuestionsAsync(),
+    getTiebreakerQuestionsAsync()
+  ]);
+  cachedAll = [...phase1, ...tiebreakers];
+  return cachedAll;
+}
 
 // Short quiz: Filter allQuestions for only priority 2 questions
 // Generate randomized short quiz questions
-export function generateShortQuizQuestions(): Question[] {
+export async function generateShortQuizQuestions(): Promise<Question[]> {
   console.log('🎲 Generating randomized short quiz questions...');
   
+  // Get all questions from TSV
+  const allQs = await getAllQuestionsAsync();
+  
   // Get the priority 2 questions and shuffle them
-  const priority2Ids = [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
-  const priority2Questions = allQuestions.filter(q => priority2Ids.includes(q.id));
+  const priority2Ids = ['P01', 'P02', 'P03', 'P04', 'P09', 'P10', 'P11', 'P12', 'P17', 'P18'];
+  const priority2Questions = allQs.filter(q => 
+    q.originalId && priority2Ids.includes(q.originalId)
+  );
   const randomizedShort = shuffleArray(priority2Questions);
   
   console.log(`📝 Short Quiz: ${randomizedShort.length} questions randomized`);
@@ -240,16 +94,27 @@ export function generateShortQuizQuestions(): Question[] {
 }
 
 // Static fallback for short quiz (backwards compatibility)
-export const shortQuestions: Question[] = allQuestions.filter(q => {
-  const priority2Ids = [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
-  return priority2Ids.includes(q.id);
-});
+export const shortQuestions: Question[] = [];
 
-// Get core Phase 1 questions (IDs 1-30)
-export const phase1Questions = allQuestions.filter(q => q.id >= 1 && q.id <= 30);
+// Get core Phase 1 questions - now async
+export let phase1Questions: Question[] = [];
+export let tiebreakerQuestions: Question[] = [];
 
-// Get tiebreaker questions (IDs 31-34)
-export const tiebreakerQuestions = allQuestions.filter(q => q.id >= 31 && q.id <= 34);
+// Initialize questions on module load
+(async () => {
+  try {
+    const [p1, tb] = await Promise.all([
+      getPhase1QuestionsAsync(),
+      getTiebreakerQuestionsAsync()
+    ]);
+    phase1Questions = p1;
+    tiebreakerQuestions = tb;
+    // Also populate allQuestions for backwards compatibility
+    allQuestions.push(...p1, ...tb);
+  } catch (error) {
+    console.error('Failed to load questions from TSV:', error);
+  }
+})();
 
 // Randomize array order using Fisher-Yates shuffle
 function shuffleArray<T>(array: T[]): T[] {
@@ -262,113 +127,181 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Generate randomized long quiz questions with balanced distribution
-export function generateLongQuizQuestions(): Question[] {
+export async function generateLongQuizQuestions(): Promise<Question[]> {
   console.log('🎲 Generating randomized long quiz questions with balanced distribution...');
   
-  // Separate questions by axis for balanced distribution
-  const economicQuestions = phase1Questions.filter(q => q.axis === 'economic');
-  const authorityQuestions = phase1Questions.filter(q => q.axis === 'authority');
-  const culturalQuestions = phase1Questions.filter(q => q.axis === 'cultural');
+  // Get Phase 1 questions from TSV
+  const p1Questions = await getPhase1QuestionsAsync();
   
-  // Shuffle each category
-  const shuffledEconomic = shuffleArray(economicQuestions);
-  const shuffledAuthority = shuffleArray(authorityQuestions);
-  const shuffledCultural = shuffleArray(culturalQuestions);
+  // Separate questions by axis AND direction for truly balanced distribution
+  const economicLeft = p1Questions.filter(q => q.axis === 'economic' && q.agreeDir === -1);
+  const economicRight = p1Questions.filter(q => q.axis === 'economic' && q.agreeDir === 1);
+  const authorityLib = p1Questions.filter(q => q.axis === 'authority' && q.agreeDir === -1);
+  const authorityAuth = p1Questions.filter(q => q.axis === 'authority' && q.agreeDir === 1);
+  const culturalProg = p1Questions.filter(q => q.axis === 'cultural' && q.agreeDir === -1);
+  const culturalTrad = p1Questions.filter(q => q.axis === 'cultural' && q.agreeDir === 1);
   
-  console.log(`📊 Question distribution: ${shuffledEconomic.length} economic, ${shuffledAuthority.length} authority, ${shuffledCultural.length} cultural`);
+  // Shuffle each subcategory
+  const shuffledEconLeft = shuffleArray(economicLeft);
+  const shuffledEconRight = shuffleArray(economicRight);
+  const shuffledAuthLib = shuffleArray(authorityLib);
+  const shuffledAuthAuth = shuffleArray(authorityAuth);
+  const shuffledCultProg = shuffleArray(culturalProg);
+  const shuffledCultTrad = shuffleArray(culturalTrad);
   
-  // For the first 20 questions (screens 1-4), ensure balanced distribution
-  // We want roughly 6-7 of each type in the first 20
-  const first20: Question[] = [];
+  console.log(`📊 Distribution - Econ: ${economicLeft.length}L/${economicRight.length}R, Auth: ${authorityLib.length}L/${authorityAuth.length}A, Cult: ${culturalProg.length}P/${culturalTrad.length}T`);
   
-  // Take 7 economic, 7 authority, 6 cultural for first 20
-  first20.push(...shuffledEconomic.slice(0, 7));
-  first20.push(...shuffledAuthority.slice(0, 7));
-  first20.push(...shuffledCultural.slice(0, 6));
+  // Track indices for pulling from each subcategory
+  const indices = {
+    econLeft: 0, econRight: 0,
+    authLib: 0, authAuth: 0,
+    cultProg: 0, cultTrad: 0
+  };
   
-  // Shuffle the first 20 to mix them up
-  const shuffledFirst20 = shuffleArray(first20);
+  // Build questions for each screen with balanced distribution
+  const finalQuestions: Question[] = [];
   
-  // For the last 10 questions (screens 5-6), use remaining questions
-  // This ensures we have 3 economic, 3 authority, 4 cultural available
-  const last10: Question[] = [];
-  last10.push(...shuffledEconomic.slice(7)); // 3 remaining economic
-  last10.push(...shuffledAuthority.slice(7)); // 3 remaining authority
-  last10.push(...shuffledCultural.slice(6));  // 4 remaining cultural
+  // SCREEN-BY-SCREEN DISTRIBUTION PLAN
+  // First 4 screens (20 questions): Must balance axis AND direction
+  const screenPlans = [
+    // Screen 1 (Q1-5): 2E(1L,1R), 2A(1L,1A), 1C(P)
+    { econLeft: 1, econRight: 1, authLib: 1, authAuth: 1, cultProg: 1, cultTrad: 0 },
+    // Screen 2 (Q6-10): 2E(1L,1R), 2A(1L,1A), 1C(T)
+    { econLeft: 1, econRight: 1, authLib: 1, authAuth: 1, cultProg: 0, cultTrad: 1 },
+    // Screen 3 (Q11-15): 2E(1L,1R), 1A(L), 2C(1P,1T)
+    { econLeft: 1, econRight: 1, authLib: 1, authAuth: 0, cultProg: 1, cultTrad: 1 },
+    // Screen 4 (Q16-20): 1E(R), 2A(2A), 2C(1P,1T)
+    { econLeft: 0, econRight: 1, authLib: 0, authAuth: 2, cultProg: 1, cultTrad: 1 },
+    // Screen 5 (Q21-25): 2E(1L,1R), 1A(A), 2C(1P,1T)
+    { econLeft: 1, econRight: 1, authLib: 0, authAuth: 1, cultProg: 1, cultTrad: 1 },
+    // Screen 6 (Q26-30): 1E(R), 2A(2A), 2C(1P,1T)
+    { econLeft: 0, econRight: 1, authLib: 0, authAuth: 2, cultProg: 1, cultTrad: 1 }
+  ];
   
-  // Shuffle the last 10
-  const shuffledLast10 = shuffleArray(last10);
+  // Generate questions for each screen
+  for (let screenIdx = 0; screenIdx < screenPlans.length; screenIdx++) {
+    const plan = screenPlans[screenIdx];
+    const screenQuestions: Question[] = [];
+    
+    // Add questions according to plan
+    for (let i = 0; i < plan.econLeft; i++) {
+      if (indices.econLeft < shuffledEconLeft.length) {
+        screenQuestions.push(shuffledEconLeft[indices.econLeft++]);
+      }
+    }
+    for (let i = 0; i < plan.econRight; i++) {
+      if (indices.econRight < shuffledEconRight.length) {
+        screenQuestions.push(shuffledEconRight[indices.econRight++]);
+      }
+    }
+    for (let i = 0; i < plan.authLib; i++) {
+      if (indices.authLib < shuffledAuthLib.length) {
+        screenQuestions.push(shuffledAuthLib[indices.authLib++]);
+      }
+    }
+    for (let i = 0; i < plan.authAuth; i++) {
+      if (indices.authAuth < shuffledAuthAuth.length) {
+        screenQuestions.push(shuffledAuthAuth[indices.authAuth++]);
+      }
+    }
+    for (let i = 0; i < plan.cultProg; i++) {
+      if (indices.cultProg < shuffledCultProg.length) {
+        screenQuestions.push(shuffledCultProg[indices.cultProg++]);
+      }
+    }
+    for (let i = 0; i < plan.cultTrad; i++) {
+      if (indices.cultTrad < shuffledCultTrad.length) {
+        screenQuestions.push(shuffledCultTrad[indices.cultTrad++]);
+      }
+    }
+    
+    // Shuffle within screen to randomize presentation
+    const shuffledScreen = shuffleArray(screenQuestions);
+    finalQuestions.push(...shuffledScreen);
+  }
   
-  const finalQuestions = [...shuffledFirst20, ...shuffledLast10];
+  // Log distribution per screen for verification
+  console.log(`📝 Phase 1: ${finalQuestions.length} questions with balanced distribution`);
+  for (let i = 0; i < 6; i++) {
+    const screenQuestions = finalQuestions.slice(i * 5, (i + 1) * 5);
+    const e = screenQuestions.filter(q => q.axis === 'economic').length;
+    const a = screenQuestions.filter(q => q.axis === 'authority').length;
+    const c = screenQuestions.filter(q => q.axis === 'cultural').length;
+    const left = screenQuestions.filter(q => q.agreeDir === -1).length;
+    const right = screenQuestions.filter(q => q.agreeDir === 1).length;
+    console.log(`Screen ${i + 1}: E:${e} A:${a} C:${c} | L:${left} R:${right}`);
+  }
   
-  console.log(`📝 Phase 1: ${finalQuestions.length} questions arranged`);
-  console.log('First 20 distribution:', shuffledFirst20.map(q => q.axis.charAt(0).toUpperCase()).join(''));
-  console.log('Last 10 distribution:', shuffledLast10.map(q => q.axis.charAt(0).toUpperCase()).join(''));
-  console.log('Last 10 reserves - E:', shuffledLast10.filter(q => q.axis === 'economic').length,
-              'A:', shuffledLast10.filter(q => q.axis === 'authority').length,
-              'C:', shuffledLast10.filter(q => q.axis === 'cultural').length);
+  // Overall balance check
+  const totalLeft = finalQuestions.filter(q => q.agreeDir === -1).length;
+  const totalRight = finalQuestions.filter(q => q.agreeDir === 1).length;
+  console.log(`✅ Overall balance: ${totalLeft} left-leaning, ${totalRight} right-leaning`);
   
   return finalQuestions;
 }
 
 // Function to adjust final questions based on tiebreaker needs (called after screen 4)
-export function adjustForTiebreakers(
+export async function adjustForTiebreakers(
   remainingQuestions: Question[],
   economicScore: number,
   governanceScore: number
-): Question[] {
+): Promise<Question[]> {
   console.log('🎯 Checking for tiebreaker needs...');
   console.log(`Current scores - Economic: ${economicScore.toFixed(2)}, Governance: ${governanceScore.toFixed(2)}`);
   
   // Check proximity to macro cell boundaries (±33.33 for 3x3 grid)
-  // If within ±5 of boundary, we need tiebreakers
-  const BOUNDARY_THRESHOLD = 5;
+  // If within ±15 of boundary, we need tiebreakers
+  const BOUNDARY_THRESHOLD = 15;
   const MACRO_BOUNDARY = 33.33;
   
-  const needsEconomicTiebreaker = Math.abs(Math.abs(economicScore) - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD;
-  const needsGovernanceTiebreaker = Math.abs(Math.abs(governanceScore) - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD;
+  // Detect which specific boundaries we're near
+  const boundaries: string[] = [];
   
-  console.log(`Tiebreakers needed - Economic: ${needsEconomicTiebreaker}, Governance: ${needsGovernanceTiebreaker}`);
-  
-  let adjustedQuestions = [...remainingQuestions];
-  let replacedCount = 0;
-  
-  // Count available questions by type in remaining set
-  const remainingByType = {
-    economic: remainingQuestions.filter(q => q.axis === 'economic').length,
-    authority: remainingQuestions.filter(q => q.axis === 'authority').length,
-    cultural: remainingQuestions.filter(q => q.axis === 'cultural').length
-  };
-  
-  console.log('Remaining questions by type:', remainingByType);
-  
-  // Replace cultural questions with tiebreakers if needed
-  if (needsEconomicTiebreaker && remainingByType.cultural >= 2) {
-    const economicTiebreakers = tiebreakerQuestions.filter(q => q.axis === 'economic');
-    const culturalIndices = adjustedQuestions
-      .map((q, i) => q.axis === 'cultural' ? i : -1)
-      .filter(i => i !== -1);
-    
-    // Replace up to 2 cultural questions with economic tiebreakers
-    for (let i = 0; i < Math.min(2, economicTiebreakers.length, culturalIndices.length); i++) {
-      adjustedQuestions[culturalIndices[i]] = economicTiebreakers[i];
-      replacedCount++;
-      console.log(`✅ Replaced cultural question with economic tiebreaker: "${economicTiebreakers[i].question.substring(0, 50)}..."`);
-    }
+  // Economic boundaries
+  if (Math.abs(economicScore + MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+    boundaries.push('LEFT_CENTER');
+    console.log('📍 Near Left-Center economic boundary');
+  }
+  if (Math.abs(economicScore - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+    boundaries.push('CENTER_RIGHT');
+    console.log('📍 Near Center-Right economic boundary');
   }
   
-  if (needsGovernanceTiebreaker && remainingByType.cultural >= 2 - replacedCount) {
-    const authorityTiebreakers = tiebreakerQuestions.filter(q => q.axis === 'authority');
-    const culturalIndices = adjustedQuestions
-      .map((q, i) => q.axis === 'cultural' ? i : -1)
-      .filter(i => i !== -1);
-    
-    // Replace up to 2 more cultural questions with authority tiebreakers
-    const startIndex = replacedCount; // Skip already replaced ones
-    for (let i = 0; i < Math.min(2, authorityTiebreakers.length, culturalIndices.length - startIndex); i++) {
-      adjustedQuestions[culturalIndices[startIndex + i]] = authorityTiebreakers[i];
-      console.log(`✅ Replaced cultural question with authority tiebreaker: "${authorityTiebreakers[i].question.substring(0, 50)}..."`);
-    }
+  // Authority boundaries
+  if (Math.abs(governanceScore + MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+    boundaries.push('LIB_CENTER');
+    console.log('📍 Near Lib-Center authority boundary');
+  }
+  if (Math.abs(governanceScore - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+    boundaries.push('CENTER_AUTH');
+    console.log('📍 Near Center-Auth authority boundary');
+  }
+  
+  if (boundaries.length === 0) {
+    console.log('✅ No tiebreakers needed - clear positioning');
+    return remainingQuestions;
+  }
+  
+  console.log(`🎯 Selecting targeted tiebreakers for boundaries: ${boundaries.join(', ')}`);
+  
+  // Get relevant tiebreaker questions for detected boundaries from TSV
+  const relevantTiebreakers = await getTiebreakerQuestionsAsync(boundaries);
+  
+  console.log(`Found ${relevantTiebreakers.length} relevant tiebreaker questions`);
+  
+  // Count available cultural questions to replace
+  const culturalIndices = remainingQuestions
+    .map((q, i) => q.axis === 'cultural' ? i : -1)
+    .filter(i => i !== -1);
+  
+  const maxReplacements = Math.min(relevantTiebreakers.length, culturalIndices.length, 4);
+  console.log(`Will replace up to ${maxReplacements} cultural questions with tiebreakers`);
+  
+  // Replace cultural questions with targeted tiebreakers
+  let adjustedQuestions = [...remainingQuestions];
+  for (let i = 0; i < maxReplacements; i++) {
+    adjustedQuestions[culturalIndices[i]] = relevantTiebreakers[i];
+    console.log(`✅ Added tiebreaker: "${relevantTiebreakers[i].question.substring(0, 50)}..."`);
   }
   
   return adjustedQuestions;
@@ -383,8 +316,8 @@ export interface Phase2Question extends Question {
 // Load and parse Phase 2 questions from TSV
 async function loadPhase2QuestionsFromTSV(): Promise<Map<string, Phase2Question[]>> {
   try {
-    const response = await fetch('/political_quiz_final.tsv');
-    const text = await response.text();
+    // Use cached fetch to avoid repeated requests
+    const text = await fetchTSVWithCache('/political_quiz_final.tsv');
     const lines = text.trim().split('\n');
     const headers = lines[0].split('\t');
     

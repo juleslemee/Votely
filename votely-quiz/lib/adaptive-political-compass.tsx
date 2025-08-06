@@ -19,19 +19,148 @@ function formatLabel(label: string, x: number, maxLength: number = 12): React.Re
   let currentLine = '';
   
   words.forEach(word => {
-    // If the word itself is too long, break it with a hyphen
-    if (word.length > maxLength) {
+    // If word fits with current line, add it
+    if (currentLine.length + word.length + 1 <= maxLength) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } 
+    // If word itself is longer than maxLength, we need to break it
+    else if (word.length > maxLength) {
+      // Push current line if it exists
       if (currentLine) {
         lines.push(currentLine);
         currentLine = '';
       }
-      // Break the long word
-      const breakPoint = maxLength - 1; // Leave room for hyphen
-      lines.push(word.substring(0, breakPoint) + '-');
-      currentLine = word.substring(breakPoint);
-    } else if (currentLine.length + word.length + 1 <= maxLength) {
-      currentLine += (currentLine ? ' ' : '') + word;
-    } else {
+      
+      // Smart word breaking algorithm
+      const breakWord = (w: string, max: number): string[] => {
+        const result: string[] = [];
+        let remaining = w;
+        
+        while (remaining.length > max) {
+          let breakPoint = -1;
+          let quality = 0; // Higher is better
+          
+          // Strategy 1: Look for existing hyphens (best quality)
+          for (let i = max - 1; i > 0; i--) {
+            if (remaining[i] === '-' && i < max) {
+              breakPoint = i + 1; // Include the hyphen
+              quality = 100;
+              break;
+            }
+          }
+          
+          // Strategy 2: Look for capital letters (good for compound words)
+          if (quality < 90) {
+            for (let i = Math.min(max - 1, remaining.length - 1); i > 2; i--) {
+              if (remaining[i] === remaining[i].toUpperCase() && 
+                  remaining[i] !== remaining[i].toLowerCase() &&
+                  i > 2 && i < max) {
+                breakPoint = i;
+                quality = 80;
+                break;
+              }
+            }
+          }
+          
+          // Strategy 3: Look for common prefixes
+          if (quality < 70) {
+            const prefixes = ['Neo', 'Geo', 'Anti', 'Proto', 'Pseudo', 'Quasi', 'Ultra', 
+                            'Anarcho', 'Crypto', 'Paleo', 'Eco', 'Post', 'Pre', 'Sub', 'Super'];
+            for (const prefix of prefixes) {
+              if (remaining.startsWith(prefix) && 
+                  prefix.length <= max - 1 && 
+                  remaining.length > prefix.length + 3) {
+                breakPoint = prefix.length;
+                quality = 60;
+                break;
+              }
+            }
+          }
+          
+          // Strategy 4: Avoid breaking right before common suffixes
+          if (breakPoint === -1) {
+            // Find a position that doesn't create awkward breaks
+            const avoidPatterns = ['ism', 'ist', 'tion', 'sion', 'ment', 'ness', 'ity', 'acy', 'archy', 'cracy'];
+            
+            for (let i = max - 1; i >= Math.max(3, max * 0.4); i--) {
+              let isGoodBreak = true;
+              const afterBreak = remaining.substring(i);
+              
+              // Check if we're breaking right before a suffix pattern
+              for (const pattern of avoidPatterns) {
+                if (afterBreak.startsWith(pattern) || 
+                    (afterBreak.length <= 3 && remaining.substring(i - 1).startsWith(pattern))) {
+                  isGoodBreak = false;
+                  break;
+                }
+              }
+              
+              // Also avoid breaking if it leaves very short segments
+              if (afterBreak.length < 3 || i < 3) {
+                isGoodBreak = false;
+              }
+              
+              if (isGoodBreak) {
+                breakPoint = i;
+                quality = 40;
+                break;
+              }
+            }
+          }
+          
+          // Strategy 5: Look for syllable boundaries (simplified)
+          if (breakPoint === -1) {
+            // Look for vowel-consonant-vowel patterns
+            const vowels = 'aeiouAEIOU';
+            for (let i = Math.min(max - 1, remaining.length - 4); i >= 4; i--) {
+              if (vowels.includes(remaining[i - 1]) && 
+                  !vowels.includes(remaining[i]) && 
+                  vowels.includes(remaining[i + 1])) {
+                breakPoint = i;
+                quality = 30;
+                break;
+              }
+            }
+          }
+          
+          // Last resort: break at max length, but try to avoid the last 2 characters
+          if (breakPoint === -1) {
+            breakPoint = Math.max(max - 2, Math.floor(max * 0.7));
+            quality = 10;
+          }
+          
+          // Apply the break
+          if (quality < 50 && breakPoint < remaining.length - 1) {
+            // Add hyphen for low-quality breaks
+            result.push(remaining.substring(0, breakPoint) + '-');
+            remaining = remaining.substring(breakPoint);
+          } else {
+            // High quality break, no hyphen needed
+            result.push(remaining.substring(0, breakPoint));
+            remaining = remaining.substring(breakPoint);
+          }
+        }
+        
+        if (remaining) {
+          result.push(remaining);
+        }
+        
+        return result;
+      };
+      
+      // Break the word and add to lines
+      const brokenParts = breakWord(word, maxLength);
+      brokenParts.forEach((part, idx) => {
+        if (idx === brokenParts.length - 1) {
+          // Last part becomes the current line
+          currentLine = part;
+        } else {
+          lines.push(part);
+        }
+      });
+    } 
+    // Word doesn't fit on current line but isn't too long by itself
+    else {
       if (currentLine) lines.push(currentLine);
       currentLine = word;
     }
@@ -325,12 +454,12 @@ export function AdaptivePoliticalCompass({ point, animateDot, quizType }: Adapti
                 y={toSvg(-y)}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={4.5}
+                fontSize={4}
                 fill={eerieBlack}
                 fontWeight="600"
                 style={{ pointerEvents: 'none' }}
               >
-                {formatLabel(label, toSvg(x), 12)}
+                {formatLabel(label, toSvg(x), 13)}
               </text>
             );
           })

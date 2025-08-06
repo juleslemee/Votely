@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Session Creation</title>
+    <style>
+        body { font-family: monospace; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        button { padding: 10px 20px; background: #6b46c1; color: white; border: none; cursor: pointer; margin: 5px; }
+        button:hover { background: #553c9a; }
+        .result { background: #f0f0f0; padding: 15px; margin: 20px 0; }
+        .success { background: #d4edda; padding: 15px; margin: 10px 0; }
+        .error { background: #ffebee; padding: 15px; margin: 10px 0; }
+        pre { background: white; padding: 10px; overflow-x: auto; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Test Session Creator</h1>
+    
+    <button onclick="createAndNavigate()">Create Session & Open Results</button>
+    <button onclick="checkStorage()">Check Storage</button>
+    <button onclick="directTest()">Direct Test (No Session)</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        // Create session and immediately navigate
+        function createAndNavigate() {
+            const sessionId = `quiz_${Date.now()}_direct`;
+            
+            // Create minimal test session
+            const session = {
+                sessionId: sessionId,
+                type: 'long',
+                questions: generateQuestions(),
+                answers: generateAnswers(),
+                phase1Scores: {
+                    economic: 5.2,
+                    authority: 8.7,
+                    cultural: -2.1
+                },
+                macroCellCode: 'EM-GM',
+                createdAt: Date.now()
+            };
+            
+            // Save to localStorage (more reliable than sessionStorage)
+            const allSessions = JSON.parse(localStorage.getItem('votely_quiz_session_all') || '{}');
+            allSessions[sessionId] = session;
+            localStorage.setItem('votely_quiz_session_all', JSON.stringify(allSessions));
+            
+            // Also save to sessionStorage
+            sessionStorage.setItem('votely_quiz_session', JSON.stringify(session));
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">
+                    <p>Session ${sessionId} saved!</p>
+                    <p>Redirecting to results...</p>
+                </div>
+            `;
+            
+            // Navigate to results
+            setTimeout(() => {
+                window.location.href = `/quiz/results?sessionId=${sessionId}&type=long`;
+            }, 1000);
+        }
+        
+        function generateQuestions() {
+            const questions = [];
+            
+            // Phase 1 (30 questions)
+            const phase1Ids = [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30];
+            phase1Ids.forEach((id, i) => {
+                questions.push({
+                    id: id,
+                    originalId: `P${id.toString().padStart(2, '0')}`,
+                    text: `Question ${id}`,
+                    axis: i % 3 === 0 ? 'economic' : i % 3 === 1 ? 'authority' : 'cultural',
+                    agreeDir: i % 2 === 0 ? -1 : 1,
+                    phase: 1,
+                    qType: 'core'
+                });
+            });
+            
+            // Phase 2 (20 questions) with supplementary axes
+            // 5 questions per axis for proper scoring
+            const axes = ['EMGM-A', 'EMGM-B', 'EMGM-C', 'EMGM-D'];
+            for (let i = 0; i < 20; i++) {
+                const axisIndex = Math.floor(i / 5);
+                questions.push({
+                    id: 1001 + i,
+                    originalId: `${axes[axisIndex]}-${(i % 5) + 1}`,
+                    text: `Phase 2 Question ${i + 1} for ${axes[axisIndex]}`,
+                    axis: 'cultural',
+                    agreeDir: i % 2 === 0 ? 1 : -1,
+                    phase: 2,
+                    qType: 'refine',
+                    supplementAxis: axes[axisIndex]
+                });
+            }
+            
+            console.log('Phase 2 questions with axes:', questions.slice(30).map(q => q.supplementAxis));
+            
+            return questions;
+        }
+        
+        function generateAnswers() {
+            const answerValues = [
+                0.54, 0.26, 0.65, 0.63, 1.00, 0.02, 0.68, 0.23, 0.97, 0.99,
+                0.98, 0.66, 0.37, 0.51, 0.56, 0.51, 0.02, 0.76, 0.90, 0.76,
+                0.63, 0.64, 0.53, 0.66, 0.50, 0.76, 0.75, 0.58, 0.74, 0.99,
+                0.65, 0.57, 0.72, 0.24, 0.63, 0.64, 0.65, 0.60, 0.73, 0.57,
+                0.98, 0.50, 0.71, 0.63, 0.72, 0.73, 0.74, 0.72, 0.99, 0.60
+            ];
+            
+            const answers = {};
+            const questions = generateQuestions();
+            questions.forEach((q, i) => {
+                answers[q.id] = answerValues[i];
+            });
+            
+            return answers;
+        }
+        
+        function checkStorage() {
+            const session = sessionStorage.getItem('votely_quiz_session');
+            const allSessions = localStorage.getItem('votely_quiz_session_all');
+            
+            let html = '<div class="result"><h3>Storage Status:</h3>';
+            
+            if (session) {
+                const s = JSON.parse(session);
+                html += `<p>✅ SessionStorage: ${s.sessionId}</p>`;
+            } else {
+                html += '<p>❌ SessionStorage: Empty</p>';
+            }
+            
+            if (allSessions) {
+                const all = JSON.parse(allSessions);
+                const count = Object.keys(all).length;
+                html += `<p>✅ LocalStorage: ${count} sessions</p>`;
+                Object.keys(all).forEach(id => {
+                    html += `<p style="margin-left: 20px">- ${id}</p>`;
+                });
+            } else {
+                html += '<p>❌ LocalStorage: Empty</p>';
+            }
+            
+            html += '</div>';
+            document.getElementById('result').innerHTML = html;
+        }
+        
+        function directTest() {
+            // Test with the legacy URL format
+            window.location.href = 'http://localhost:3000/quiz/results?answers=0.54,0.26,0.65,0.63,1.00,0.02,0.68,0.23,0.97,0.99,0.98,0.66,0.37,0.51,0.56,0.51,0.02,0.76,0.90,0.76,0.63,0.64,0.53,0.66,0.50,0.76,0.75,0.58,0.74,0.99,0.65,0.57,0.72,0.24,0.63,0.64,0.65,0.60,0.73,0.57,0.98,0.50,0.71,0.63,0.72,0.73,0.74,0.72,0.99,0.60&type=long&shared=true';
+        }
+    </script>
+</body>
+</html>

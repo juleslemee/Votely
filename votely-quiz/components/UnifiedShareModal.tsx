@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, Suspense } from 'react';
 import { AdaptivePoliticalCompass } from '../lib/adaptive-political-compass';
+import { LOGO_BASE64_DATA_URL } from '../lib/logo-base64';
 
 /**
  * UnifiedShareModal - Comprehensive sharing functionality for quiz results
@@ -740,10 +741,9 @@ export default function UnifiedShareModal({
               <div className="flex items-center justify-between w-full max-w-4xl">
                 <div className="flex items-center gap-4">
                   <img 
-                    src="https://votelyquiz.juleslemee.com/logo.svg" 
+                    src={LOGO_BASE64_DATA_URL}
                     alt="Votely" 
                     className="h-12 w-auto"
-                    crossOrigin="anonymous"
                     style={{ height: '48px', width: 'auto' }}
                   />
                   <div>
@@ -1367,10 +1367,9 @@ export default function UnifiedShareModal({
         <div className="flex items-center justify-between w-full max-w-4xl">
           <div className="flex items-center gap-4">
             <img 
-              src="https://votelyquiz.juleslemee.com/logo.svg" 
+              src={LOGO_BASE64_DATA_URL} 
               alt="Votely" 
               className="h-12 w-auto"
-              crossOrigin="anonymous"
               style={{ height: '48px', width: 'auto' }}
             />
             <div>

@@ -140,3 +140,28 @@
     flex-direction: row;
   }
 }
+
+/* Disable or reduce animations on mobile Safari for better stability */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  @media (max-width: 768px) {
+    .animate-float {
+      animation: none !important;
+    }
+  }
+}
+
+/* Alternative: Reduce animation on all mobile devices */
+@media (max-width: 768px) and (hover: none) {
+  .animate-float {
+    animation-duration: 10s !important;
+    animation-timing-function: ease-in-out !important;
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float {
+    animation: none !important;
+  }
+}

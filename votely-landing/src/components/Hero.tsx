@@ -44,7 +44,16 @@ const Hero = () => {
           </div>
           
           <div className="flex-1 flex justify-center items-center">
-            <div className="relative w-full max-w-[280px] mx-auto animate-float">
+            <div 
+              className="relative w-full max-w-[280px] mx-auto animate-float"
+              style={{
+                WebkitTransform: 'translateZ(0)',
+                WebkitBackfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden',
+                willChange: 'transform'
+              }}
+            >
               <img 
                 src="/Quiz Mockup.svg" 
                 alt="Votely Quiz Interface" 
@@ -52,6 +61,10 @@ const Hero = () => {
                   isImageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}
                 loading="eager"
+                style={{
+                  WebkitTransform: 'translateZ(0)',
+                  transform: 'translateZ(0)'
+                }}
               />
             </div>
           </div>

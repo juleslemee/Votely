@@ -53,7 +53,7 @@ async function sendEmailNotification(feedbackData: any) {
         },
         body: JSON.stringify({
           from: process.env.RESEND_FROM_EMAIL || 'Votely Quiz <votely@juleslemee.com>',
-          to: process.env.FEEDBACK_EMAIL || 'contact@juleslemee.com',
+          to: process.env.FEEDBACK_EMAIL || 'juleslemee@gmail.com',
           subject: 'New Votely Quiz Feedback',
           html: `
             <h2>New Feedback from Votely Quiz</h2>

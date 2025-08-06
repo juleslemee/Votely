@@ -73,6 +73,8 @@ export default function QuizPageClient() {
 
   const handleSliderInteraction = (questionId: number, event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     event.preventDefault(); // Prevent default touch behavior on mobile
+    event.stopPropagation(); // Stop event bubbling
+    
     // Find the actual slider track element (not the invisible click area)
     const sliderTrack = event.currentTarget.querySelector('.slider-track');
     if (!sliderTrack) return;
@@ -80,7 +82,11 @@ export default function QuizPageClient() {
     const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
     const relativeX = clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-    handleAnswerSelect(questionId, percentage);
+    
+    // Store the value immediately to prevent visual flickering
+    requestAnimationFrame(() => {
+      handleAnswerSelect(questionId, percentage);
+    });
   };
 
   const handleSliderMouseDown = (questionId: number, event: React.MouseEvent<HTMLDivElement>) => {
@@ -114,12 +120,18 @@ export default function QuizPageClient() {
     const handleTouchMove = (event: TouchEvent) => {
       if (dragState?.isDragging && dragState.element) {
         event.preventDefault(); // Prevent default touch behavior like swiping
+        event.stopPropagation();
+        
         const sliderTrack = dragState.element.querySelector('.slider-track');
         if (!sliderTrack) return;
         const rect = sliderTrack.getBoundingClientRect();
         const relativeX = event.touches[0].clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-        handleAnswerSelect(dragState.questionId, percentage);
+        
+        // Use requestAnimationFrame for smoother updates
+        requestAnimationFrame(() => {
+          handleAnswerSelect(dragState.questionId, percentage);
+        });
       }
     };
 
@@ -329,7 +341,12 @@ export default function QuizPageClient() {
                     {/* Slider track with extended click area */}
                     <div 
                       className="absolute top-1/2 left-0 right-0 -translate-y-1/2 cursor-pointer select-none pt-8 pb-8 px-10 -mx-10"
-                      style={{ touchAction: 'none' }}
+                      style={{ 
+                        touchAction: 'none',
+                        WebkitTouchCallout: 'none',
+                        WebkitUserSelect: 'none',
+                        userSelect: 'none'
+                      }}
                       data-question-id={question.id}
                       onMouseDown={(e) => handleSliderMouseDown(question.id, e)}
                       onTouchStart={(e) => handleSliderTouchStart(question.id, e)}
@@ -364,7 +381,11 @@ export default function QuizPageClient() {
                           style={{
                             left: `${(answers[question.id] ?? 0.5) * 100}%`,
                             transform: 'translateX(-50%) translateY(-50%)',
-                            animation: answers[question.id] === undefined ? 'pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+                            animation: answers[question.id] === undefined ? 'pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+                            WebkitTransform: 'translateX(-50%) translateY(-50%)',
+                            willChange: 'left',
+                            WebkitBackfaceVisibility: 'hidden',
+                            backfaceVisibility: 'hidden'
                           }}
                         />
                       </div>

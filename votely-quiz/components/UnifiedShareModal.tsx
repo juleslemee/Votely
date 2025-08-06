@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, Suspense } from 'react';
+import React, { useState, useRef, Suspense, useEffect } from 'react';
 import { AdaptivePoliticalCompass } from '../lib/adaptive-political-compass';
 
 /**
@@ -319,6 +319,29 @@ export default function UnifiedShareModal({
   const share2DRef = useRef<HTMLDivElement>(null);
   const share3DRef = useRef<HTMLDivElement>(null);
   const gifFrameRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Lock background scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      
+      // Apply styles to prevent scrolling
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Restore scroll position when modal closes
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   const generateScreenshot = async (type: '2d' | '3d') => {
     const ref = type === '2d' ? share2DRef.current : share3DRef.current;
@@ -740,15 +763,13 @@ export default function UnifiedShareModal({
               <div className="flex items-center justify-between w-full max-w-4xl">
                 <div className="flex items-center gap-4">
                   <img 
-                    src="https://votelyquiz.juleslemee.com/logo.svg"
+                    src="https://votelyquiz.juleslemee.com/256logo.png"
                     alt="Votely" 
                     className="h-12 w-auto"
                     crossOrigin="anonymous"
                     style={{ 
                       height: '48px', 
-                      width: 'auto',
-                      WebkitTransform: 'translateZ(0)',
-                      transform: 'translateZ(0)'
+                      width: 'auto'
                     }}
                   />
                   <div>
@@ -1372,15 +1393,13 @@ export default function UnifiedShareModal({
         <div className="flex items-center justify-between w-full max-w-4xl">
           <div className="flex items-center gap-4">
             <img 
-              src="https://votelyquiz.juleslemee.com/logo.svg" 
+              src="https://votelyquiz.juleslemee.com/256logo.png" 
               alt="Votely" 
               className="h-12 w-auto"
               crossOrigin="anonymous"
               style={{ 
                 height: '48px', 
-                width: 'auto',
-                WebkitTransform: 'translateZ(0)',
-                transform: 'translateZ(0)'
+                width: 'auto'
               }}
             />
             <div>
@@ -1439,7 +1458,7 @@ export default function UnifiedShareModal({
                       <span className="text-xl flex-shrink-0">📊</span>
                       <div className="text-left">
                         <div className="font-semibold">Download 2D Political Grid</div>
-                        <div className="text-sm text-purple-100">Detailed 9×9 ideology chart with all labels</div>
+                        <div className="text-sm text-purple-100">Detailed chart with all labels</div>
                       </div>
                     </div>
                   </>
@@ -1462,7 +1481,7 @@ export default function UnifiedShareModal({
                       <span className="text-xl flex-shrink-0">🎲</span>
                       <div className="text-left">
                         <div className="font-semibold">Download 3D Political Cube</div>
-                        <div className="text-sm text-green-100">3D visualization with colored 3×3 cells</div>
+                        <div className="text-sm text-green-100">Full 3D visualization</div>
                       </div>
                     </div>
                   </>
@@ -1488,7 +1507,7 @@ export default function UnifiedShareModal({
                       <span className="text-xl flex-shrink-0">🎬</span>
                       <div className="text-left">
                         <div className="font-semibold">Download Rotating 3D GIF</div>
-                        <div className="text-sm text-orange-100">Animated rotating cube visualization</div>
+                        <div className="text-sm text-orange-100">Animated rotating cube</div>
                       </div>
                     </div>
                   </>
@@ -1508,7 +1527,7 @@ export default function UnifiedShareModal({
                 <span className="text-xl flex-shrink-0">🔗</span>
                 <div className="text-left">
                   <div className="font-semibold">Copy Share Link</div>
-                  <div className="text-sm text-gray-100">Let others view your interactive results</div>
+                  <div className="text-sm text-gray-100">Full interactive webpage</div>
                 </div>
               </div>
             </button>

@@ -789,7 +789,7 @@ export default function ResultsClient() {
   const [waitlistCount, setWaitlistCount] = useState<number>(0);
 
   // Handle error states within the component return
-  if (!answersParam && !sessionIdParam && !dataParam) {
+  if (!answersParam && !sessionIdParam && !dataParam && !firebaseId) {
     return <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground mb-4">No results found</h1>
@@ -798,8 +798,8 @@ export default function ResultsClient() {
     </div>;
   }
   
-  // Check if data is still loading
-  if (!dataLoaded) {
+  // Check if data is still loading (including Firebase loading)
+  if (!dataLoaded || isLoadingFirebase) {
     return <div className="min-h-screen bg-gradient-to-b from-background to-primary/10 p-4 md:p-8 flex items-center justify-center">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground mb-4">Loading quiz data...</h1>

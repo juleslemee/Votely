@@ -167,8 +167,9 @@ async function updateGridCellCount(economic: number, social: number, quizType: '
 export async function testFirebaseConnection(): Promise<boolean> {
   try {
     console.log('Testing Firebase connection...');
-    const snapshot = await getDocs(collection(db, 'quizResponses'));
-    console.log('Firebase connection successful. Found', snapshot.size, 'documents');
+    // Just read ONE document instead of ALL documents!
+    const testDoc = await getDoc(doc(db, 'aggregatedStats', 'totals'));
+    console.log('Firebase connection successful. Stats exist:', testDoc.exists());
     return true;
   } catch (error) {
     console.error('Firebase connection failed:', error);

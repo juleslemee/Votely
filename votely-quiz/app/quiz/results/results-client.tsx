@@ -666,27 +666,27 @@ export default function ResultsClient() {
     }
     hasSaved.current = true;
     
+    // Calculate macro cell code from coordinates as fallback
+    const calculateMacroCellCode = (econ: number, soc: number): string => {
+      let econCode: 'EL' | 'EM' | 'ER';
+      if (econ < -33) econCode = 'EL';
+      else if (econ > 33) econCode = 'ER';
+      else econCode = 'EM';
+      
+      let authCode: 'GL' | 'GM' | 'GR';
+      if (soc > 33) authCode = 'GL';
+      else if (soc < -33) authCode = 'GR';
+      else authCode = 'GM';
+      
+      return `${econCode}-${authCode}`;
+    };
+    
+    const macroCellCode = ideologyData?.macroCellCode || calculateMacroCellCode(economic, social);
+    
     saveQuizResult({
       answers,
       quizType: quizType as 'short' | 'long',
       questionData: questionData.length > 0 ? questionData : undefined,
-      // Calculate macro cell code from coordinates as fallback
-      const calculateMacroCellCode = (econ: number, soc: number): string => {
-        let econCode: 'EL' | 'EM' | 'ER';
-        if (econ < -33) econCode = 'EL';
-        else if (econ > 33) econCode = 'ER';
-        else econCode = 'EM';
-        
-        let authCode: 'GL' | 'GM' | 'GR';
-        if (soc > 33) authCode = 'GL';
-        else if (soc < -33) authCode = 'GR';
-        else authCode = 'GM';
-        
-        return `${econCode}-${authCode}`;
-      };
-      
-      const macroCellCode = ideologyData?.macroCellCode || calculateMacroCellCode(economic, social);
-      
       result: {
         economicScore: economic,
         socialScore: social,

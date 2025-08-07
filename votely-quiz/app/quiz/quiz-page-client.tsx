@@ -141,18 +141,8 @@ export default function QuizPageClient() {
     const relativeX = clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
     
-    // Apply dead zone for small movements near neutral position
-    const currentValue = answers[questionId] ?? 0.5;
-    const delta = Math.abs(percentage - 0.5);
-    const deadZone = 0.03; // 3% dead zone around center
-    
-    // If the movement is very small and near center, snap to center
-    if (delta < deadZone && Math.abs(currentValue - 0.5) < deadZone) {
-      handleAnswerSelect(questionId, 0.5);
-    } else {
-      // Store the value immediately to prevent visual flickering
-      handleAnswerSelect(questionId, percentage);
-    }
+    // Store the value immediately to prevent visual flickering
+    handleAnswerSelect(questionId, percentage);
   };
 
   const handleSliderMouseDown = (questionId: number, event: React.MouseEvent<HTMLDivElement>) => {
@@ -194,18 +184,8 @@ export default function QuizPageClient() {
         const relativeX = event.touches[0].clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
         
-        // Apply dead zone for small movements near neutral position
-        const currentValue = answers[dragState.questionId] ?? 0.5;
-        const delta = Math.abs(percentage - 0.5);
-        const deadZone = 0.03; // 3% dead zone around center
-        
-        // If the movement is very small and near center, snap to center
-        if (delta < deadZone && Math.abs(currentValue - 0.5) < deadZone) {
-          handleAnswerSelect(dragState.questionId, 0.5);
-        } else {
-          // Use requestAnimationFrame for smoother updates
-          handleAnswerSelect(dragState.questionId, percentage);
-        }
+        // Use requestAnimationFrame for smoother updates
+        handleAnswerSelect(dragState.questionId, percentage);
       }
     };
 
@@ -557,7 +537,7 @@ export default function QuizPageClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-primary/25 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-background to-primary/25 p-4 md:p-8 overflow-x-hidden">
       <div className="max-w-3xl mx-auto space-y-12">
         {/* Progress Bar */}
         <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-6">

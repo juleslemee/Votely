@@ -45,40 +45,75 @@ async function sendEmailNotification(feedbackData: any) {
   if (process.env.RESEND_API_KEY) {
     try {
       console.log('Attempting to send email via Resend...');
+      const emailPayload: any = {
+        from: process.env.RESEND_FROM_EMAIL || 'Votely Quiz <votely@juleslemee.com>',
+        to: process.env.FEEDBACK_EMAIL || 'juleslemee@gmail.com',
+        subject: 'New Votely Quiz Feedback',
+        text: `NEW FEEDBACK FROM VOTELY QUIZ
+${'='.repeat(40)}
+
+Message:
+${feedbackData.feedback}
+
+${'='.repeat(40)}
+User wants reply: ${feedbackData.wantsReply ? 'Yes' : 'No'}
+${feedbackData.wantsReply && feedbackData.email ? `Reply email: ${feedbackData.email}` : ''}
+Sent at: ${new Date(feedbackData.timestamp).toLocaleString()}
+Feedback ID: ${feedbackData.id}
+`,
+      };
+      
+      // Use reply_to field if user wants a reply
+      if (feedbackData.wantsReply && feedbackData.email) {
+        emailPayload.reply_to = feedbackData.email;
+      }
+      
+      console.log('Sending email with payload:', {
+        to: emailPayload.to,
+        from: emailPayload.from,
+        subject: emailPayload.subject,
+        has_reply_to: !!emailPayload.reply_to,
+        reply_to: emailPayload.reply_to || 'none'
+      });
+      
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || 'Votely Quiz <votely@juleslemee.com>',
-          to: process.env.FEEDBACK_EMAIL || 'juleslemee@gmail.com',
-          subject: 'New Votely Quiz Feedback',
-          html: `
-            <h2>New Feedback from Votely Quiz</h2>
-            <p><strong>Message:</strong></p>
-            <p style="white-space: pre-wrap; background: #f5f5f5; padding: 16px; border-radius: 8px;">
-              ${feedbackData.feedback}
-            </p>
-            <hr style="margin: 24px 0; border: none; border-top: 1px solid #e0e0e0;">
-            <p><strong>User wants reply:</strong> ${feedbackData.wantsReply ? 'Yes' : 'No'}</p>
-            ${feedbackData.wantsReply && feedbackData.email ? 
-              `<p><strong>Reply to:</strong> <a href="mailto:${feedbackData.email}">${feedbackData.email}</a></p>` : 
-              ''}
-            <p><strong>Sent at:</strong> ${new Date(feedbackData.timestamp).toLocaleString()}</p>
-            <p><strong>Feedback ID:</strong> ${feedbackData.id}</p>
-          `,
-        }),
+        body: JSON.stringify(emailPayload),
       });
 
       console.log('Resend API response status:', response.status);
       const responseText = await response.text();
       
       if (!response.ok) {
-        console.error('Failed to send email:', responseText);
+        console.error('Failed to send email with Resend:');
+        console.error('Status:', response.status);
+        console.error('Response:', responseText);
+        
+        // Try to parse error details
+        try {
+          const errorData = JSON.parse(responseText);
+          console.error('Error details:', errorData);
+          if (errorData.message) {
+            console.error('Error message:', errorData.message);
+          }
+          if (errorData.name === 'validation_error') {
+            console.error('Validation issues:', errorData.errors);
+          }
+        } catch (e) {
+          console.error('Could not parse error response');
+        }
       } else {
-        console.log('Email sent successfully:', responseText);
+        console.log('Email sent successfully');
+        try {
+          const successData = JSON.parse(responseText);
+          console.log('Email ID:', successData.id);
+        } catch (e) {
+          console.log('Response:', responseText);
+        }
       }
     } catch (error) {
       console.error('Error sending email notification:', error);

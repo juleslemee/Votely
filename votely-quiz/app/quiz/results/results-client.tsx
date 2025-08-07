@@ -657,6 +657,11 @@ export default function ResultsClient() {
 
   // Save the quiz result (skip if this is a shared result or debug mode)
   useEffect(() => {
+    // Don't save if we don't have actual data yet
+    if (answers.length === 0 || !dataLoaded) {
+      return;
+    }
+    
     if (hasSaved.current || isShared || isDebugMode) {
       if (isDebugMode && !hasSaved.current) {
         console.log('🐛 DEBUG MODE: Skipping Firebase save');
@@ -726,7 +731,7 @@ export default function ResultsClient() {
         console.error('Failed to save quiz result:', error);
         console.error('Error details:', error.message, error.code);
       });
-  }, [answers, economic, social, alignment, isShared]);
+  }, [answers, economic, social, alignment, isShared, dataLoaded]);
 
   // Load analytics data
   useEffect(() => {

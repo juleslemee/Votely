@@ -67,20 +67,6 @@ const HowItWorks = () => {
       </div>
     </div>,
     
-    // Act step visualization
-    <div key="act" className="flex flex-col items-center justify-center h-full w-full">
-      <div className="max-w-[300px] w-full mx-auto">
-        <img 
-          src="/Page 2 - Act.png" 
-          alt="Act step mockup" 
-          className={`w-full h-full object-contain transition-opacity duration-300 ${
-            loadedImages["/Page 2 - Act.png"] ? "opacity-100" : "opacity-0"
-          }`}
-          loading="lazy"
-        />
-      </div>
-    </div>,
-    
     // Map step visualization
     <div key="map" className="flex flex-col items-center justify-center h-full w-full">
       <div className="max-w-[300px] w-full mx-auto">
@@ -89,6 +75,20 @@ const HowItWorks = () => {
           alt="Map step mockup" 
           className={`w-full h-full object-contain transition-opacity duration-300 ${
             loadedImages["/Page 3 - Map.png"] ? "opacity-100" : "opacity-0"
+          }`}
+          loading="lazy"
+        />
+      </div>
+    </div>,
+    
+    // Act step visualization
+    <div key="act" className="flex flex-col items-center justify-center h-full w-full">
+      <div className="max-w-[300px] w-full mx-auto">
+        <img 
+          src="/Page 2 - Act.png" 
+          alt="Act step mockup" 
+          className={`w-full h-full object-contain transition-opacity duration-300 ${
+            loadedImages["/Page 2 - Act.png"] ? "opacity-100" : "opacity-0"
           }`}
           loading="lazy"
         />

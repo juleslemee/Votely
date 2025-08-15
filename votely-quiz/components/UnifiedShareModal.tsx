@@ -327,7 +327,7 @@ export default function UnifiedShareModal({
     if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
       const isHTTPS = window.location.protocol === 'https:';
       const isLocalhost = window.location.hostname === 'localhost';
-      const hasShareAPI = !!navigator.share;
+      const hasShareAPI = 'share' in navigator;
       
       // Debug info
       console.log('Share API Debug:', {
@@ -925,7 +925,7 @@ export default function UnifiedShareModal({
     // Requirements: HTTPS (or localhost), user interaction, and browser support
     // Note: Also allowing local network IPs for testing (though share API may not work)
     const canShare = typeof navigator !== 'undefined' && 
-                     navigator.share && 
+                     'share' in navigator && 
                      (window.location.protocol === 'https:' || 
                       window.location.hostname === 'localhost' ||
                       window.location.hostname.startsWith('192.168.') ||

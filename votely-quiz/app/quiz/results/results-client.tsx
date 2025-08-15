@@ -418,20 +418,31 @@ export default function ResultsClient() {
                 supplementary: data.result.supplementaryScores || {}
               });
               
-              // Set ideology data if available
-              if (data.result.alignmentLabel) {
-                // The ideology is already calculated, just display it
-                setIdeologyData({
-                  ideology: data.result.alignmentLabel,
-                  explanation: data.result.alignmentDescription,
-                  friendlyLabel: data.result.alignmentLabel
-                } as any);
+              // Also set supplementScores separately for ideology calculation
+              if (data.result.supplementaryScores) {
+                setSupplementScores(data.result.supplementaryScores);
               }
+              
+              // Don't set ideology data directly - let it be recalculated from scores
+              // This ensures the ideology matches the actual scores
             }
             
-            // Set answers if we need them for the graph
+            // Set answers and questionData for proper display
             if (data.answers) {
               setAnswers(data.answers);
+              
+              // Set questionData if available - this is crucial for proper ideology calculation
+              if (data.questionData) {
+                setQuestionData(data.questionData);
+                setQuestionIds(data.questionData.map((q: any) => q.id));
+              } else if (data.quizType) {
+                // Fallback: reconstruct questionIds based on quiz type if questionData not saved
+                const reconstructedIds = data.quizType === 'long' 
+                  ? [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30]
+                  : [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
+                setQuestionIds(reconstructedIds.slice(0, data.answers.length));
+              }
+              
               setDataLoaded(true);
             }
             

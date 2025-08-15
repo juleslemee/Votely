@@ -316,9 +316,32 @@ export default function UnifiedShareModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingType, setGeneratingType] = useState<'2d' | '3d' | 'gif' | null>(null);
   const [gifProgress, setGifProgress] = useState(0);
+  const [canNativeShare, setCanNativeShare] = useState(false);
   const share2DRef = useRef<HTMLDivElement>(null);
   const share3DRef = useRef<HTMLDivElement>(null);
   const gifFrameRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Check for native share support
+  useEffect(() => {
+    // Check if we're on the client and if navigator.share is available
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+      const isHTTPS = window.location.protocol === 'https:';
+      const isLocalhost = window.location.hostname === 'localhost';
+      const hasShareAPI = !!navigator.share;
+      
+      // Debug info
+      console.log('Share API Debug:', {
+        isHTTPS,
+        isLocalhost,
+        hasShareAPI,
+        protocol: window.location.protocol,
+        hostname: window.location.hostname,
+        canUseShare: hasShareAPI && (isHTTPS || isLocalhost)
+      });
+      
+      setCanNativeShare(hasShareAPI && (isHTTPS || isLocalhost));
+    }
+  }, []);
 
   // Lock background scrolling when modal is open
   useEffect(() => {
@@ -886,15 +909,70 @@ export default function UnifiedShareModal({
     }
   };
 
-  const handleCopyLink = () => {
+  const handleShareLink = async () => {
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('shared', 'true');
     const shareUrl = currentUrl.toString();
     
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareUrl);
-      alert('Link copied to clipboard!');
-    } else {
+    const resultLabel = quizType === 'short' ? 
+      (ideologyData?.macroCellLabel || alignment.label) : 
+      (ideologyData?.ideology || alignment.label);
+    
+    const shareTitle = 'My Votely Political Quiz Results';
+    const shareText = `I got "${resultLabel}" on the Votely Political Quiz!`;
+    
+    // Check if we can use Web Share API
+    // Requirements: HTTPS (or localhost), user interaction, and browser support
+    // Note: Also allowing local network IPs for testing (though share API may not work)
+    const canShare = typeof navigator !== 'undefined' && 
+                     navigator.share && 
+                     (window.location.protocol === 'https:' || 
+                      window.location.hostname === 'localhost' ||
+                      window.location.hostname.startsWith('192.168.') ||
+                      window.location.hostname.startsWith('10.'));
+    
+    if (canShare) {
+      try {
+        // Use Web Share API - this will open the native share menu
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl
+        });
+        // Share was successful or user cancelled
+        return;
+      } catch (error) {
+        // Only log real errors, not user cancellation
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            // User cancelled the share, this is fine
+            return;
+          }
+          console.error('Share failed:', error.message);
+          // Fall through to fallback options
+        }
+      }
+    }
+    
+    // Fallback: copy to clipboard
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Link copied to clipboard!');
+      } else {
+        // Use the old execCommand as fallback
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      // Last resort fallback
       window.prompt('Copy this link:', shareUrl);
     }
   };
@@ -1518,16 +1596,16 @@ export default function UnifiedShareModal({
 
           {/* Link Sharing */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Link</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Results</h3>
             <button
-              onClick={handleCopyLink}
-              className="w-full bg-gray-600 text-white p-4 rounded-xl hover:bg-gray-700 font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              onClick={handleShareLink}
+              className="w-full bg-blue-600 text-white p-4 rounded-xl hover:bg-blue-700 font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
             >
               <div className="flex items-center gap-3 w-full">
-                <span className="text-xl flex-shrink-0">🔗</span>
+                <span className="text-xl flex-shrink-0">↗️</span>
                 <div className="text-left">
-                  <div className="font-semibold">Copy Share Link</div>
-                  <div className="text-sm text-gray-100">Full interactive webpage</div>
+                  <div className="font-semibold">Share Results</div>
+                  <div className="text-sm text-blue-100">Share to apps, social media, or copy link</div>
                 </div>
               </div>
             </button>

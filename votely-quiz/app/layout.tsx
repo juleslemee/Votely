@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://votelyquiz.juleslemee.com'),
+  metadataBase: new URL('https://votelyquiz.com'),
   title: {
     template: '%s | The Votely Political Quiz',
     default: 'The Votely Political Quiz - Most Accurate 3D Political Compass Test | 39 Axes',
@@ -37,12 +37,12 @@ export const metadata: Metadata = {
   creator: 'Jules Lemee',
   publisher: 'Jules Lemee',
   alternates: {
-    canonical: 'https://votelyquiz.juleslemee.com',
+    canonical: 'https://votelyquiz.com',
   },
   openGraph: {
     title: 'The Votely Political Quiz - Most Accurate 3D Political Compass',
     description: 'Discover your position among 81 ideologies with the most advanced political quiz. 39 axes, percentage sliders, 3D visualization.',
-    url: 'https://votelyquiz.juleslemee.com',
+    url: 'https://votelyquiz.com',
     siteName: 'Votely Political Quiz',
     images: [
       {

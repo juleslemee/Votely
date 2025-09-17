@@ -136,7 +136,7 @@ export default function Home() {
           <div className="relative rounded-3xl bg-white/80 shadow-xl backdrop-blur p-8 flex flex-col items-center">
             {/* Logo */}
             <a 
-              href="https://votely.juleslemee.com" 
+              href="https://getvotely.com" 
               target="_blank" 
               rel="noopener noreferrer"
               className="w-32 h-32 md:w-44 md:h-44 mb-8 relative block hover:scale-105 transition-transform"

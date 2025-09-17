@@ -6,8 +6,8 @@ export default function StructuredData() {
     "@type": "Organization",
     "name": "Votely Political Quiz",
     "alternateName": "The Votely Quiz",
-    "url": "https://votelyquiz.juleslemee.com",
-    "logo": "https://votelyquiz.juleslemee.com/logo.svg",
+    "url": "https://votelyquiz.com",
+    "logo": "https://votelyquiz.com/logo.svg",
     "description": "The most accurate political quiz with 39 axes, 81 ideologies, and 3D visualization.",
     "founder": {
       "@type": "Person",
@@ -24,12 +24,12 @@ export default function StructuredData() {
     "@type": "WebSite",
     "name": "The Votely Political Quiz",
     "alternateName": ["Votely Quiz", "Votely Political Compass"],
-    "url": "https://votelyquiz.juleslemee.com",
+    "url": "https://votelyquiz.com",
     "description": "Take the most accurate political quiz with 39 total axes, 81 ideologies, and 3D cube visualization. Better than Political Compass, 8values, or 12axes.",
     "potentialAction": {
       "@type": "Action",
       "name": "Take Political Quiz",
-      "target": "https://votelyquiz.juleslemee.com/quiz"
+      "target": "https://votelyquiz.com/quiz"
     }
   };
 
@@ -55,7 +55,7 @@ export default function StructuredData() {
     "provider": {
       "@type": "Organization",
       "name": "Votely Political Quiz",
-      "url": "https://votelyquiz.juleslemee.com"
+      "url": "https://votelyquiz.com"
     }
   };
 

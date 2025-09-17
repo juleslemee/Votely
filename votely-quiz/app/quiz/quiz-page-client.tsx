@@ -1280,7 +1280,7 @@ export default function QuizPageClient() {
         
         <div className="flex justify-center items-center mt-8 pt-4 border-t border-gray-200/30">
           <a 
-            href="https://votely.juleslemee.com" 
+            href="https://getvotely.com" 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors group"

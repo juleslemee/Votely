@@ -523,7 +523,7 @@ export default function UnifiedShareModal({
                       fontSize: '10px',
                       lineHeight: '14px'
                     }}>
-                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Governance Score:</span> {social > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(social).toFixed(1)}%)
+                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Governance Score:</span> {governance > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(governance).toFixed(1)}%)
                     </div>
                     <div style={{ 
                       backgroundColor: '#f9fafb',
@@ -532,7 +532,7 @@ export default function UnifiedShareModal({
                       fontSize: '10px',
                       lineHeight: '14px'
                     }}>
-                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Social Score:</span> {governance < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(governance).toFixed(1)}%)
+                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Social Score:</span> {social < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(social).toFixed(1)}%)
                     </div>
                   </div>
 
@@ -787,7 +787,7 @@ export default function UnifiedShareModal({
               <div className="flex items-center justify-between w-full max-w-4xl">
                 <div className="flex items-center gap-4">
                   <img 
-                    src="https://votelyquiz.juleslemee.com/256logo.png"
+                    src="https://votelyquiz.com/256logo.png"
                     alt="Votely" 
                     className="h-12 w-auto"
                     crossOrigin="anonymous"
@@ -801,7 +801,7 @@ export default function UnifiedShareModal({
                     <div className="text-sm text-purple-200">Political Quiz</div>
                   </div>
                 </div>
-                <div className="text-lg text-purple-200 font-medium">votelyquiz.juleslemee.com</div>
+                <div className="text-lg text-purple-200 font-medium">votelyquiz.com</div>
               </div>
             </div>
           </div>
@@ -1142,7 +1142,7 @@ export default function UnifiedShareModal({
                     whiteSpace: 'nowrap',
                     lineHeight: '16px',
                     display: 'block'
-                  }}>{social > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(social).toFixed(1)}%)</span>
+                  }}>{governance > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(governance).toFixed(1)}%)</span>
                 </div>
                 <div style={{ 
                   position: 'relative',
@@ -1156,8 +1156,8 @@ export default function UnifiedShareModal({
                     height: '6px',
                     borderRadius: '9999px',
                     backgroundColor: '#a855f7',
-                    left: social < 0 ? `${50 + social/2}%` : '50%',
-                    width: `${Math.abs(social)/2}%`,
+                    left: governance < 0 ? `${50 + governance/2}%` : '50%',
+                    width: `${Math.abs(governance)/2}%`,
                     top: '0'
                   }} />
                   <div style={{ 
@@ -1174,46 +1174,46 @@ export default function UnifiedShareModal({
               </div>
               
               {/* Social Score */}
-              <div style={{ 
+              <div style={{
                 paddingTop: '4px',
                 paddingBottom: '4px'
               }}>
-                <div style={{ 
+                <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
                   gap: '8px',
                   marginBottom: '6px'
                 }}>
-                  <span style={{ 
+                  <span style={{
                     fontSize: '12px',
                     fontWeight: '500',
                     color: '#9333ea',
                     lineHeight: '16px',
                     display: 'block'
                   }}>Social Score</span>
-                  <span style={{ 
+                  <span style={{
                     fontSize: '12px',
                     color: '#4b5563',
                     whiteSpace: 'nowrap',
                     lineHeight: '16px',
                     display: 'block'
-                  }}>{governance < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(governance).toFixed(1)}%)</span>
+                  }}>{social < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(social).toFixed(1)}%)</span>
                 </div>
-                <div style={{ 
+                <div style={{
                   position: 'relative',
                   height: '6px',
                   backgroundColor: '#e5e7eb',
                   borderRadius: '9999px',
                   overflow: 'visible'
                 }}>
-                  <div style={{ 
+                  <div style={{
                     position: 'absolute',
                     height: '6px',
                     borderRadius: '9999px',
                     backgroundColor: '#a855f7',
-                    left: governance < 0 ? `${50 + governance/2}%` : '50%',
-                    width: `${Math.abs(governance)/2}%`,
+                    left: social < 0 ? `${50 + social/2}%` : '50%',
+                    width: `${Math.abs(social)/2}%`,
                     top: '0'
                   }} />
                   <div style={{ 
@@ -1472,7 +1472,7 @@ export default function UnifiedShareModal({
         <div className="flex items-center justify-between w-full max-w-4xl">
           <div className="flex items-center gap-4">
             <img 
-              src="https://votelyquiz.juleslemee.com/256logo.png" 
+              src="https://votelyquiz.com/256logo.png" 
               alt="Votely" 
               className="h-12 w-auto"
               crossOrigin="anonymous"
@@ -1486,7 +1486,7 @@ export default function UnifiedShareModal({
               <div className="text-sm text-purple-200">Political Quiz</div>
             </div>
           </div>
-          <div className="text-lg text-purple-200 font-medium">votelyquiz.juleslemee.com</div>
+          <div className="text-lg text-purple-200 font-medium">votelyquiz.com</div>
         </div>
       </div>
     </div>

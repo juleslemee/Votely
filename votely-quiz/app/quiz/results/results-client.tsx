@@ -1133,12 +1133,12 @@ export default function ResultsClient() {
             <div className="inline-block bg-purple-100 border border-purple-300 text-purple-800 px-4 py-3 rounded-full text-sm font-medium mb-4">
               👤 Viewing shared results – take the quiz yourself at{' '}
               <a 
-                href="https://votelyquiz.juleslemee.com" 
+                href="https://votelyquiz.com" 
                 className="font-semibold underline hover:no-underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                votelyquiz.juleslemee.com
+                votelyquiz.com
               </a>
             </div>
           ) : (

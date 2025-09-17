@@ -6,8 +6,8 @@
 
 Modern civic engagement platform helping young people discover their political values and take meaningful local action.
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-votely.juleslemee.com-purple?style=for-the-badge)](https://votely.juleslemee.com)
-[![Political Quiz](https://img.shields.io/badge/📊_Political_Quiz-votelyquiz.juleslemee.com-blue?style=for-the-badge)](https://votelyquiz.juleslemee.com)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-getvotely.com-purple?style=for-the-badge)](https://getvotely.com)
+[![Political Quiz](https://img.shields.io/badge/📊_Political_Quiz-votelyquiz.com-blue?style=for-the-badge)](https://votelyquiz.com)
 
 </div>
 

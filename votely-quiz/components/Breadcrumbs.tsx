@@ -13,7 +13,7 @@ export default function Breadcrumbs() {
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://votelyquiz.juleslemee.com"
+        "item": "https://votelyquiz.com"
       }
     ];
     
@@ -22,7 +22,7 @@ export default function Breadcrumbs() {
         "@type": "ListItem",
         "position": 2,
         "name": "Political Quiz",
-        "item": "https://votelyquiz.juleslemee.com/quiz"
+        "item": "https://votelyquiz.com/quiz"
       });
       
       if (pathname.includes('/results')) {
@@ -30,7 +30,7 @@ export default function Breadcrumbs() {
           "@type": "ListItem",
           "position": 3,
           "name": "Your Results",
-          "item": "https://votelyquiz.juleslemee.com/quiz/results"
+          "item": "https://votelyquiz.com/quiz/results"
         });
       }
     }

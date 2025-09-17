@@ -319,8 +319,8 @@ export async function calculateScores(answers: number[], questionIds: number[], 
   Object.entries(supplementaryScores).forEach(([axis, data]) => {
     if (data.count > 0) {
       const maxScore = data.count * 2;
-      // Use the same normalization as quiz page: account for negative range (-2 to +2)
-      supplementary[axis] = (data.score + maxScore) / (maxScore * 2) * 100;
+      // Normalize from range [-maxScore, +maxScore] to [-100, +100] (same as main axes)
+      supplementary[axis] = (data.score / maxScore) * 100;
     }
   });
 

@@ -37,23 +37,18 @@ export function TooltipTrigger({ children, asChild = false, ...props }: {
 
   const triggerProps = {
     onMouseEnter: () => {
-      console.log('Mouse enter - showing tooltip');
       setOpen(true);
     },
     onMouseLeave: () => {
-      console.log('Mouse leave - hiding tooltip');
       setOpen(false);
     },
     onFocus: () => {
-      console.log('Focus - showing tooltip');
       setOpen(true);
     },
     onBlur: () => {
-      console.log('Blur - hiding tooltip');
       setOpen(false);
     },
     onClick: () => {
-      console.log('Click - toggling tooltip');
       setOpen(!open);
     },
     ...props
@@ -83,8 +78,6 @@ export function TooltipContent({
   if (!context) throw new Error('TooltipContent must be used within Tooltip');
 
   const { open } = context;
-
-  console.log('TooltipContent render - open:', open, 'children:', children);
 
   if (!open) return null;
 

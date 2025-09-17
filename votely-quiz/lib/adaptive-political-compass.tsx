@@ -230,6 +230,112 @@ export function AdaptivePoliticalCompass({ point, animateDot, quizType }: Adapti
   const scale = graphSize / 20;
   const labelFontSize = quizType === 'short' ? 10 : 4.5;
 
+  // Zoom and pan state for 2D compass
+  const [zoomLevel, setZoomLevel] = React.useState(1);
+  const [panX, setPanX] = React.useState(0);
+  const [panY, setPanY] = React.useState(0);
+  const [isPanning, setIsPanning] = React.useState(false);
+  const [lastTouchCenter, setLastTouchCenter] = React.useState<{ x: number; y: number } | null>(null);
+  const [lastTouchDistance, setLastTouchDistance] = React.useState<number | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Reset on quiz type change
+  React.useEffect(() => {
+    setZoomLevel(1);
+    setPanX(0);
+    setPanY(0);
+  }, [quizType]);
+
+  // Native event handlers to prevent browser zoom
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        // Single touch - start panning
+        setIsPanning(true);
+        setLastTouchCenter({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      } else if (e.touches.length === 2) {
+        // Two touches - start pinching - prevent browser zoom immediately
+        e.preventDefault();
+        e.stopPropagation();
+        setIsPanning(false);
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        setLastTouchDistance(distance);
+        setLastTouchCenter({ x: (touch1.clientX + touch2.clientX) / 2, y: (touch1.clientY + touch2.clientY) / 2 });
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && isPanning && lastTouchCenter) {
+        // Single touch - pan
+        const deltaX = e.touches[0].clientX - lastTouchCenter.x;
+        const deltaY = e.touches[0].clientY - lastTouchCenter.y;
+        setPanX(prev => prev + deltaX);
+        setPanY(prev => prev + deltaY);
+        setLastTouchCenter({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      } else if (e.touches.length === 2 && lastTouchDistance) {
+        // Two touches - zoom - prevent browser zoom immediately
+        e.preventDefault();
+        e.stopPropagation();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        const scale = distance / lastTouchDistance;
+        setZoomLevel(prev => Math.max(0.5, Math.min(3, prev * scale)));
+        setLastTouchDistance(distance);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Prevent any remaining browser zoom gestures
+      if (isPanning || lastTouchDistance) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      setIsPanning(false);
+      setLastTouchCenter(null);
+      setLastTouchDistance(null);
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setZoomLevel(prev => Math.max(0.5, Math.min(3, prev * delta)));
+    };
+
+    // Add event listeners with capture phase to handle before browser
+    container.addEventListener('touchstart', handleTouchStart, { capture: true, passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { capture: true, passive: false });
+    container.addEventListener('wheel', handleWheel, { capture: true, passive: false });
+
+    return () => {
+      // Clean up event listeners
+      container.removeEventListener('touchstart', handleTouchStart, { capture: true });
+      container.removeEventListener('touchmove', handleTouchMove, { capture: true });
+      container.removeEventListener('touchend', handleTouchEnd, { capture: true });
+      container.removeEventListener('wheel', handleWheel, { capture: true });
+    };
+  }, [isPanning, lastTouchCenter, lastTouchDistance]);
+
+  // Double tap to reset zoom
+  const handleDoubleClick = React.useCallback(() => {
+    setZoomLevel(1);
+    setPanX(0);
+    setPanY(0);
+  }, []);
+
   function toSvg(val: number) {
     return center + val * scale;
   }
@@ -241,13 +347,39 @@ export function AdaptivePoliticalCompass({ point, animateDot, quizType }: Adapti
   if (quizType === 'short') {
     // 3x3 macro-cell view
     const cellSize = 20 / 3; // Each cell is 6.67 units
-    
+
     return (
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        className="w-full h-auto"
-        aria-label="Political Compass - Macro-cell View"
+      <div
+        ref={containerRef}
+        className="w-full h-auto overflow-hidden relative select-none"
+        onDoubleClick={handleDoubleClick}
+        style={{
+          cursor: isPanning ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitUserDrag: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent',
+          msContentZooming: 'none',
+          msUserSelect: 'none',
+          MozUserSelect: 'none'
+        } as React.CSSProperties}
       >
+        <svg
+          viewBox={`0 0 ${size} ${size}`}
+          className="w-full h-auto select-none"
+          aria-label="Political Compass - Macro-cell View"
+          style={{
+            transform: `scale(${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`,
+            transformOrigin: 'center center',
+            transition: isPanning ? 'none' : 'transform 0.1s ease-out',
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            pointerEvents: 'auto'
+          } as React.CSSProperties}
+        >
         {/* Clipping path for clean edges and shadow filter */}
         <defs>
           <clipPath id="macroGridClip">
@@ -346,7 +478,15 @@ export function AdaptivePoliticalCompass({ point, animateDot, quizType }: Adapti
         ) : point ? (
           <circle cx={toSvg(point.x)} cy={toSvg(-point.y)} r={8} fill="#6200B3" stroke={antiFlashWhite} strokeWidth={3} />
         ) : null}
-      </svg>
+        </svg>
+
+        {/* Zoom instructions overlay for 3x3 grid */}
+        {zoomLevel > 1 && (
+          <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none z-10">
+            Zoom: {zoomLevel.toFixed(1)}x • Double-tap to reset
+          </div>
+        )}
+      </div>
     );
   } else {
     // 9x9 detailed view for longer quiz
@@ -366,13 +506,39 @@ export function AdaptivePoliticalCompass({ point, animateDot, quizType }: Adapti
       
       return colorMap[macroRow][macroCol];
     };
-    
+
     return (
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        className="w-full h-auto"
-        aria-label="Political Compass - Detailed View"
+      <div
+        ref={containerRef}
+        className="w-full h-auto overflow-hidden relative select-none"
+        onDoubleClick={handleDoubleClick}
+        style={{
+          cursor: isPanning ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitUserDrag: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent',
+          msContentZooming: 'none',
+          msUserSelect: 'none',
+          MozUserSelect: 'none'
+        } as React.CSSProperties}
       >
+        <svg
+          viewBox={`0 0 ${size} ${size}`}
+          className="w-full h-auto select-none"
+          aria-label="Political Compass - Detailed View"
+          style={{
+            transform: `scale(${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`,
+            transformOrigin: 'center center',
+            transition: isPanning ? 'none' : 'transform 0.1s ease-out',
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            pointerEvents: 'auto'
+          } as React.CSSProperties}
+        >
         {/* Create clipping path to prevent color bleeding */}
         <defs>
           <clipPath id="gridClip">
@@ -471,7 +637,15 @@ export function AdaptivePoliticalCompass({ point, animateDot, quizType }: Adapti
         ) : point ? (
           <circle cx={toSvg(point.x)} cy={toSvg(-point.y)} r={6} fill="#6200B3" stroke={antiFlashWhite} strokeWidth={2} />
         ) : null}
-      </svg>
+        </svg>
+
+        {/* Zoom instructions overlay for 9x9 grid */}
+        {zoomLevel > 1 && (
+          <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none z-10">
+            Zoom: {zoomLevel.toFixed(1)}x • Double-tap to reset
+          </div>
+        )}
+      </div>
     );
   }
 }

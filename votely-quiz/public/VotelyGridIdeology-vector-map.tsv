@@ -1,0 +1,82 @@
+Ideology	Macro Cell	Axis1	Code1	Score1	Axis2	Code2	Score2	Axis3	Code3	Score3	Axis4	Code4	Score4	Axis5	Code5	Score5	Axis6	Code6	Score6
+Bolshevik Marxism	EL-GA	Leadership Model	ELGA-A	70	National vs International	ELGA-B	-80	Urban vs Rural Base	ELGA-C	-70	Class vs Ethno-Populism	ELGA-D	-90	Military Role	ELGA-E	-40	Cultural Policy	ELGA-F	-60
+Juche	EL-GA	Leadership Model	ELGA-A	90	National vs International	ELGA-B	100	Urban vs Rural Base	ELGA-C	20	Class vs Ethno-Populism	ELGA-D	60	Military Role	ELGA-E	80	Cultural Policy	ELGA-F	70
+Strasserism	EL-GA	Leadership Model	ELGA-A	60	National vs International	ELGA-B	70	Urban vs Rural Base	ELGA-C	-30	Class vs Ethno-Populism	ELGA-D	80	Military Role	ELGA-E	60	Cultural Policy	ELGA-F	40
+Maoism	EL-GA	Leadership Model	ELGA-A	80	National vs International	ELGA-B	30	Urban vs Rural Base	ELGA-C	90	Class vs Ethno-Populism	ELGA-D	-40	Military Role	ELGA-E	70	Cultural Policy	ELGA-F	-30
+National Bolshevism	EL-GA	Leadership Model	ELGA-A	70	National vs International	ELGA-B	90	Urban vs Rural Base	ELGA-C	0	Class vs Ethno-Populism	ELGA-D	70	Military Role	ELGA-E	50	Cultural Policy	ELGA-F	60
+Ba'athism	EL-GA	Leadership Model	ELGA-A	60	National vs International	ELGA-B	80	Urban vs Rural Base	ELGA-C	10	Class vs Ethno-Populism	ELGA-D	60	Military Role	ELGA-E	90	Cultural Policy	ELGA-F	20
+Trotskyism	EL-GA	Leadership Model	ELGA-A	50	National vs International	ELGA-B	-100	Urban vs Rural Base	ELGA-C	-60	Class vs Ethno-Populism	ELGA-D	-100	Military Role	ELGA-E	-50	Cultural Policy	ELGA-F	-80
+Left-Wing Nationalism	EL-GA	Leadership Model	ELGA-A	-20	National vs International	ELGA-B	50	Urban vs Rural Base	ELGA-C	0	Class vs Ethno-Populism	ELGA-D	40	Military Role	ELGA-E	30	Cultural Policy	ELGA-F	30
+Longism	EL-GA	Leadership Model	ELGA-A	30	National vs International	ELGA-B	60	Urban vs Rural Base	ELGA-C	40	Class vs Ethno-Populism	ELGA-D	50	Military Role	ELGA-E	20	Cultural Policy	ELGA-F	50
+Falangism	EM-GA	Source of Authority	EMGA-A	60	Economic Coordination	EMGA-B	70	Revolutionary Origin	EMGA-C	80	Tradition vs Modernization	EMGA-D	-40	Racial/Universal Vision	EMGA-E	30	Mass Mobilization	EMGA-F	70
+Autocratic Theocracy	EM-GA	Source of Authority	EMGA-A	100	Economic Coordination	EMGA-B	50	Revolutionary Origin	EMGA-C	-70	Tradition vs Modernization	EMGA-D	-80	Racial/Universal Vision	EMGA-E	-60	Mass Mobilization	EMGA-F	-50
+Nazism	EM-GA	Source of Authority	EMGA-A	0	Economic Coordination	EMGA-B	80	Revolutionary Origin	EMGA-C	90	Tradition vs Modernization	EMGA-D	40	Racial/Universal Vision	EMGA-E	100	Mass Mobilization	EMGA-F	90
+State Socialism	EM-GA	Source of Authority	EMGA-A	-70	Economic Coordination	EMGA-B	90	Revolutionary Origin	EMGA-C	60	Tradition vs Modernization	EMGA-D	60	Racial/Universal Vision	EMGA-E	-70	Mass Mobilization	EMGA-F	40
+Integralism	EM-GA	Source of Authority	EMGA-A	80	Economic Coordination	EMGA-B	60	Revolutionary Origin	EMGA-C	-30	Tradition vs Modernization	EMGA-D	-60	Racial/Universal Vision	EMGA-E	-40	Mass Mobilization	EMGA-F	20
+State Capitalism	EM-GA	Source of Authority	EMGA-A	-60	Economic Coordination	EMGA-B	40	Revolutionary Origin	EMGA-C	-40	Tradition vs Modernization	EMGA-D	70	Racial/Universal Vision	EMGA-E	-50	Mass Mobilization	EMGA-F	-30
+Distributism	EM-GA	Source of Authority	EMGA-A	70	Economic Coordination	EMGA-B	30	Revolutionary Origin	EMGA-C	-60	Tradition vs Modernization	EMGA-D	-70	Racial/Universal Vision	EMGA-E	-80	Mass Mobilization	EMGA-F	-40
+State Liberalism	EM-GA	Source of Authority	EMGA-A	-40	Economic Coordination	EMGA-B	20	Revolutionary Origin	EMGA-C	-20	Tradition vs Modernization	EMGA-D	50	Racial/Universal Vision	EMGA-E	-90	Mass Mobilization	EMGA-F	-20
+Civic Conservatism	EM-GA	Source of Authority	EMGA-A	-20	Economic Coordination	EMGA-B	-30	Revolutionary Origin	EMGA-C	-50	Tradition vs Modernization	EMGA-D	-30	Racial/Universal Vision	EMGA-E	-30	Mass Mobilization	EMGA-F	-60
+Francoism	ER-GA	Source of Rule	ERGA-A	-40	Religious Centrality	ERGA-B	90	Economic Direction	ERGA-C	30	Modernization vs Heritage	ERGA-D	60	Mass Politics	ERGA-E	-30	Constitutional Limits	ERGA-F	-70
+Fascism	ER-GA	Source of Rule	ERGA-A	-80	Religious Centrality	ERGA-B	-30	Economic Direction	ERGA-C	20	Modernization vs Heritage	ERGA-D	-70	Mass Politics	ERGA-E	80	Constitutional Limits	ERGA-F	-80
+Absolute Monarchy	ER-GA	Source of Rule	ERGA-A	100	Religious Centrality	ERGA-B	80	Economic Direction	ERGA-C	0	Modernization vs Heritage	ERGA-D	90	Mass Politics	ERGA-E	-90	Constitutional Limits	ERGA-F	-100
+Constitutional Monarchy	ER-GA	Source of Rule	ERGA-A	70	Religious Centrality	ERGA-B	40	Economic Direction	ERGA-C	50	Modernization vs Heritage	ERGA-D	40	Mass Politics	ERGA-E	-60	Constitutional Limits	ERGA-F	80
+Feudalism	ER-GA	Source of Rule	ERGA-A	90	Religious Centrality	ERGA-B	70	Economic Direction	ERGA-C	-40	Modernization vs Heritage	ERGA-D	100	Mass Politics	ERGA-E	-100	Constitutional Limits	ERGA-F	-60
+Authoritarian Capitalism	ER-GA	Source of Rule	ERGA-A	-50	Religious Centrality	ERGA-B	-60	Economic Direction	ERGA-C	90	Modernization vs Heritage	ERGA-D	-30	Mass Politics	ERGA-E	-20	Constitutional Limits	ERGA-F	-50
+Right-Wing Nationalism	ER-GA	Source of Rule	ERGA-A	-60	Religious Centrality	ERGA-B	20	Economic Direction	ERGA-C	60	Modernization vs Heritage	ERGA-D	-20	Mass Politics	ERGA-E	50	Constitutional Limits	ERGA-F	-40
+Paleo-Conservatism	ER-GA	Source of Rule	ERGA-A	30	Religious Centrality	ERGA-B	60	Economic Direction	ERGA-C	70	Modernization vs Heritage	ERGA-D	70	Mass Politics	ERGA-E	-40	Constitutional Limits	ERGA-F	20
+National Capitalism	ER-GA	Source of Rule	ERGA-A	-30	Religious Centrality	ERGA-B	0	Economic Direction	ERGA-C	80	Modernization vs Heritage	ERGA-D	0	Mass Politics	ERGA-E	20	Constitutional Limits	ERGA-F	-30
+Posadism	EL-GM	Reform vs Revolution	ELGM-A	100	Decision Structure	ELGM-B	-30	Market Usage	ELGM-C	-100	Ownership Model	ELGM-D	-60	Party vs Union	ELGM-E	-50	International Strategy	ELGM-F	100
+Socialism	EL-GM	Reform vs Revolution	ELGM-A	20	Decision Structure	ELGM-B	30	Market Usage	ELGM-C	-70	Ownership Model	ELGM-D	-40	Party vs Union	ELGM-E	-30	International Strategy	ELGM-F	40
+Democratic Socialism	EL-GM	Reform vs Revolution	ELGM-A	-70	Decision Structure	ELGM-B	-40	Market Usage	ELGM-C	-20	Ownership Model	ELGM-D	20	Party vs Union	ELGM-E	-20	International Strategy	ELGM-F	-20
+Orthodox Marxism	EL-GM	Reform vs Revolution	ELGM-A	60	Decision Structure	ELGM-B	40	Market Usage	ELGM-C	-90	Ownership Model	ELGM-D	-70	Party vs Union	ELGM-E	-40	International Strategy	ELGM-F	80
+Market Socialism	EL-GM	Reform vs Revolution	ELGM-A	-30	Decision Structure	ELGM-B	-20	Market Usage	ELGM-C	60	Ownership Model	ELGM-D	60	Party vs Union	ELGM-E	30	International Strategy	ELGM-F	-30
+Labour Liberalism	EL-GM	Reform vs Revolution	ELGM-A	-80	Decision Structure	ELGM-B	50	Market Usage	ELGM-C	70	Ownership Model	ELGM-D	30	Party vs Union	ELGM-E	40	International Strategy	ELGM-F	-40
+Luxemburgism	EL-GM	Reform vs Revolution	ELGM-A	70	Decision Structure	ELGM-B	-60	Market Usage	ELGM-C	-80	Ownership Model	ELGM-D	40	Party vs Union	ELGM-E	-60	International Strategy	ELGM-F	90
+Syndicalism	EL-GM	Reform vs Revolution	ELGM-A	40	Decision Structure	ELGM-B	-80	Market Usage	ELGM-C	-40	Ownership Model	ELGM-D	90	Party vs Union	ELGM-E	90	International Strategy	ELGM-F	50
+Social Democracy	EL-GM	Reform vs Revolution	ELGM-A	-90	Decision Structure	ELGM-B	60	Market Usage	ELGM-C	50	Ownership Model	ELGM-D	-20	Party vs Union	ELGM-E	-10	International Strategy	ELGM-F	-50
+Social Liberalism	EM-GM	Market Freedom	EMGM-A	-40	Economic Rights	EMGM-B	70	Globalism vs Domestic	EMGM-C	-30	Democratic Form	EMGM-D	30	Welfare Model	EMGM-E	-50	Cultural Policy	EMGM-F	-60
+Third-Way Labour	EM-GM	Market Freedom	EMGM-A	20	Economic Rights	EMGM-B	40	Globalism vs Domestic	EMGM-C	-20	Democratic Form	EMGM-D	40	Welfare Model	EMGM-E	20	Cultural Policy	EMGM-F	-40
+Neo-Conservatism	EM-GM	Market Freedom	EMGM-A	50	Economic Rights	EMGM-B	-30	Globalism vs Domestic	EMGM-C	-60	Democratic Form	EMGM-D	60	Welfare Model	EMGM-E	40	Cultural Policy	EMGM-F	30
+Liberalism	EM-GM	Market Freedom	EMGM-A	30	Economic Rights	EMGM-B	-10	Globalism vs Domestic	EMGM-C	-40	Democratic Form	EMGM-D	50	Welfare Model	EMGM-E	10	Cultural Policy	EMGM-F	-20
+Centrism	EM-GM	Market Freedom	EMGM-A	0	Economic Rights	EMGM-B	0	Globalism vs Domestic	EMGM-C	0	Democratic Form	EMGM-D	0	Welfare Model	EMGM-E	0	Cultural Policy	EMGM-F	0
+Neoliberalism	EM-GM	Market Freedom	EMGM-A	70	Economic Rights	EMGM-B	-60	Globalism vs Domestic	EMGM-C	-80	Democratic Form	EMGM-D	70	Welfare Model	EMGM-E	60	Cultural Policy	EMGM-F	20
+Liberal Democracy	EM-GM	Market Freedom	EMGM-A	10	Economic Rights	EMGM-B	30	Globalism vs Domestic	EMGM-C	-10	Democratic Form	EMGM-D	80	Welfare Model	EMGM-E	-20	Cultural Policy	EMGM-F	-30
+Welfare Capitalism	EM-GM	Market Freedom	EMGM-A	-50	Economic Rights	EMGM-B	90	Globalism vs Domestic	EMGM-C	10	Democratic Form	EMGM-D	20	Welfare Model	EMGM-E	-70	Cultural Policy	EMGM-F	-50
+Liberal Capitalism	EM-GM	Market Freedom	EMGM-A	60	Economic Rights	EMGM-B	-40	Globalism vs Domestic	EMGM-C	-50	Democratic Form	EMGM-D	40	Welfare Model	EMGM-E	50	Cultural Policy	EMGM-F	10
+Conservatism	ER-GM	Government Scope	ERGM-A	-20	National Priority	ERGM-B	60	Change Pace	ERGM-C	70	Corporatist Coordination	ERGM-D	10	Social Values	ERGM-E	-60	Economic Freedom	ERGM-F	20
+Elective Monarchy	ER-GM	Government Scope	ERGM-A	30	National Priority	ERGM-B	70	Change Pace	ERGM-C	60	Corporatist Coordination	ERGM-D	30	Social Values	ERGM-E	-50	Economic Freedom	ERGM-F	10
+Corporatism	ER-GM	Government Scope	ERGM-A	40	National Priority	ERGM-B	80	Change Pace	ERGM-C	40	Corporatist Coordination	ERGM-D	90	Social Values	ERGM-E	-30	Economic Freedom	ERGM-F	-40
+Liberal Conservatism	ER-GM	Government Scope	ERGM-A	-40	National Priority	ERGM-B	-20	Change Pace	ERGM-C	20	Corporatist Coordination	ERGM-D	-30	Social Values	ERGM-E	20	Economic Freedom	ERGM-F	60
+Traditional Conservatism	ER-GM	Government Scope	ERGM-A	10	National Priority	ERGM-B	70	Change Pace	ERGM-C	80	Corporatist Coordination	ERGM-D	20	Social Values	ERGM-E	-70	Economic Freedom	ERGM-F	30
+Capitalism	ER-GM	Government Scope	ERGM-A	70	National Priority	ERGM-B	-30	Change Pace	ERGM-C	-60	Corporatist Coordination	ERGM-D	-70	Social Values	ERGM-E	50	Economic Freedom	ERGM-F	80
+Civil Libertarianism	ER-GM	Government Scope	ERGM-A	80	National Priority	ERGM-B	-50	Change Pace	ERGM-C	-40	Corporatist Coordination	ERGM-D	-80	Social Values	ERGM-E	80	Economic Freedom	ERGM-F	70
+Conservative Libertarianism	ER-GM	Government Scope	ERGM-A	60	National Priority	ERGM-B	30	Change Pace	ERGM-C	-20	Corporatist Coordination	ERGM-D	-60	Social Values	ERGM-E	-40	Economic Freedom	ERGM-F	90
+Libertarian Capitalism	ER-GM	Government Scope	ERGM-A	90	National Priority	ERGM-B	-10	Change Pace	ERGM-C	-50	Corporatist Coordination	ERGM-D	-90	Social Values	ERGM-E	60	Economic Freedom	ERGM-F	100
+Classical Marxism	EL-GL	Transition Strategy	ELGL-A	60	Violence vs Pacifism	ELGL-B	60	Eco Priority	ELGL-C	-30	Local vs Network	ELGL-D	50	Production Organization	ELGL-E	-70	Minimal State	ELGL-F	40
+Eco-Socialism	EL-GL	Transition Strategy	ELGL-A	40	Violence vs Pacifism	ELGL-B	-50	Eco Priority	ELGL-C	90	Local vs Network	ELGL-D	30	Production Organization	ELGL-E	-40	Minimal State	ELGL-F	20
+Progressivism	EL-GL	Transition Strategy	ELGL-A	70	Violence vs Pacifism	ELGL-B	-70	Eco Priority	ELGL-C	40	Local vs Network	ELGL-D	60	Production Organization	ELGL-E	30	Minimal State	ELGL-F	60
+Council Communism	EL-GL	Transition Strategy	ELGL-A	-70	Violence vs Pacifism	ELGL-B	40	Eco Priority	ELGL-C	-20	Local vs Network	ELGL-D	-40	Production Organization	ELGL-E	50	Minimal State	ELGL-F	-30
+Minarcho-Socialism	EL-GL	Transition Strategy	ELGL-A	80	Violence vs Pacifism	ELGL-B	-30	Eco Priority	ELGL-C	20	Local vs Network	ELGL-D	20	Production Organization	ELGL-E	20	Minimal State	ELGL-F	80
+Libertarian Socialism	EL-GL	Transition Strategy	ELGL-A	30	Violence vs Pacifism	ELGL-B	-40	Eco Priority	ELGL-C	30	Local vs Network	ELGL-D	-20	Production Organization	ELGL-E	-30	Minimal State	ELGL-F	50
+Anarcho-Communism	EL-GL	Transition Strategy	ELGL-A	-100	Violence vs Pacifism	ELGL-B	50	Eco Priority	ELGL-C	50	Local vs Network	ELGL-D	-60	Production Organization	ELGL-E	-90	Minimal State	ELGL-F	-100
+Anarcho-Syndicalism	EL-GL	Transition Strategy	ELGL-A	-90	Violence vs Pacifism	ELGL-B	30	Eco Priority	ELGL-C	10	Local vs Network	ELGL-D	70	Production Organization	ELGL-E	60	Minimal State	ELGL-F	-90
+Anarchism	EL-GL	Transition Strategy	ELGL-A	-100	Violence vs Pacifism	ELGL-B	-60	Eco Priority	ELGL-C	0	Local vs Network	ELGL-D	-70	Production Organization	ELGL-E	-80	Minimal State	ELGL-F	-100
+Nordic Liberalism	EM-GL	Resource Commons	EMGL-A	30	Welfare Provision	EMGL-B	-80	Market Purpose	EMGL-C	-60	Market Intervention	EMGL-D	-50	Land Policy	EMGL-E	-20	State Scope	EMGL-F	70
+Social Libertarianism	EM-GL	Resource Commons	EMGL-A	10	Welfare Provision	EMGL-B	-40	Market Purpose	EMGL-C	-40	Market Intervention	EMGL-D	-30	Land Policy	EMGL-E	0	State Scope	EMGL-F	50
+Georgism	EM-GL	Resource Commons	EMGL-A	90	Welfare Provision	EMGL-B	-30	Market Purpose	EMGL-C	-50	Market Intervention	EMGL-D	-20	Land Policy	EMGL-E	100	State Scope	EMGL-F	60
+Mutualism	EM-GL	Resource Commons	EMGL-A	60	Welfare Provision	EMGL-B	60	Market Purpose	EMGL-C	-70	Market Intervention	EMGL-D	-60	Land Policy	EMGL-E	40	State Scope	EMGL-F	-40
+Minarchism	EM-GL	Resource Commons	EMGL-A	-70	Welfare Provision	EMGL-B	80	Market Purpose	EMGL-C	80	Market Intervention	EMGL-D	90	Land Policy	EMGL-E	-60	State Scope	EMGL-F	90
+Geo-Libertarianism	EM-GL	Resource Commons	EMGL-A	80	Welfare Provision	EMGL-B	50	Market Purpose	EMGL-C	60	Market Intervention	EMGL-D	70	Land Policy	EMGL-E	90	State Scope	EMGL-F	80
+Anarcho-Mutualism	EM-GL	Resource Commons	EMGL-A	70	Welfare Provision	EMGL-B	70	Market Purpose	EMGL-C	-80	Market Intervention	EMGL-D	80	Land Policy	EMGL-E	50	State Scope	EMGL-F	-100
+Agorism	EM-GL	Resource Commons	EMGL-A	-50	Welfare Provision	EMGL-B	90	Market Purpose	EMGL-C	90	Market Intervention	EMGL-D	100	Land Policy	EMGL-E	-40	State Scope	EMGL-F	-90
+Geoanarchism	EM-GL	Resource Commons	EMGL-A	100	Welfare Provision	EMGL-B	40	Market Purpose	EMGL-C	-30	Market Intervention	EMGL-D	60	Land Policy	EMGL-E	100	State Scope	EMGL-F	-100
+Classical Liberalism	ER-GL	Enforcement Mechanism	ERGL-A	60	Property Absolutism	ERGL-B	60	Moral Traditionalism	ERGL-C	-40	Corporate Power	ERGL-D	70	Immigration Policy	ERGL-E	-30	Natural Law	ERGL-F	80
+Libertarianism	ER-GL	Enforcement Mechanism	ERGL-A	40	Property Absolutism	ERGL-B	80	Moral Traditionalism	ERGL-C	-60	Corporate Power	ERGL-D	80	Immigration Policy	ERGL-E	-50	Natural Law	ERGL-F	60
+Paleo-Libertarianism	ER-GL	Enforcement Mechanism	ERGL-A	50	Property Absolutism	ERGL-B	70	Moral Traditionalism	ERGL-C	70	Corporate Power	ERGL-D	60	Immigration Policy	ERGL-E	60	Natural Law	ERGL-F	90
+National Libertarian	ER-GL	Enforcement Mechanism	ERGL-A	70	Property Absolutism	ERGL-B	50	Moral Traditionalism	ERGL-C	50	Corporate Power	ERGL-D	40	Immigration Policy	ERGL-E	80	Natural Law	ERGL-F	70
+Voluntarism	ER-GL	Enforcement Mechanism	ERGL-A	-30	Property Absolutism	ERGL-B	90	Moral Traditionalism	ERGL-C	-30	Corporate Power	ERGL-D	90	Immigration Policy	ERGL-E	-70	Natural Law	ERGL-F	50
+Minarcho-Capitalism	ER-GL	Enforcement Mechanism	ERGL-A	80	Property Absolutism	ERGL-B	100	Moral Traditionalism	ERGL-C	0	Corporate Power	ERGL-D	100	Immigration Policy	ERGL-E	-20	Natural Law	ERGL-F	40
+Objectivism	ER-GL	Enforcement Mechanism	ERGL-A	30	Property Absolutism	ERGL-B	100	Moral Traditionalism	ERGL-C	-20	Corporate Power	ERGL-D	100	Immigration Policy	ERGL-E	-60	Natural Law	ERGL-F	-70
+Anarcho-Feudalism	ER-GL	Enforcement Mechanism	ERGL-A	-60	Property Absolutism	ERGL-B	40	Moral Traditionalism	ERGL-C	90	Corporate Power	ERGL-D	30	Immigration Policy	ERGL-E	90	Natural Law	ERGL-F	100
+Anarcho-Capitalism	ER-GL	Enforcement Mechanism	ERGL-A	-100	Property Absolutism	ERGL-B	100	Moral Traditionalism	ERGL-C	10	Corporate Power	ERGL-D	100	Immigration Policy	ERGL-E	-40	Natural Law	ERGL-F	30

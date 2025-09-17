@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { batchUpdateAllGridPercentages } from '@/lib/quiz';
+import { debugLog, debugError } from '@/lib/debug-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,17 +12,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Starting scheduled stats update...');
+    debugLog('Starting scheduled stats update...');
     const result = await batchUpdateAllGridPercentages();
     
-    console.log('Scheduled stats update completed:', result);
+    debugLog('Scheduled stats update completed:', result);
     return NextResponse.json({ 
       success: true, 
       result,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Cron stats update error:', error);
+    debugError('Cron stats update error:', error);
     return NextResponse.json({ 
       error: error.message,
       timestamp: new Date().toISOString()

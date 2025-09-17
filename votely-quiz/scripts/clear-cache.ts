@@ -10,23 +10,24 @@ dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 import { db, auth } from '../lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
+import { debugLog, debugError } from '../lib/debug-logger';
 
 async function clearCache() {
   try {
     // Sign in
-    console.log('Signing in...');
+    debugLog('Signing in...');
     await signInAnonymously(auth);
     
     // Delete the cached daily stats
-    console.log('Clearing cached daily stats...');
+    debugLog('Clearing cached daily stats...');
     const dailyStatsRef = doc(db, 'cachedStats', 'daily');
     await deleteDoc(dailyStatsRef);
-    console.log('✅ Cached stats cleared!');
+    debugLog('✅ Cached stats cleared!');
     
-    console.log('\nNow refresh your app - it will recalculate with the correct count of 1169.');
+    debugLog('\nNow refresh your app - it will recalculate with the correct count of 1169.');
     
   } catch (error) {
-    console.error('Error:', error);
+    debugError('Error:', error);
   }
   
   process.exit(0);

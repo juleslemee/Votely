@@ -96,8 +96,8 @@ const faqItems = [
     answer: "With 39 measured dimensions, 81 distinct ideologies, percentage-based answers, and two-phase analysis, Votely offers the most comprehensive political assessment available online. No other quiz matches this level of detail and nuance."
   },
   {
-    question: "Should I take the 10 or 50 question version?",
-    answer: "The 10-question version gives you a quick but accurate overview, perfect for sharing and casual use. The 50-question version provides extreme detail and precision, ideal when you want the most accurate possible results."
+    question: "Should I take the 12 or 60 question version?",
+    answer: "The 12-question version gives you a quick but accurate overview, perfect for sharing and casual use. The 60-question version provides extreme detail and precision, ideal when you want the most accurate possible results."
   },
   {
     question: "Who created Votely and why?",
@@ -165,13 +165,13 @@ export default function Home() {
                   <Link href="/quiz?type=short" className="flex-1">
                     <button className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-500 text-white hover:bg-purple-600 transition">
                       Shortform<br />
-                      <span className="text-sm opacity-90">(10 Questions)</span>
+                      <span className="text-sm opacity-90">(12 Questions)</span>
                     </button>
                   </Link>
                   <Link href="/quiz?type=long" className="flex-1">
                     <button className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition">
                       Longform<br />
-                      <span className="text-sm opacity-90">(50 Questions)</span>
+                      <span className="text-sm opacity-90">(60 Questions)</span>
                     </button>
                   </Link>
                 </div>

@@ -29,6 +29,9 @@ function ensureContrast(color: string): string {
 
 export default function SupplementAxes({ axes, scores, macroCell, macroCellColor = '#B07DD5' }: SupplementAxesProps) {
   const displayColor = ensureContrast(macroCellColor);
+  
+  // Get the cell label from the first axis (they all have the same label for a given macro cell)
+  const cellLabel = axes[0]?.cellLabel;
 
   return (
     <div className="mt-8 pt-8 border-t">
@@ -36,7 +39,8 @@ export default function SupplementAxes({ axes, scores, macroCell, macroCellColor
         <span className="mr-1 sm:mr-2">🎯</span><span className="text-base sm:text-2xl">Your Detailed Position</span>
       </h3>
       <p className="text-xs sm:text-sm text-foreground/60 mb-4 sm:mb-6">
-        These axes show nuanced dimensions specific to your ideology grouping
+        These axes show nuanced dimensions specific to your ideology grouping:<br />
+        <span className="font-medium">{cellLabel || macroCell}</span>
       </p>
       
       <div className="space-y-6">

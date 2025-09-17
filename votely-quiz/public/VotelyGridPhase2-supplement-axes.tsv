@@ -1,0 +1,55 @@
+Macro Cell	Cell Label	Code	Axis	-100 Anchor	100 Anchor
+EL-GA	Revolutionary Communism & State Socialism	ELGA-A	Leadership Model	Mass-spontaneous uprising	Vanguard party directs
+EL-GA	Revolutionary Communism & State Socialism	ELGA-B	National vs International	Global class solidarity	Nation-first self-reliance
+EL-GA	Revolutionary Communism & State Socialism	ELGA-C	Urban vs Rural Base	Industrial workers	Peasant/agrarian base
+EL-GA	Revolutionary Communism & State Socialism	ELGA-D	Class vs Ethno-Populism	Pure class struggle	National-ethnic populism
+EL-GA	Revolutionary Communism & State Socialism	ELGA-E	Military Role	Civilian party control	Military-revolutionary fusion
+EL-GA	Revolutionary Communism & State Socialism	ELGA-F	Cultural Policy	Cosmopolitan modernism	National traditionalism
+EM-GA	Authoritarian Statist Centrism	EMGA-A	Source of Authority	Technocratic expertise	Traditional/religious wisdom
+EM-GA	Authoritarian Statist Centrism	EMGA-B	Economic Coordination	Market competition	State-directed sectors
+EM-GA	Authoritarian Statist Centrism	EMGA-C	Revolutionary Origin	Established order	Revolutionary movement
+EM-GA	Authoritarian Statist Centrism	EMGA-D	Tradition vs Modernization	Preserve folk tradition	Accelerate industrial modernity
+EM-GA	Authoritarian Statist Centrism	EMGA-E	Racial/Universal Vision	Universalist principles	Racial-ethnic hierarchy
+EM-GA	Authoritarian Statist Centrism	EMGA-F	Mass Mobilization	Technocratic administration	Mass movement politics
+ER-GA	Authoritarian Right & Corporatist Monarchism	ERGA-A	Source of Rule	Nationalist party state	Divine or hereditary right
+ER-GA	Authoritarian Right & Corporatist Monarchism	ERGA-B	Religious Centrality	Secular authority	Church-anchored authority
+ER-GA	Authoritarian Right & Corporatist Monarchism	ERGA-C	Economic Direction	Command economy	Authoritarian free market
+ER-GA	Authoritarian Right & Corporatist Monarchism	ERGA-D	Modernization vs Heritage	Futurist corporatism	Medieval or ancestral order
+ER-GA	Authoritarian Right & Corporatist Monarchism	ERGA-E	Mass Politics	Elite-only rule	Mass movement mobilization
+ER-GA	Authoritarian Right & Corporatist Monarchism	ERGA-F	Constitutional Limits	Absolute power	Constitutional constraints
+EL-GM	Democratic Socialism & Left Populism	ELGM-A	Reform vs Revolution	Gradual ballots	Sudden rupture
+EL-GM	Democratic Socialism & Left Populism	ELGM-B	Decision Structure	Direct democracy	Representative bodies
+EL-GM	Democratic Socialism & Left Populism	ELGM-C	Market Usage	Abolish markets	Regulated markets
+EL-GM	Democratic Socialism & Left Populism	ELGM-D	Ownership Model	State ownership	Worker cooperatives
+EL-GM	Democratic Socialism & Left Populism	ELGM-E	Party vs Union	Political party leads	Trade union primacy
+EL-GM	Democratic Socialism & Left Populism	ELGM-F	International Strategy	National focus	World revolution
+EM-GM	Mixed-Economy Liberal Center	EMGM-A	Market Freedom	Strong regulation	Deregulated markets
+EM-GM	Mixed-Economy Liberal Center	EMGM-B	Economic Rights	Positive entitlements	Negative freedoms only
+EM-GM	Mixed-Economy Liberal Center	EMGM-C	Globalism vs Domestic	Free-trade internationalism	Domestic protection
+EM-GM	Mixed-Economy Liberal Center	EMGM-D	Democratic Form	Direct participation	Representative institutions
+EM-GM	Mixed-Economy Liberal Center	EMGM-E	Welfare Model	Universal benefits	Means-tested safety net
+EM-GM	Mixed-Economy Liberal Center	EMGM-F	Cultural Policy	Progressive values	Neutral proceduralism
+ER-GM	Conservative Capitalism & National Conservatism	ERGM-A	Government Scope	Large paternal state	Minimal night-watchman
+ER-GM	Conservative Capitalism & National Conservatism	ERGM-B	National Priority	Cosmopolitan openness	National sovereignty
+ER-GM	Conservative Capitalism & National Conservatism	ERGM-C	Change Pace	Preserve status quo	Accept market disruption
+ER-GM	Conservative Capitalism & National Conservatism	ERGM-D	Corporatist Coordination	Free enterprise pluralism	State-brokered sectors
+ER-GM	Conservative Capitalism & National Conservatism	ERGM-E	Social Values	Moral enforcement	Personal freedom
+ER-GM	Conservative Capitalism & National Conservatism	ERGM-F	Economic Freedom	Regulated capitalism	Laissez-faire
+EL-GL	Libertarian Socialism & Anarcho-Communism	ELGL-A	Transition Strategy	Immediate abolition	Gradual withering
+EL-GL	Libertarian Socialism & Anarcho-Communism	ELGL-B	Violence vs Pacifism	Strictly non-violent	Accepts revolutionary force
+EL-GL	Libertarian Socialism & Anarcho-Communism	ELGL-C	Eco Priority	Human-centric	Ecological socialist
+EL-GL	Libertarian Socialism & Anarcho-Communism	ELGL-D	Local vs Network	Localist communes	Global federations
+EL-GL	Libertarian Socialism & Anarcho-Communism	ELGL-E	Production Organization	Gift economy	Labor vouchers
+EL-GL	Libertarian Socialism & Anarcho-Communism	ELGL-F	Minimal State	Zero state	Night-watchman functions
+EM-GL	Social-Market Libertarianism	EMGL-A	Resource Commons	Private ownership	Common ownership
+EM-GL	Social-Market Libertarianism	EMGL-B	Welfare Provision	Public safety net	Voluntary mutual aid
+EM-GL	Social-Market Libertarianism	EMGL-C	Market Purpose	Serve social needs	Pure efficiency
+EM-GL	Social-Market Libertarianism	EMGL-D	Market Intervention	Social regulation	Pure market autonomy
+EM-GL	Social-Market Libertarianism	EMGL-E	Land Policy	Private property	Georgist commons
+EM-GL	Social-Market Libertarianism	EMGL-F	State Scope	Minimal state	Stateless markets
+ER-GL	Anarcho-Capitalism & Ultra-Free-Market Libertarianism	ERGL-A	Enforcement Mechanism	Competitive private agencies	Single minimal state
+ER-GL	Anarcho-Capitalism & Ultra-Free-Market Libertarianism	ERGL-B	Property Absolutism	Use-based limits	Unlimited private rights
+ER-GL	Anarcho-Capitalism & Ultra-Free-Market Libertarianism	ERGL-C	Moral Traditionalism	Socially permissive	Traditionalist culture
+ER-GL	Anarcho-Capitalism & Ultra-Free-Market Libertarianism	ERGL-D	Corporate Power	Potentially coercive	Always voluntary
+ER-GL	Anarcho-Capitalism & Ultra-Free-Market Libertarianism	ERGL-E	Immigration Policy	Open borders	Property-owner exclusion
+ER-GL	Anarcho-Capitalism & Ultra-Free-Market Libertarianism	ERGL-F	Natural Law	Utilitarian efficiency	Deontological rights

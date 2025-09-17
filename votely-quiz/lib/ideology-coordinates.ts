@@ -3,6 +3,8 @@
 // - X, Y (from Phase 1)
 // - A, B, C, D (from Phase 2 supplementary axes)
 
+import { debugError } from './debug-logger';
+
 import { fetchTSVWithCache } from './tsv-cache';
 
 export interface IdeologyCoordinates {
@@ -74,7 +76,7 @@ export async function loadIdeologyCoordinates(): Promise<Map<string, IdeologyCoo
     coordinatesCache = coordinatesByMacroCell;
     return coordinatesByMacroCell;
   } catch (error) {
-    console.error('Error loading ideology coordinates:', error);
+    debugError('Error loading ideology coordinates:', error);
     return new Map();
   }
 }

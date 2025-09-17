@@ -1,23 +1,35 @@
-// Unified question loader - single source of truth from TSV
-// This replaces the hardcoded questions in questions.ts
+// Unified question loader - loads from new question format
+// Uses "VotelyQuestionsNewestQuestions.tsv"
 
 import { fetchTSVWithCache } from './tsv-cache';
+import { debugLog, debugWarn, debugError } from './debug-logger';
 
 export interface Question {
   id: number;
-  originalId: string; // Keep track of original TSV ID
+  originalId: string; // Original TSV ID (P01, TBE-LC1, ELGA-A-01, etc.)
   text: string;
-  axis: 'economic' | 'authority' | 'cultural';
+  description?: string; // Column 3 - context/description
+  axis?: 'economic' | 'governance' | 'social'; // Only for Phase 1 questions
+  axisLabel: string; // Human-readable axis label from TSV (e.g., "Economic", "Leadership Model")
+  topic: string; // Topic category  
   agreeDir: -1 | 1;
   phase: 1 | 2;
   qType: 'core' | 'tiebreaker' | 'refine';
-  macroCell?: string; // For tiebreakers and phase 2
-  boundary?: 'LEFT_CENTER' | 'CENTER_RIGHT' | 'LIB_CENTER' | 'CENTER_AUTH';
+  macroCell?: string; // For Phase 2 questions (EL-GA, etc.)
+  axisCode?: string; // For Phase 2 (ELGA-A, etc.) or Phase 1 (econ, auth, soc)
+  boundary?: 'LEFT_CENTER' | 'CENTER_RIGHT' | 'LIB_CENTER' | 'CENTER_AUTH'; // For tiebreakers
+  shortQuiz?: boolean; // Whether marked 'yes' in short_quiz column
+  removalPriority?: string; // From removal_priority column (e.g., "first", "second")
 }
 
 let questionsCache: Map<string, Question> | null = null;
 let phase1Cache: Question[] | null = null;
 let tiebreakerCache: Map<string, Question[]> | null = null;
+
+// Force clear caches for debugging - timestamp: 22:15
+questionsCache = null;
+phase1Cache = null;
+tiebreakerCache = null;
 
 export async function loadAllQuestions(): Promise<Map<string, Question>> {
   if (questionsCache) {
@@ -25,10 +37,19 @@ export async function loadAllQuestions(): Promise<Map<string, Question>> {
   }
 
   try {
-    // Use cached fetch to avoid repeated requests
-    const text = await fetchTSVWithCache('/political_quiz_final.tsv');
+    // Load from new questions file
+    debugLog('Loading questions from TSV file...');
+    const text = await fetchTSVWithCache('/VotelyQuestionsNewestQuestions.tsv');
+    debugLog(`TSV loaded, length: ${text.length} characters`);
     const lines = text.trim().split('\n');
-    const headers = lines[0].split('\t');
+    const headers = lines[0].split('\t').map(h => h.trim());
+    
+    // Debug: Check if removal_priority header exists
+    debugLog(`📋 TSV Headers found: ${headers.join(', ')}`);
+    debugLog(`🔍 removal_priority header index: ${headers.indexOf('removal_priority')}`);
+    if (!headers.includes('removal_priority')) {
+      debugLog(`❌ removal_priority header NOT found!`);
+    }
     
     const questions = new Map<string, Question>();
     
@@ -36,61 +57,93 @@ export async function loadAllQuestions(): Promise<Map<string, Question>> {
       const values = lines[i].split('\t');
       const row: any = {};
       headers.forEach((header, index) => {
-        row[header] = values[index];
+        row[header] = values[index] ? values[index].trim() : values[index];
       });
       
       // Skip if no ID or phase
       if (!row.id || !row.phase) continue;
       
-      // Skip phase 2 questions for now (handle separately)
-      if (row.phase === '2') continue;
-      
-      // Parse axis
-      let axis: 'economic' | 'authority' | 'cultural' | null = null;
-      if (row.axis === 'econ') axis = 'economic';
-      else if (row.axis === 'auth') axis = 'authority';
-      else if (row.axis === 'soc') axis = 'cultural';
-      
-      // Skip if invalid axis for phase 1
-      if (!axis) continue;
-      
       // Parse phase
       const phase = parseInt(row.phase) as 1 | 2;
       
+      // Parse axis for Phase 1 questions only
+      let axis: 'economic' | 'governance' | 'social' | undefined;
+      if (phase === 1) {
+        if (row.axis_code === 'econ') {
+          axis = 'economic';
+        } else if (row.axis_code === 'gov') {
+          axis = 'governance';
+        } else if (row.axis_code === 'soc') {
+          axis = 'social';
+        }
+      }
+      // Phase 2 questions don't use the traditional 3 axes
+      
+      // Use the numeric ID directly from the TSV data
+      const numericId = parseInt(row.id);
+      
       // Create question object
       const question: Question = {
-        id: row.id.startsWith('P') ? parseInt(row.id.substring(1)) : 
-            (row.id.startsWith('TB') || row.id.startsWith('TBE-') || row.id.startsWith('TBA-')) ? 1000 + i : // Tiebreakers get high IDs
-            2000 + i, // Phase 2 gets even higher IDs
-        originalId: row.id,
-        text: row.text,
+        id: numericId,
+        originalId: row.id_code,
+        text: row.text || '',
+        description: row.description || undefined, // Description column
         axis,
+        axisLabel: row.axis_label || '',
+        topic: row.topic || '',
         agreeDir: parseInt(row.agree_dir) as -1 | 1,
         phase,
-        qType: row.q_type as 'core' | 'tiebreaker' | 'refine',
-        macroCell: row.macro_cell !== 'ALL' ? row.macro_cell : undefined
+        qType: row.type as 'core' | 'tiebreaker' | 'refine',
+        macroCell: row.macro_cell !== 'ALL' ? row.macro_cell : undefined,
+        axisCode: row.axis_code || undefined,
+        shortQuiz: row.short_quiz === 'yes',
+        removalPriority: (row.removal_priority && row.removal_priority.trim()) || undefined
       };
+      
+      // Debug: Log removal priority parsing for specific questions
+      if (['P25', 'P28', 'P29', 'P36'].includes(row.id_code)) {
+        debugLog(`🔍 Question ${row.id_code}: removal_priority="${row.removal_priority}" (type: ${typeof row.removal_priority}) → removalPriority="${question.removalPriority}"`);
+        debugLog(`    Raw row keys: ${Object.keys(row).join(', ')}`);
+        debugLog(`    Raw row values: ${Object.values(row).map(v => `"${v}"`).join(', ')}`);
+        
+        // Special focus on P36 since it seems to be problematic
+        if (row.id_code === 'P36') {
+          debugLog(`🚨 P36 DETAILED DEBUG:`);
+          debugLog(`    Raw removal_priority value: "${row.removal_priority}"`);
+          debugLog(`    After trim: "${(row.removal_priority && row.removal_priority.trim()) || 'undefined'}"`);
+          debugLog(`    Truthy check: ${!!(row.removal_priority && row.removal_priority.trim())}`);
+        }
+      }
       
       // Add boundary for tiebreakers
       if (question.qType === 'tiebreaker' && question.macroCell) {
         question.boundary = question.macroCell as any;
       }
       
-      questions.set(row.id, question);
+      questions.set(row.id_code, question);
     }
     
     // Debug: log what we loaded
-    console.log(`📦 Question loader summary: ${questions.size} total questions loaded`);
+    debugLog(`📦 Question loader summary: ${questions.size} total questions loaded`);
     let typeCount: Record<string, number> = {};
+    let phaseCount: Record<string, number> = { phase1: 0, phase2: 0 };
+    let shortQuizCount = 0;
+    
     for (const [id, q] of questions) {
       typeCount[q.qType] = (typeCount[q.qType] || 0) + 1;
+      if (q.phase === 1) phaseCount.phase1++;
+      else if (q.phase === 2) phaseCount.phase2++;
+      if (q.shortQuiz) shortQuizCount++;
     }
-    console.log(`📊 By type:`, typeCount);
+    
+    debugLog(`📊 By type:`, typeCount);
+    debugLog(`📊 By phase:`, phaseCount);
+    debugLog(`📊 Short quiz eligible:`, shortQuizCount);
     
     questionsCache = questions;
     return questions;
   } catch (error) {
-    console.error('Error loading questions from TSV:', error);
+    debugError('Error loading questions from TSV:', error);
     return new Map();
   }
 }
@@ -121,17 +174,17 @@ export async function getTiebreakerQuestions(boundaries: string[]): Promise<Ques
   for (const [id, question] of allQuestions) {
     if (question.qType === 'tiebreaker') {
       allTiebreakerCount++;
-      console.log(`🔍 Found tiebreaker: ${id} - boundary: ${question.boundary}`);
+      debugLog(`🔍 Found tiebreaker: ${id} - boundary: ${question.boundary}`);
     }
   }
-  console.log(`📊 Total tiebreaker questions in TSV: ${allTiebreakerCount}`);
+  debugLog(`📊 Total tiebreaker questions in TSV: ${allTiebreakerCount}`);
   
   for (const [id, question] of allQuestions) {
     if (question.qType === 'tiebreaker' && 
         question.boundary && 
         boundaries.includes(question.boundary)) {
       tiebreakers.push(question);
-      console.log(`✅ Including tiebreaker for ${question.boundary}: ${id}`);
+      debugLog(`✅ Including tiebreaker for ${question.boundary}: ${id}`);
     }
   }
   
@@ -139,15 +192,40 @@ export async function getTiebreakerQuestions(boundaries: string[]): Promise<Ques
 }
 
 // Get Phase 2 questions for a specific macro cell
-export async function getPhase2Questions(macroCell: string): Promise<Question[]> {
+export async function getPhase2QuestionsUnshuffled(macroCell: string): Promise<any[]> {
   const allQuestions = await loadAllQuestions();
   const phase2 = [];
-  
+
+  debugLog(`🔍 Looking for Phase 2 questions for macro cell: ${macroCell}`);
+
+  // Count all phase 2 questions for debugging
+  let allPhase2Count = 0;
+  let macroCellCounts: Record<string, number> = {};
+
   for (const [id, question] of allQuestions) {
-    if (question.phase === 2 && question.macroCell === macroCell) {
-      phase2.push(question);
+    if (question.phase === 2) {
+      allPhase2Count++;
+      const cell = question.macroCell || 'NONE';
+      macroCellCounts[cell] = (macroCellCounts[cell] || 0) + 1;
+
+      if (question.macroCell === macroCell) {
+        // Transform to match the expected Phase2Question interface from app/quiz/questions.ts
+        phase2.push({
+          id: question.id,
+          question: question.text, // Map 'text' to 'question'
+          axis: 'social' as any, // Phase 2 uses supplementary axes, but interface expects PoliticalAxis
+          agreeDir: question.agreeDir,
+          originalId: question.originalId,
+          supplementAxis: question.axisCode, // Add the supplementary axis code
+          phase: 2
+        });
+      }
     }
   }
-  
+
+  debugLog(`📊 Total Phase 2 questions loaded: ${allPhase2Count}`);
+  debugLog(`📊 Phase 2 questions by macro cell:`, macroCellCounts);
+  debugLog(`✅ Found ${phase2.length} Phase 2 questions for macro cell ${macroCell}`);
+
   return phase2;
 }

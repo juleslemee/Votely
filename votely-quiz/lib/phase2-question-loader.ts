@@ -1,7 +1,9 @@
 // Phase 2 question loader for scoring purposes
 // This loads Phase 2 questions with their supplementary axis information
+// Updated to use the new unified question format from 'VotelyQuestionsNewestQuestions.tsv'
 
-import { fetchTSVWithCache } from './tsv-cache';
+import { loadAllQuestions } from './question-loader';
+import { debugLog, debugWarn, debugError } from './debug-logger';
 
 export interface Phase2QuestionData {
   id: number;
@@ -18,35 +20,27 @@ export async function loadPhase2QuestionData(): Promise<Map<number, Phase2Questi
   }
 
   try {
-    // Use cached fetch to avoid repeated requests
-    const text = await fetchTSVWithCache('/political_quiz_final.tsv');
-    const lines = text.trim().split('\n');
-    
+    // Load all questions from the unified question loader (uses new TSV format)
+    const allQuestions = await loadAllQuestions();
     const questionMap = new Map<number, Phase2QuestionData>();
     
-    for (let i = 1; i < lines.length; i++) {
-      const row = lines[i].split('\t');
-      const phase = row[3]; // phase column
-      
-      if (phase === '2') {
-        const supplementAxis = row[2]; // axis code like ELGL-A
-        const agreeDir = parseInt(row[6]) as -1 | 1; // agree_dir column
-        
-        // Generate the same numeric ID as in questions.ts
-        const numericId = 1000 + i;
-        
-        questionMap.set(numericId, {
-          id: numericId,
-          supplementAxis,
-          agreeDir
+    // Filter for Phase 2 questions and extract needed data for scoring
+    for (const [originalId, question] of allQuestions) {
+      if (question.phase === 2 && question.axisCode) {
+        questionMap.set(question.id, {
+          id: question.id,
+          supplementAxis: question.axisCode, // e.g., 'ELGA-A', 'EMGM-B', etc.
+          agreeDir: question.agreeDir
         });
       }
     }
     
+    debugLog(`📦 Phase 2 question loader: ${questionMap.size} Phase 2 questions loaded for scoring (from new TSV format)`);
+    
     phase2QuestionCache = questionMap;
     return questionMap;
   } catch (error) {
-    console.error('Error loading Phase 2 question data:', error);
+    debugError('Error loading Phase 2 question data from new format:', error);
     return new Map();
   }
 }

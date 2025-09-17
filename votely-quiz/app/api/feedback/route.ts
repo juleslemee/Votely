@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { adminDb, serverTimestamp } from '../../../lib/firebase-admin';
+import { debugLog, debugWarn, debugError } from '../../../lib/debug-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,13 +39,13 @@ async function checkRateLimit(ip: string): Promise<boolean> {
 }
 
 async function sendEmailNotification(feedbackData: any) {
-  console.log('sendEmailNotification called');
-  console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
-  console.log('FEEDBACK_EMAIL:', process.env.FEEDBACK_EMAIL || 'contact@juleslemee.com');
+  debugLog('sendEmailNotification called');
+  debugLog('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+  debugLog('FEEDBACK_EMAIL:', process.env.FEEDBACK_EMAIL || 'contact@juleslemee.com');
   
   if (process.env.RESEND_API_KEY) {
     try {
-      console.log('Attempting to send email via Resend...');
+      debugLog('Attempting to send email via Resend...');
       const emailPayload: any = {
         from: process.env.RESEND_FROM_EMAIL || 'Votely Quiz <votely@juleslemee.com>',
         to: process.env.FEEDBACK_EMAIL || 'juleslemee@gmail.com',
@@ -68,7 +69,7 @@ Feedback ID: ${feedbackData.id}
         emailPayload.reply_to = feedbackData.email;
       }
       
-      console.log('Sending email with payload:', {
+      debugLog('Sending email with payload:', {
         to: emailPayload.to,
         from: emailPayload.from,
         subject: emailPayload.subject,
@@ -85,51 +86,51 @@ Feedback ID: ${feedbackData.id}
         body: JSON.stringify(emailPayload),
       });
 
-      console.log('Resend API response status:', response.status);
+      debugLog('Resend API response status:', response.status);
       const responseText = await response.text();
       
       if (!response.ok) {
-        console.error('Failed to send email with Resend:');
-        console.error('Status:', response.status);
-        console.error('Response:', responseText);
+        debugError('Failed to send email with Resend:');
+        debugError('Status:', response.status);
+        debugError('Response:', responseText);
         
         // Try to parse error details
         try {
           const errorData = JSON.parse(responseText);
-          console.error('Error details:', errorData);
+          debugError('Error details:', errorData);
           if (errorData.message) {
-            console.error('Error message:', errorData.message);
+            debugError('Error message:', errorData.message);
           }
           if (errorData.name === 'validation_error') {
-            console.error('Validation issues:', errorData.errors);
+            debugError('Validation issues:', errorData.errors);
           }
         } catch (e) {
-          console.error('Could not parse error response');
+          debugError('Could not parse error response');
         }
       } else {
-        console.log('Email sent successfully');
+        debugLog('Email sent successfully');
         try {
           const successData = JSON.parse(responseText);
-          console.log('Email ID:', successData.id);
+          debugLog('Email ID:', successData.id);
         } catch (e) {
-          console.log('Response:', responseText);
+          debugLog('Response:', responseText);
         }
       }
     } catch (error) {
-      console.error('Error sending email notification:', error);
+      debugError('Error sending email notification:', error);
     }
   } else {
-    console.log('RESEND_API_KEY not found, skipping email notification');
+    debugLog('RESEND_API_KEY not found, skipping email notification');
   }
 }
 
 export async function POST(request: Request) {
-  console.log('Feedback API route called');
+  debugLog('Feedback API route called');
   
   try {
     // Check if Firebase Admin is properly configured
     if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      console.error('FIREBASE_SERVICE_ACCOUNT_KEY is not set');
+      debugError('FIREBASE_SERVICE_ACCOUNT_KEY is not set');
       return NextResponse.json(
         { error: 'Server configuration error. Please contact support.' },
         { status: 500 }
@@ -193,17 +194,17 @@ export async function POST(request: Request) {
 
     // Store in Firestore
     try {
-      console.log('Attempting to save feedback to Firestore...');
+      debugLog('Attempting to save feedback to Firestore...');
       
       const docRef = await adminDb.collection('feedback').add(feedbackData);
       feedbackData.id = docRef.id;
       
       // Update with ID
       await docRef.update({ id: docRef.id });
-      console.log('Feedback saved successfully with ID:', docRef.id);
+      debugLog('Feedback saved successfully with ID:', docRef.id);
     } catch (error: any) {
-      console.error('Error saving to Firestore:', error);
-      console.error('Error details:', {
+      debugError('Error saving to Firestore:', error);
+      debugError('Error details:', {
         code: error.code,
         message: error.message,
         details: error.details,
@@ -232,12 +233,12 @@ export async function POST(request: Request) {
     try {
       await sendEmailNotification(feedbackData);
     } catch (error) {
-      console.error('Failed to send email notification:', error);
+      debugError('Failed to send email notification:', error);
       // Don't fail the request just because email failed
     }
 
     // Log for monitoring
-    console.log(`New feedback received: ${feedbackData.id}`);
+    debugLog(`New feedback received: ${feedbackData.id}`);
 
     return NextResponse.json({ 
       success: true,
@@ -251,8 +252,8 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Error processing feedback:', error);
-    console.error('Error stack:', error.stack);
+    debugError('Error processing feedback:', error);
+    debugError('Error stack:', error.stack);
     
     // Always return valid JSON, even on unexpected errors
     return NextResponse.json(

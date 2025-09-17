@@ -2,6 +2,7 @@ import { db, auth } from './firebase';
 import { collection, addDoc, serverTimestamp, Timestamp, doc, updateDoc, getDocs, query, where, orderBy, limit, getDoc, setDoc, increment, runTransaction } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { findVisionAlignment, alignments, toVisionScale } from '../app/quiz/results/types';
+import { debugLog, debugWarn, debugError } from './debug-logger';
 
 export type QuizResult = {
   answers: number[];
@@ -15,14 +16,23 @@ export type QuizResult = {
   }>;
   result: {
     economicScore: number;
+    governanceScore?: number; // Governance axis score
     socialScore: number;
-    progressiveScore?: number; // Cultural axis score
+    progressiveScore?: number; // Cultural axis score (legacy)
     alignmentLabel: string;
     alignmentDescription: string;
     macroCellCode?: string; // e.g., "EM-GM"
     supplementaryScores?: Record<string, number>; // Phase 2 scores
     gridPosition?: { // For 3x3 or 9x9 grid
       economic: number;
+      social: number;
+    };
+  };
+  skipStats?: { // Analytics for skipped questions
+    totalSkipped: number;
+    skipsByAxis: {
+      economic: number;
+      governance: number;
       social: number;
     };
   };
@@ -35,11 +45,11 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
   try {
     // Ensure we have an anonymous user
     if (!auth.currentUser) {
-      console.log('No current user, signing in anonymously...');
+      debugLog('No current user, signing in anonymously...');
       const userCredential = await signInAnonymously(auth);
-      console.log('Anonymous sign-in successful, uid:', userCredential.user.uid);
+      debugLog('Anonymous sign-in successful, uid:', userCredential.user.uid);
     } else {
-      console.log('Already signed in, uid:', auth.currentUser.uid);
+      debugLog('Already signed in, uid:', auth.currentUser.uid);
     }
 
     const dataToSave: any = {
@@ -48,14 +58,15 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
       timestamp: serverTimestamp(),
       userId: auth.currentUser?.uid || null,
     };
-    
+
     // Only add optional fields if they have values
     if (result.quizType) dataToSave.quizType = result.quizType;
     if (result.phase) dataToSave.phase = result.phase;
+    if (result.skipStats) dataToSave.skipStats = result.skipStats;
     if (result.questionData && result.questionData.length > 0) {
       // Filter out any undefined supplementAxis values
       dataToSave.questionData = result.questionData.map(q => {
-        const cleaned: any = { 
+        const cleaned: any = {
           id: q.id,
           axis: q.axis,
           agreeDir: q.agreeDir,
@@ -66,7 +77,7 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
       });
     }
     
-    console.log('Attempting to save quiz result to Firestore...', {
+    debugLog('Attempting to save quiz result to Firestore...', {
       dataStructure: Object.keys(dataToSave),
       alignmentLabel: result.result.alignmentLabel,
       userId: dataToSave.userId,
@@ -78,24 +89,24 @@ export async function saveQuizResult(result: Omit<QuizResult, 'timestamp'>) {
       dataToSave
     );
     
-    console.log('Quiz result saved successfully, docId:', docRef.id);
+    debugLog('Quiz result saved successfully, docId:', docRef.id);
     
     // Update aggregated stats to avoid reading all documents later
     await updateAggregatedStats(result.result.economicScore, result.result.socialScore);
     
     return docRef.id;
   } catch (error: any) {
-    console.error('Error saving quiz result:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
+    debugError('Error saving quiz result:', error);
+    debugError('Error code:', error.code);
+    debugError('Error message:', error.message);
     
     // Check for specific Firebase errors
     if (error.code === 'permission-denied') {
-      console.error('Firebase permission denied - check Firestore rules');
+      debugError('Firebase permission denied - check Firestore rules');
     } else if (error.code === 'unavailable') {
-      console.error('Firebase unavailable - check network connection');
+      debugError('Firebase unavailable - check network connection');
     } else if (error.code === 'auth/api-key-expired') {
-      console.error('Firebase API key expired - please renew the API key in Firebase Console');
+      debugError('Firebase API key expired - please renew the API key in Firebase Console');
     }
     
     throw error;
@@ -114,7 +125,7 @@ export async function saveEmailToWaitlist(email: string) {
     );
     return docRef.id;
   } catch (error) {
-    console.error('Error saving email to waitlist:', error);
+    debugError('Error saving email to waitlist:', error);
     throw error;
   }
 }
@@ -122,18 +133,33 @@ export async function saveEmailToWaitlist(email: string) {
 // Helper function to update aggregated statistics
 async function updateAggregatedStats(economicScore: number, socialScore: number) {
   try {
-    // Update total count
+    // Use a transaction to ensure atomic increment
     const statsRef = doc(db, 'aggregatedStats', 'totals');
-    await setDoc(statsRef, {
-      totalCount: increment(1),
-      lastUpdated: serverTimestamp()
-    }, { merge: true });
+    
+    await runTransaction(db, async (transaction) => {
+      const statsDoc = await transaction.get(statsRef);
+      
+      if (!statsDoc.exists()) {
+        // If document doesn't exist, create it with count of 1
+        transaction.set(statsRef, {
+          totalCount: 1,
+          lastUpdated: serverTimestamp()
+        });
+      } else {
+        // If it exists, increment the existing count
+        const currentCount = statsDoc.data().totalCount || 0;
+        transaction.update(statsRef, {
+          totalCount: currentCount + 1,
+          lastUpdated: serverTimestamp()
+        });
+      }
+    });
 
     // Update grid cell counts for both 3x3 and 9x9 grids
     await updateGridCellCount(economicScore, socialScore, 'short');
     await updateGridCellCount(economicScore, socialScore, 'long');
   } catch (error) {
-    console.error('Error updating aggregated stats:', error);
+    debugError('Error updating aggregated stats:', error);
     // Don't throw - this is not critical for the user experience
   }
 }
@@ -166,13 +192,13 @@ async function updateGridCellCount(economic: number, social: number, quizType: '
 // Simple test function to check Firebase connection
 export async function testFirebaseConnection(): Promise<boolean> {
   try {
-    console.log('Testing Firebase connection...');
+    debugLog('Testing Firebase connection...');
     // Just read ONE document instead of ALL documents!
     const testDoc = await getDoc(doc(db, 'aggregatedStats', 'totals'));
-    console.log('Firebase connection successful. Stats exist:', testDoc.exists());
+    debugLog('Firebase connection successful. Stats exist:', testDoc.exists());
     return true;
   } catch (error) {
-    console.error('Firebase connection failed:', error);
+    debugError('Firebase connection failed:', error);
     return false;
   }
 }
@@ -186,50 +212,52 @@ export async function getQuizResultById(docId: string): Promise<any | null> {
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() };
     } else {
-      console.error(`No quiz result found with ID: ${docId}`);
+      debugError(`No quiz result found with ID: ${docId}`);
       return null;
     }
   } catch (error) {
-    console.error('Error loading quiz result:', error);
+    debugError('Error loading quiz result:', error);
     return null;
   }
 }
 
 // New coordinate-range-based percentage calculation - ULTRA OPTIMIZED VERSION
 export async function getCoordinateRangePercentage(
-  userEconomic: number, 
-  userSocial: number, 
+  userEconomic: number,
+  userGovernance: number,
   quizType: 'short' | 'long'
 ): Promise<number> {
   try {
     const cellSize = quizType === 'short' ? (200 / 3) : (200 / 9);
     const gridSize = quizType === 'short' ? 3 : 9;
-    
+
     let econCell = Math.floor((userEconomic + 100) / cellSize);
     if (econCell >= gridSize) econCell = gridSize - 1;
-    
-    let socialCell = Math.floor((100 - userSocial) / cellSize);
-    if (socialCell >= gridSize) socialCell = gridSize - 1;
-    
-    const cellId = `${quizType}_${econCell}_${socialCell}`;
+
+    let govCell = Math.floor((100 - userGovernance) / cellSize);
+    if (govCell >= gridSize) govCell = gridSize - 1;
+
+    const cellId = `${quizType}_${econCell}_${govCell}`;
     
     // ONLY read from cache - never calculate on the fly
     const cacheRef = doc(db, 'cachedPercentages', cellId);
     const cacheDoc = await getDoc(cacheRef);
     
     if (cacheDoc.exists() && cacheDoc.data().percentage !== undefined) {
-      console.log(`Using cached percentage for cell ${cellId}: ${cacheDoc.data().percentage}%`);
+      debugLog(`Using cached percentage for cell ${cellId}: ${cacheDoc.data().percentage}%`);
       return cacheDoc.data().percentage;
     }
     
     // If no cache exists, return a default
     // The batch job will ensure cache is always populated
-    console.warn(`No cached percentage for cell ${cellId}, returning default`);
-    return 5;
-    
+    debugWarn(`No cached percentage for cell ${cellId}, returning default`);
+    // Different fallbacks for short (3x3) vs long (9x9) quiz
+    return quizType === 'short' ? 9 : 2;
+
   } catch (error) {
-    console.error('Error getting cached percentage:', error);
-    return 5; // Default fallback percentage
+    debugError('Error getting cached percentage:', error);
+    // Different fallbacks for short (3x3) vs long (9x9) quiz
+    return quizType === 'short' ? 9 : 2; // Default fallback percentage
   }
 }
 
@@ -252,27 +280,37 @@ export async function getAlignmentPercentage(alignmentLabel: string): Promise<nu
 
 export async function getTotalQuizCount(): Promise<number | string> {
   try {
-    // Always get fresh count from aggregated stats (just 1 read!)
+    // Single read from aggregated stats - force server read to avoid cache issues
     const statsRef = doc(db, 'aggregatedStats', 'totals');
     const statsDoc = await getDoc(statsRef);
     
-    if (statsDoc.exists() && statsDoc.data().totalCount) {
-      const totalCount = statsDoc.data().totalCount;
-      console.log(`Total quiz count: ${totalCount}`);
-      return totalCount;
+    if (statsDoc.exists()) {
+      const data = statsDoc.data();
+      debugLog('📊 Raw Firebase document data:', JSON.stringify(data));
+      const totalCount = data?.totalCount;
+      
+      debugLog(`Total quiz count from Firebase: ${totalCount}, type: ${typeof totalCount}`);
+      
+      // Simple validation - just check it's a valid number
+      if (typeof totalCount === 'number' && totalCount >= 1) {
+        return totalCount;
+      } else {
+        debugWarn(`Invalid totalCount value: ${totalCount}. Returning fallback.`);
+        return 'thousands of';
+      }
     }
     
     // Default fallback if document doesn't exist
-    console.log('No aggregated stats found, returning fallback text');
-    return 'a lot of';
+    debugLog('No aggregated stats document found, returning fallback');
+    return 'thousands of';
     
   } catch (error: any) {
-    console.error('Error getting total quiz count:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
+    debugError('Error getting total quiz count:', error);
+    debugError('Error code:', error.code);
+    debugError('Error message:', error.message);
     
     // Return fallback text if Firebase fails
-    return 'a lot of';
+    return 'thousands of';
   }
 }
 
@@ -776,7 +814,7 @@ export async function getWaitlistCount(): Promise<number> {
     const snapshot = await getDocs(collection(db, 'waitlist'));
     return snapshot.size;
   } catch (error) {
-    console.error('Error getting waitlist count:', error);
+    debugError('Error getting waitlist count:', error);
     return 0;
   }
 }
@@ -785,7 +823,7 @@ export async function getWaitlistCount(): Promise<number> {
 // This should be run periodically (e.g., once per day via a scheduled function)
 export async function batchUpdateAllGridPercentages() {
   try {
-    console.log('Starting batch update of all grid percentages...');
+    debugLog('Starting batch update of all grid percentages...');
     
     // Get total count once
     const statsRef = doc(db, 'aggregatedStats', 'totals');
@@ -793,7 +831,7 @@ export async function batchUpdateAllGridPercentages() {
     const totalCount = statsDoc.exists() ? statsDoc.data().totalCount || 0 : 0;
     
     if (totalCount === 0) {
-      console.log('No responses to calculate percentages for');
+      debugLog('No responses to calculate percentages for');
       return;
     }
     
@@ -853,11 +891,11 @@ export async function batchUpdateAllGridPercentages() {
     
     await Promise.all(updates);
     
-    console.log(`Batch update complete! Updated ${updates.length} grid cell percentages`);
+    debugLog(`Batch update complete! Updated ${updates.length} grid cell percentages`);
     return { success: true, updatedCells: updates.length };
     
   } catch (error) {
-    console.error('Error during batch update:', error);
+    debugError('Error during batch update:', error);
     throw error;
   }
 }
@@ -866,13 +904,13 @@ export async function batchUpdateAllGridPercentages() {
 // Run this ONCE to set up the aggregated collections
 export async function migrateToAggregatedStats() {
   try {
-    console.log('Starting migration to aggregated stats...');
+    debugLog('Starting migration to aggregated stats...');
     
     // Get all existing quiz responses
     const allResponsesSnapshot = await getDocs(collection(db, 'quizResponses'));
     const totalCount = allResponsesSnapshot.size;
     
-    console.log(`Found ${totalCount} existing quiz responses to migrate`);
+    debugLog(`Found ${totalCount} existing quiz responses to migrate`);
     
     // Initialize total count
     await setDoc(doc(db, 'aggregatedStats', 'totals'), {
@@ -918,11 +956,11 @@ export async function migrateToAggregatedStats() {
     
     await Promise.all(promises);
     
-    console.log(`Migration complete! Migrated ${totalCount} responses across ${Object.keys(gridCellCounts).length} grid cells`);
+    debugLog(`Migration complete! Migrated ${totalCount} responses across ${Object.keys(gridCellCounts).length} grid cells`);
     return { success: true, totalCount, cellCount: Object.keys(gridCellCounts).length };
     
   } catch (error) {
-    console.error('Error during migration:', error);
+    debugError('Error during migration:', error);
     throw error;
   }
 } 

@@ -1,7 +1,9 @@
 import { fetchTSVWithCache } from './tsv-cache';
+import { debugLog, debugWarn, debugError } from './debug-logger';
 
 export interface SupplementAxis {
   macroCell: string;
+  cellLabel?: string;
   code: string;
   axis: string;
   negativeAnchor: string; // -100
@@ -10,8 +12,8 @@ export interface SupplementAxis {
 
 export async function loadSupplementAxes(): Promise<Map<string, SupplementAxis[]>> {
   try {
-    // Use cached fetch to avoid repeated requests
-    const text = await fetchTSVWithCache('/supplement-axes.tsv');
+    // Use cached fetch to avoid repeated requests - now using the new 6-axes file
+    const text = await fetchTSVWithCache('/VotelyGridPhase2-supplement-axes.tsv');
     const lines = text.trim().split('\n');
     
     // Skip header
@@ -20,10 +22,11 @@ export async function loadSupplementAxes(): Promise<Map<string, SupplementAxis[]
     const axesByMacroCell = new Map<string, SupplementAxis[]>();
     
     dataLines.forEach(line => {
-      const [macroCell, code, axis, negativeAnchor, positiveAnchor] = line.split('\t');
+      const [macroCell, cellLabel, code, axis, negativeAnchor, positiveAnchor] = line.split('\t');
       
       const axisData: SupplementAxis = {
         macroCell,
+        cellLabel,
         code,
         axis,
         negativeAnchor,
@@ -39,7 +42,7 @@ export async function loadSupplementAxes(): Promise<Map<string, SupplementAxis[]
     
     return axesByMacroCell;
   } catch (error) {
-    console.error('Error loading supplement axes:', error);
+    debugError('Error loading supplement axes:', error);
     return new Map();
   }
 }

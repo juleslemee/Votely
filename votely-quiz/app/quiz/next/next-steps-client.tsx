@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { saveEmailToWaitlist } from '@/lib/quiz';
+import { debugError } from '@/lib/debug-logger';
 import { Rocket, Target, Users, Lightbulb, Heart, Shield, Lock } from 'lucide-react';
 
 const carouselScreenshots = [
@@ -36,7 +37,7 @@ function NextStepsContent() {
         await Promise.all(promises);
         setImagesLoaded(true);
       } catch (error) {
-        console.error('Error preloading images:', error);
+        debugError('Error preloading images:', error);
         setImagesLoaded(true); // Still allow interaction even if preload fails
       }
     };
@@ -71,7 +72,7 @@ function NextStepsContent() {
       await saveEmailToWaitlist(email);
       setIsSuccess(true);
     } catch (error) {
-      console.error('Error saving email:', error);
+      debugError('Error saving email:', error);
       // You might want to show an error message to the user here
     } finally {
       setIsSubmitting(false);

@@ -73,7 +73,7 @@ export default function TestSessionPage() {
         id: i,
         originalId: `P${i.toString().padStart(2, '0')}`,
         text: `Question ${i}`,
-        axis: i % 3 === 0 ? 'cultural' : i % 3 === 1 ? 'economic' : 'authority',
+        axis: i % 3 === 0 ? 'social' : i % 3 === 1 ? 'economic' : 'governance',
         agreeDir: i % 2 === 0 ? 1 : -1,
         phase: 1,
         qType: 'core'
@@ -88,7 +88,7 @@ export default function TestSessionPage() {
         id: 1001 + i,
         originalId: `${supplementAxes[Math.floor(i / 5)]}-${(i % 5) + 1}`,
         text: `Phase 2 Question ${i + 1}`,
-        axis: 'cultural',
+        axis: 'social',
         agreeDir: i % 2 === 0 ? 1 : -1,
         phase: 2,
         qType: 'refine',
@@ -113,8 +113,8 @@ export default function TestSessionPage() {
       answers: answers,
       phase1Scores: {
         economic: 5.2,
-        authority: 8.7,
-        cultural: -2.1
+        governance: 8.7,
+        social: -2.1
       },
       macroCellCode: 'EM-GM',
       createdAt: Date.now()

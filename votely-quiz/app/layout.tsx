@@ -46,9 +46,9 @@ export const metadata: Metadata = {
     siteName: 'Votely Political Quiz',
     images: [
       {
-        url: '/logo.svg',
-        width: 512,
-        height: 512,
+        url: '/Logo.png',
+        width: 1200,
+        height: 630,
         alt: 'Votely Political Quiz Logo',
       }
     ],
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'The Votely Political Quiz - 3D Political Compass',
     description: 'Most accurate political quiz: 39 axes, 81 ideologies, 3D visualization',
-    images: ['/logo.svg'],
+    images: ['/Logo.png'],
     creator: '@juleslemee',
   },
   icons: {

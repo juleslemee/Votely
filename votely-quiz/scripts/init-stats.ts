@@ -10,33 +10,34 @@ dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 import { migrateToAggregatedStats, batchUpdateAllGridPercentages } from '../lib/quiz';
 import { auth } from '../lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
+import { debugLog, debugError } from '../lib/debug-logger';
 
 async function initializeStats() {
-  console.log('🚀 Initializing aggregated stats...\n');
+  debugLog('🚀 Initializing aggregated stats...\n');
   
   try {
     // First, sign in anonymously to get auth permissions
-    console.log('Signing in anonymously...');
+    debugLog('Signing in anonymously...');
     const userCredential = await signInAnonymously(auth);
-    console.log('✅ Signed in successfully, uid:', userCredential.user.uid);
-    console.log('\n');
+    debugLog('✅ Signed in successfully, uid:', userCredential.user.uid);
+    debugLog('\n');
     // Step 1: Migrate existing data to aggregated stats
-    console.log('Step 1: Migrating existing quiz responses...');
+    debugLog('Step 1: Migrating existing quiz responses...');
     const migrationResult = await migrateToAggregatedStats();
-    console.log('✅ Migration complete:', migrationResult);
-    console.log('\n');
+    debugLog('✅ Migration complete:', migrationResult);
+    debugLog('\n');
     
     // Step 2: Calculate and cache all percentages
-    console.log('Step 2: Calculating and caching all grid percentages...');
+    debugLog('Step 2: Calculating and caching all grid percentages...');
     const batchResult = await batchUpdateAllGridPercentages();
-    console.log('✅ Batch update complete:', batchResult);
-    console.log('\n');
+    debugLog('✅ Batch update complete:', batchResult);
+    debugLog('\n');
     
-    console.log('🎉 All stats initialized successfully!');
-    console.log('Your app should now show the correct quiz count and percentages.');
+    debugLog('🎉 All stats initialized successfully!');
+    debugLog('Your app should now show the correct quiz count and percentages.');
     
   } catch (error) {
-    console.error('❌ Error initializing stats:', error);
+    debugError('❌ Error initializing stats:', error);
     process.exit(1);
   }
   

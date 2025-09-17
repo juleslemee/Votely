@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { migrateToAggregatedStats, batchUpdateAllGridPercentages } from '@/lib/quiz';
+import { debugError } from '@/lib/debug-logger';
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Stats update error:', error);
+    debugError('Stats update error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

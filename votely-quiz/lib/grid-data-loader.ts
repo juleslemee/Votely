@@ -1,6 +1,7 @@
 // Grid data loader for dynamic ideology information
 
 import { fetchTSVWithCache } from './tsv-cache';
+import { debugLog, debugWarn, debugError } from './debug-logger';
 
 export interface GridCellData {
   macroCellCode: string;
@@ -59,15 +60,14 @@ export async function loadGridData(quizType: 'short' | 'long'): Promise<GridCell
   const filename = quizType === 'short' ? 'grid-3x3-details.tsv' : 'grid-details.tsv';
   
   try {
-    // Use absolute URL in production to avoid issues
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const url = `${baseUrl}/${filename}`;
+    // Use relative URL - let fetchTSVWithCache handle the normalization
+    const url = `/${filename}`;
     
     // Use cached fetch to avoid repeated requests
     const content = await fetchTSVWithCache(url);
     return parseTSV(content);
   } catch (error) {
-    console.error(`Error loading ${filename}:`, error);
+    debugError(`Error loading ${filename}:`, error);
     // Return empty array to prevent app from crashing
     return [];
   }
@@ -77,21 +77,21 @@ export async function loadGridData(quizType: 'short' | 'long'): Promise<GridCell
 export function findIdeologyByPosition(
   gridData: GridCellData[],
   economicScore: number,
-  socialScore: number
+  governanceScore: number
 ): GridCellData | null {
   // Convert normalized scores (-100 to 100) to macro cell codes
   let econCode: 'EL' | 'EM' | 'ER';
   if (economicScore < -33) econCode = 'EL';
   else if (economicScore > 33) econCode = 'ER';
   else econCode = 'EM';
-  
-  let authCode: 'GL' | 'GM' | 'GR';
-  if (socialScore > 33) authCode = 'GL'; // More authoritarian
-  else if (socialScore < -33) authCode = 'GR'; // More libertarian
+
+  let authCode: 'GL' | 'GM' | 'GA';
+  if (governanceScore > 33) authCode = 'GA'; // More authoritarian
+  else if (governanceScore < -33) authCode = 'GL'; // More libertarian
   else authCode = 'GM';
-  
+
   const macroCellCode = `${econCode}-${authCode}`;
-  
+
   // Find the matching cell data
   return gridData.find(cell => cell.macroCellCode === macroCellCode) || null;
 }
@@ -100,11 +100,11 @@ export function findIdeologyByPosition(
 export function findDetailedIdeology(
   gridData: GridCellData[],
   economicScore: number,
-  socialScore: number,
-  progressiveScore: number = 0
+  governanceScore: number,
+  socialScore: number = 0
 ): GridCellData | null {
   // First determine which macro cell the user falls into
-  const macroCellIdeology = findIdeologyByPosition(gridData, economicScore, socialScore);
+  const macroCellIdeology = findIdeologyByPosition(gridData, economicScore, governanceScore);
   if (!macroCellIdeology) return null;
   
   const macroCellCode = macroCellIdeology.macroCellCode;
@@ -135,8 +135,8 @@ export function findDetailedIdeology(
     
     // Simple Euclidean distance for Phase 1 only
     const distance = Math.sqrt(
-      Math.pow(economicScore - centerX, 2) + 
-      Math.pow(socialScore - centerY, 2)
+      Math.pow(economicScore - centerX, 2) +
+      Math.pow(governanceScore - centerY, 2)
     );
     
     if (distance < minDistance) {
@@ -148,34 +148,61 @@ export function findDetailedIdeology(
   return closestIdeology;
 }
 
-// New function to find ideology using weighted distance with supplementary scores
+// New function to find ideology using pure 6-axis distance with supplementary scores
 export async function findDetailedIdeologyWithSupplementary(
   gridData: GridCellData[],
   economicScore: number,
-  socialScore: number,
+  governanceScore: number,
   supplementaryScores: Record<string, number>
 ): Promise<GridCellData | null> {
-  // Import the weighted distance calculation
-  const { findClosestIdeology } = await import('./ideology-coordinates');
-  
-  // First determine macro cell
-  const macroCellIdeology = findIdeologyByPosition(gridData, economicScore, socialScore);
+  // Import the new 6-axis vector calculation
+  const { findClosestIdeologyPure6Axis } = await import('./ideology-vector-loader');
+
+  // STEP 1: First determine macro cell based on Phase 1 scores (economic and governance)
+  // This determines which of the 9 macro cells the user falls into
+  const macroCellIdeology = findIdeologyByPosition(gridData, economicScore, governanceScore);
   if (!macroCellIdeology) return null;
   
   const macroCellCode = macroCellIdeology.macroCellCode;
   
-  // Find closest ideology using weighted distance
-  const closestIdeologyName = await findClosestIdeology(
+  // STEP 2: Within that macro cell, find the closest ideology using pure 6-axis Euclidean distance
+  // This compares the user's 6 supplementary axis scores to each ideology's vector
+  const closestIdeologyName = await findClosestIdeologyPure6Axis(
     macroCellCode,
-    economicScore,
-    socialScore,
     supplementaryScores
   );
   
   if (!closestIdeologyName) {
-    return macroCellIdeology; // Fallback to macro cell
+    return macroCellIdeology; // Fallback to macro cell if no specific ideology found
   }
   
-  // Find the full ideology data
+  // STEP 3: Return the full ideology data for display
+  return gridData.find(cell => cell.ideology === closestIdeologyName) || macroCellIdeology;
+}
+
+// Function to find ideology with a predefined macro cell (for long quiz sessions)
+export async function findDetailedIdeologyWithPredefinedMacroCell(
+  gridData: GridCellData[],
+  macroCellCode: string,
+  supplementaryScores: Record<string, number>
+): Promise<GridCellData | null> {
+  // Import the new 6-axis vector calculation
+  const { findClosestIdeologyPure6Axis } = await import('./ideology-vector-loader');
+
+  // Get the macro cell ideology for fallback
+  const macroCellIdeology = gridData.find(cell => cell.macroCellCode === macroCellCode);
+  if (!macroCellIdeology) return null;
+
+  // Within that macro cell, find the closest ideology using pure 6-axis Euclidean distance
+  const closestIdeologyName = await findClosestIdeologyPure6Axis(
+    macroCellCode,
+    supplementaryScores
+  );
+
+  if (!closestIdeologyName) {
+    return macroCellIdeology; // Fallback to macro cell if no specific ideology found
+  }
+
+  // Return the full ideology data for display
   return gridData.find(cell => cell.ideology === closestIdeologyName) || macroCellIdeology;
 }

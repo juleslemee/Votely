@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, Suspense, useEffect } from 'react';
 import { AdaptivePoliticalCompass } from '../lib/adaptive-political-compass';
+import { debugLog, debugError } from '../lib/debug-logger';
 
 /**
  * UnifiedShareModal - Comprehensive sharing functionality for quiz results
@@ -37,8 +38,8 @@ interface UnifiedShareModalProps {
     description: string;
   };
   economic: number;
+  governance: number;
   social: number;
-  progressive: number;
   x: number;
   y: number;
   z: number;
@@ -300,7 +301,7 @@ export default function UnifiedShareModal({
   alignment,
   economic,
   social,
-  progressive,
+  governance,
   x,
   y,
   z,
@@ -330,7 +331,7 @@ export default function UnifiedShareModal({
       const hasShareAPI = 'share' in navigator;
       
       // Debug info
-      console.log('Share API Debug:', {
+      debugLog('Share API Debug:', {
         isHTTPS,
         isLocalhost,
         hasShareAPI,
@@ -410,7 +411,7 @@ export default function UnifiedShareModal({
       }, 'image/png', 1);
       
     } catch (error) {
-      console.error('Error generating screenshot:', error);
+      debugError('Error generating screenshot:', error);
     } finally {
       setIsGenerating(false);
       setGeneratingType(null);
@@ -460,7 +461,7 @@ export default function UnifiedShareModal({
                       <ResultCube
                         x={economic}
                         y={social}
-                        z={progressive}
+                        z={governance}
                         ideologyLabel={alignment.label}
                         onInteraction={() => {}}
                         hideHint={true}
@@ -471,7 +472,7 @@ export default function UnifiedShareModal({
                       <ResultCubeFallback
                         x={economic}
                         y={social}
-                        z={progressive}
+                        z={governance}
                         ideologyLabel={alignment.label}
                       />
                     )}
@@ -531,7 +532,7 @@ export default function UnifiedShareModal({
                       fontSize: '10px',
                       lineHeight: '14px'
                     }}>
-                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Social Score:</span> {progressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(progressive).toFixed(1)}%)
+                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Social Score:</span> {governance < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(governance).toFixed(1)}%)
                     </div>
                   </div>
 
@@ -826,7 +827,7 @@ export default function UnifiedShareModal({
             
             resolve(canvas);
           } catch (error) {
-            console.error(`Error capturing frame ${frameIndex}:`, error);
+            debugError(`Error capturing frame ${frameIndex}:`, error);
             root.unmount();
             document.body.removeChild(frameContainer);
             resolve(null); // Continue with next frame even if this one fails
@@ -834,7 +835,7 @@ export default function UnifiedShareModal({
         }, 400); // Slightly increased wait time for more stable rendering
       });
     } catch (error) {
-      console.error(`Failed to create frame ${frameIndex}:`, error);
+      debugError(`Failed to create frame ${frameIndex}:`, error);
       return null;
     }
   };
@@ -860,7 +861,7 @@ export default function UnifiedShareModal({
 
       const totalFrames = 36; // 10-degree increments for smooth rotation
       
-      console.log(`Starting GIF generation with ${totalFrames} frames...`);
+      debugLog(`Starting GIF generation with ${totalFrames} frames...`);
       const startTime = performance.now();
       
       // Generate frames sequentially
@@ -877,7 +878,7 @@ export default function UnifiedShareModal({
       }
       
       const captureTime = performance.now() - startTime;
-      console.log(`Frame capture completed in ${captureTime.toFixed(0)}ms`);
+      debugLog(`Frame capture completed in ${captureTime.toFixed(0)}ms`);
 
 
       // Generate the final GIF
@@ -902,7 +903,7 @@ export default function UnifiedShareModal({
       gif.render();
 
     } catch (error) {
-      console.error('Error generating GIF:', error);
+      debugError('Error generating GIF:', error);
       setIsGenerating(false);
       setGeneratingType(null);
       setGifProgress(0);
@@ -948,7 +949,7 @@ export default function UnifiedShareModal({
             // User cancelled the share, this is fine
             return;
           }
-          console.error('Share failed:', error.message);
+          debugError('Share failed:', error.message);
           // Fall through to fallback options
         }
       }
@@ -1009,7 +1010,7 @@ export default function UnifiedShareModal({
                   <ResultCube
                     x={economic}
                     y={social}
-                    z={progressive}
+                    z={governance}
                     ideologyLabel={alignment.label}
                     onInteraction={() => {}} // No interaction needed for static screenshot
                     hideHint={true} // Hide the "drag to rotate" hint for screenshots
@@ -1019,7 +1020,7 @@ export default function UnifiedShareModal({
                   <ResultCubeFallback
                     x={economic}
                     y={social}
-                    z={progressive}  
+                    z={governance}  
                     ideologyLabel={alignment.label}
                   />
                 )}
@@ -1197,7 +1198,7 @@ export default function UnifiedShareModal({
                     whiteSpace: 'nowrap',
                     lineHeight: '16px',
                     display: 'block'
-                  }}>{progressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(progressive).toFixed(1)}%)</span>
+                  }}>{governance < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(governance).toFixed(1)}%)</span>
                 </div>
                 <div style={{ 
                   position: 'relative',
@@ -1211,8 +1212,8 @@ export default function UnifiedShareModal({
                     height: '6px',
                     borderRadius: '9999px',
                     backgroundColor: '#a855f7',
-                    left: progressive < 0 ? `${50 + progressive/2}%` : '50%',
-                    width: `${Math.abs(progressive)/2}%`,
+                    left: governance < 0 ? `${50 + governance/2}%` : '50%',
+                    width: `${Math.abs(governance)/2}%`,
                     top: '0'
                   }} />
                   <div style={{ 

@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, Suspense } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Sphere, Box, Html } from '@react-three/drei'
 import * as THREE from 'three'
+import { debugLog } from '../lib/debug-logger'
 
 type AxisScore = number
 
@@ -441,7 +442,7 @@ export default function ResultCube({ x, y, z, ideologyLabel, onInteraction, colo
         onCreated={({ gl }) => {
           gl.domElement.addEventListener('webglcontextlost', (event) => {
             event.preventDefault();
-            console.log('WebGL context lost, preventing default');
+            debugLog('WebGL context lost, preventing default');
           }, false);
         }}
       >

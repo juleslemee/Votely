@@ -2,6 +2,7 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { debugLog } from './debug-logger';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -14,7 +15,7 @@ const firebaseConfig = {
 };
 
 // Debug logging for Firebase config
-console.log('Firebase config check:', {
+debugLog('Firebase config check:', {
   hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   hasAuthDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,

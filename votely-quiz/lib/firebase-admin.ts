@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { debugLog, debugError } from './debug-logger';
 
 // Lazy initialization variables
 let adminApp: any;
@@ -22,12 +23,12 @@ const initializeFirebaseAdmin = () => {
     
     // Fix common issue with escaped newlines in private key
     if (serviceAccount.private_key && serviceAccount.private_key.includes('\\n')) {
-      console.log('Fixing escaped newlines in private key');
+      debugLog('Fixing escaped newlines in private key');
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
     
     // Log some debug info (without exposing sensitive data)
-    console.log('Firebase Admin Init - Service Account Info:', {
+    debugLog('Firebase Admin Init - Service Account Info:', {
       hasProjectId: !!serviceAccount.project_id,
       hasPrivateKey: !!serviceAccount.private_key,
       hasClientEmail: !!serviceAccount.client_email,
@@ -44,8 +45,8 @@ const initializeFirebaseAdmin = () => {
       databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`
     });
   } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
-    console.error('Environment variable length:', process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.length);
+    debugError('Failed to initialize Firebase Admin:', error);
+    debugError('Environment variable length:', process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.length);
     throw error;
   }
 };
@@ -61,14 +62,14 @@ const ensureInitialized = () => {
   }
 
   try {
-    console.log('Initializing Firebase Admin SDK...');
+    debugLog('Initializing Firebase Admin SDK...');
     adminApp = initializeFirebaseAdmin();
     _adminDb = getFirestore(adminApp);
     isInitialized = true;
-    console.log('Firebase Admin SDK initialized successfully');
+    debugLog('Firebase Admin SDK initialized successfully');
     return _adminDb;
   } catch (error: any) {
-    console.error('Failed to initialize Firebase Admin:', error);
+    debugError('Failed to initialize Firebase Admin:', error);
     initializationError = error;
     throw error;
   }

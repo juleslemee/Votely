@@ -6,33 +6,48 @@ import {
   loadAllQuestions 
 } from '../../lib/question-loader';
 import { fetchTSVWithCache } from '@/lib/tsv-cache';
+import { debugLog, debugWarn, debugError } from '@/lib/debug-logger';
 
-type PoliticalAxis = 'economic' | 'authority' | 'cultural';
+type PoliticalAxis = 'economic' | 'governance' | 'social';
 
 export interface Question {
   id: number;
   question: string;
+  description?: string; // Description from description column in TSV
   axis: PoliticalAxis;
   agreeDir?: -1 | 1; // Direction that "agree" pushes the score
   boundary?: 'LEFT_CENTER' | 'CENTER_RIGHT' | 'LIB_CENTER' | 'CENTER_AUTH'; // For tiebreakers
   originalId?: string; // Keep track of original TSV ID
+  removalPriority?: string; // From removal_priority column (e.g., "first", "second")
 }
 
-// Cache for loaded questions
+// Cache for loaded questions - FORCE CLEAR FOR DEBUGGING
 let cachedPhase1: Question[] | null = null;
-let cachedTiebreakers: Question[] | null = null;
+let cachedTiebreakers: Question[] | null = null; 
 let cachedAll: Question[] | null = null;
+
+// Clear caches on module load to force fresh data loading - timestamp: 22:20
+cachedPhase1 = null;
+cachedTiebreakers = null;
+cachedAll = null;
 
 // Convert TSV question to app Question format
 function convertQuestion(q: TSVQuestion): Question {
+  // Debug: Log conversion for questions that should have removal priority
+  if (['P25', 'P28', 'P29', 'P36'].includes(q.originalId || '')) {
+    debugLog(`🔄 Converting ${q.originalId}: removalPriority="${q.removalPriority}" (type: ${typeof q.removalPriority})`);
+  }
+  
   return {
     id: q.id,
     question: q.text,
+    description: q.description,
     axis: q.axis,
     agreeDir: q.agreeDir,
     boundary: q.boundary,
     originalId: q.originalId,
-    text: q.text // Also include text property for compatibility
+    text: q.text, // Also include text property for compatibility
+    removalPriority: q.removalPriority // Include removal priority for tiebreaker replacement
   } as Question;
 }
 
@@ -44,9 +59,16 @@ export const allQuestions: Question[] = [
 
 // Async function to get Phase 1 questions from TSV
 export async function getPhase1QuestionsAsync(): Promise<Question[]> {
-  if (cachedPhase1) return cachedPhase1;
+  if (cachedPhase1) {
+    debugLog(`📦 Using cached Phase 1 questions (${cachedPhase1.length} questions)`);
+    return cachedPhase1;
+  }
+  
+  debugLog(`🔄 Loading fresh Phase 1 questions from TSV...`);
   const tsvQuestions = await getPhase1Questions();
+  debugLog(`📥 Got ${tsvQuestions.length} TSV questions, converting...`);
   cachedPhase1 = tsvQuestions.map(convertQuestion);
+  debugLog(`✅ Converted to ${cachedPhase1.length} app questions`);
   return cachedPhase1;
 }
 
@@ -72,23 +94,31 @@ export async function getAllQuestionsAsync(): Promise<Question[]> {
   return cachedAll;
 }
 
-// Short quiz: Filter allQuestions for only priority 2 questions
-// Generate randomized short quiz questions
+// Short quiz: Filter questions marked with short_quiz = 'yes'
 export async function generateShortQuizQuestions(): Promise<Question[]> {
-  console.log('🎲 Generating randomized short quiz questions...');
+  debugLog('🎲 Generating randomized short quiz questions...');
   
-  // Get all questions from TSV
-  const allQs = await getAllQuestionsAsync();
+  // Get all Phase 1 questions (including tiebreakers) from TSV
+  const allPhase1Questions = await getAllQuestionsAsync();
   
-  // Get the priority 2 questions and shuffle them
-  const priority2Ids = ['P01', 'P02', 'P03', 'P04', 'P09', 'P10', 'P11', 'P12', 'P17', 'P18'];
-  const priority2Questions = allQs.filter(q => 
-    q.originalId && priority2Ids.includes(q.originalId)
-  );
-  const randomizedShort = shuffleArray(priority2Questions);
+  // Filter for questions marked with short_quiz = 'yes' in TSV
+  const allQuestions = await loadAllQuestions();
+  const shortQuizQuestions: Question[] = [];
   
-  console.log(`📝 Short Quiz: ${randomizedShort.length} questions randomized`);
-  console.log('Question order:', randomizedShort.map(q => `${q.id}`).join(', '));
+  for (const [originalId, tsvQuestion] of allQuestions) {
+    if (tsvQuestion.shortQuiz && tsvQuestion.phase === 1) {
+      // Find the converted question in our Phase 1 array (now includes all 44 questions: 36 core + 8 tiebreakers)
+      const convertedQuestion = allPhase1Questions.find(q => q.originalId === originalId);
+      if (convertedQuestion) {
+        shortQuizQuestions.push(convertedQuestion);
+      }
+    }
+  }
+  
+  const randomizedShort = shuffleArray(shortQuizQuestions);
+  
+  debugLog(`📝 Short Quiz: ${randomizedShort.length} questions randomized (from short_quiz='yes' column)`);
+  debugLog('Question order:', randomizedShort.map(q => `${q.originalId || q.id}`).join(', '));
   
   return randomizedShort;
 }
@@ -112,7 +142,7 @@ export let tiebreakerQuestions: Question[] = [];
     // Also populate allQuestions for backwards compatibility
     allQuestions.push(...p1, ...tb);
   } catch (error) {
-    console.error('Failed to load questions from TSV:', error);
+    debugError('Failed to load questions from TSV:', error);
   }
 })();
 
@@ -127,82 +157,140 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Generate randomized long quiz questions with balanced distribution
+// Current system: First 4 screens (20 questions) with 5 per screen
+// NEW TARGET: First 3 screens (36 questions) with 12 per screen 
+// Each screen: 4 econ + 4 authority + 4 social
 export async function generateLongQuizQuestions(): Promise<Question[]> {
-  console.log('🎲 Generating randomized long quiz questions with balanced distribution...');
+  debugLog('🎲 Generating randomized long quiz questions with balanced distribution...');
   
   // Get Phase 1 questions from TSV
   const p1Questions = await getPhase1QuestionsAsync();
   
   // Separate questions by axis AND direction for truly balanced distribution
+  // Filter social questions by removal priority for screen filtering
   const economicLeft = p1Questions.filter(q => q.axis === 'economic' && q.agreeDir === -1);
   const economicRight = p1Questions.filter(q => q.axis === 'economic' && q.agreeDir === 1);
-  const authorityLib = p1Questions.filter(q => q.axis === 'authority' && q.agreeDir === -1);
-  const authorityAuth = p1Questions.filter(q => q.axis === 'authority' && q.agreeDir === 1);
-  const culturalProg = p1Questions.filter(q => q.axis === 'cultural' && q.agreeDir === -1);
-  const culturalTrad = p1Questions.filter(q => q.axis === 'cultural' && q.agreeDir === 1);
+  const governanceLib = p1Questions.filter(q => q.axis === 'governance' && q.agreeDir === -1);
+  const governanceAuth = p1Questions.filter(q => q.axis === 'governance' && q.agreeDir === 1);
   
-  console.log(`📋 Generating first 20 questions from ${p1Questions.length} available Phase 1 questions`);
+  // Social questions separated by removal priority:
+  // - No removal priority: Always safe to include in any screen
+  // - "second" priority: Removed if we have 2+ tiebreakers (4+ tiebreaker questions)
+  // - "first" priority: Removed first if we have 1+ tiebreakers (2+ tiebreaker questions)
+  const socialProgNoRemoval = p1Questions.filter(q => 
+    q.axis === 'social' && q.agreeDir === -1 && !q.removalPriority
+  );
+  const socialTradNoRemoval = p1Questions.filter(q => 
+    q.axis === 'social' && q.agreeDir === 1 && !q.removalPriority
+  );
+  const socialProgFirstPriority = p1Questions.filter(q => 
+    q.axis === 'social' && q.agreeDir === -1 && q.removalPriority === 'first'
+  );
+  const socialTradFirstPriority = p1Questions.filter(q => 
+    q.axis === 'social' && q.agreeDir === 1 && q.removalPriority === 'first'
+  );
+  const socialProgSecondPriority = p1Questions.filter(q => 
+    q.axis === 'social' && q.agreeDir === -1 && q.removalPriority === 'second'
+  );
+  const socialTradSecondPriority = p1Questions.filter(q => 
+    q.axis === 'social' && q.agreeDir === 1 && q.removalPriority === 'second'
+  );
+  
+  debugLog(`📋 Generating first 36 questions from ${p1Questions.length} available Phase 1 questions`);
   
   // Shuffle each subcategory
   const shuffledEconLeft = shuffleArray(economicLeft);
   const shuffledEconRight = shuffleArray(economicRight);
-  const shuffledAuthLib = shuffleArray(authorityLib);
-  const shuffledAuthAuth = shuffleArray(authorityAuth);
-  const shuffledCultProg = shuffleArray(culturalProg);
-  const shuffledCultTrad = shuffleArray(culturalTrad);
+  const shuffledGovLib = shuffleArray(governanceLib);
+  const shuffledGovAuth = shuffleArray(governanceAuth);
+  const shuffledSocProgNoRemoval = shuffleArray(socialProgNoRemoval);
+  const shuffledSocTradNoRemoval = shuffleArray(socialTradNoRemoval);
+  const shuffledSocProgFirstPriority = shuffleArray(socialProgFirstPriority);
+  const shuffledSocTradFirstPriority = shuffleArray(socialTradFirstPriority);
+  const shuffledSocProgSecondPriority = shuffleArray(socialProgSecondPriority);
+  const shuffledSocTradSecondPriority = shuffleArray(socialTradSecondPriority);
   
-  console.log(`📊 Available questions - Econ: ${economicLeft.length}L/${economicRight.length}R, Auth: ${authorityLib.length}L/${authorityAuth.length}A, Cult: ${culturalProg.length}P/${culturalTrad.length}T`);
-  console.log(`🎯 Target for first 20: 7 econ (4L,3R), 7 auth (3L,4A), 6 cultural (3P,3T)`);
+  // Build priority pools for social questions (safe first, all removable last)
+  // Priority order: no removal (screens 1-2) > all removable questions combined (screen 3)
+  const removableProgQuestions = [...shuffledSocProgSecondPriority, ...shuffledSocProgFirstPriority];
+  const removableTradQuestions = [...shuffledSocTradSecondPriority, ...shuffledSocTradFirstPriority];
   
-  // Check if we have enough questions for first 20 (4 screens)
-  // Distribution: 7 econ (4L, 3R), 7 auth (3L, 4A), 6 cultural (3P, 3T)
+  const socialProgPool = [
+    ...shuffledSocProgNoRemoval,
+    ...shuffleArray(removableProgQuestions) // Shuffle combined removable questions
+  ];
+  const socialTradPool = [
+    ...shuffledSocTradNoRemoval,
+    ...shuffleArray(removableTradQuestions) // Shuffle combined removable questions
+  ];
+  
+  debugLog(`📊 Available questions:`);
+  debugLog(`  Economic: ${economicLeft.length}L/${economicRight.length}R`);
+  debugLog(`  Governance: ${governanceLib.length}L/${governanceAuth.length}A`);
+  debugLog(`  Social (no removal): ${socialProgNoRemoval.length}P/${socialTradNoRemoval.length}T (total: ${socialProgNoRemoval.length + socialTradNoRemoval.length})`);
+  debugLog(`  Social (removable - combined "first"+"second"): ${removableProgQuestions.length}P/${removableTradQuestions.length}T (total: ${removableProgQuestions.length + removableTradQuestions.length})`);
+  debugLog(`    - "second" priority: ${socialProgSecondPriority.length}P/${socialTradSecondPriority.length}T`);
+  debugLog(`    - "first" priority: ${socialProgFirstPriority.length}P/${socialTradFirstPriority.length}T`);
+  debugLog(`🧮 Social question math: Need 12 total for first 36 questions (6P + 6T)`);
+  debugLog(`   Available: ${socialProgNoRemoval.length + socialTradNoRemoval.length} (no removal) + ${removableProgQuestions.length + removableTradQuestions.length} (removable) = ${socialProgNoRemoval.length + socialTradNoRemoval.length + removableProgQuestions.length + removableTradQuestions.length} total`);
+  debugLog(`   Screen 3 needs: 6 social questions, have ${removableProgQuestions.length + removableTradQuestions.length} removable questions available`);
+  
+  // Debug: Check if we found the expected questions with removal priorities
+  debugLog(`🔍 Debug - All removable questions (will be placed in screen 3):`);
+  removableProgQuestions.forEach(q => debugLog(`    ${q.originalId}: "${q.removalPriority}" priority (progressive)`));
+  removableTradQuestions.forEach(q => debugLog(`    ${q.originalId}: "${q.removalPriority}" priority (traditional)`));
+  
+  debugLog(`🎯 Target for first 36: 12 econ (6L,6R), 12 gov (6L,6A), 12 social (6P,6T)`);
+  debugLog(`💡 Removal priority: "first" removed before "second" when tiebreakers needed`);
+  
+  // Check if we have enough questions for first 36 (3 screens of 12 each)
+  // Distribution: 12 econ (6L, 6R), 12 gov (6L, 6A), 12 social (6P, 6T)
   const requiredCounts = {
-    econLeft: 4, econRight: 3,
-    authLib: 3, authAuth: 4,
-    cultProg: 3, cultTrad: 3
+    econLeft: 6, econRight: 6,
+    govLib: 6, govAuth: 6,
+    socProg: 6, socTrad: 6
   };
   
   if (economicLeft.length < requiredCounts.econLeft) {
-    console.warn(`⚠️ Not enough economic left questions: ${economicLeft.length}/${requiredCounts.econLeft}`);
+    debugWarn(`⚠️ Not enough economic left questions: ${economicLeft.length}/${requiredCounts.econLeft}`);
   }
   if (economicRight.length < requiredCounts.econRight) {
-    console.warn(`⚠️ Not enough economic right questions: ${economicRight.length}/${requiredCounts.econRight}`);
+    debugWarn(`⚠️ Not enough economic right questions: ${economicRight.length}/${requiredCounts.econRight}`);
   }
-  if (authorityLib.length < requiredCounts.authLib) {
-    console.warn(`⚠️ Not enough authority libertarian questions: ${authorityLib.length}/${requiredCounts.authLib}`);
+  if (governanceLib.length < requiredCounts.govLib) {
+    debugWarn(`⚠️ Not enough governance libertarian questions: ${governanceLib.length}/${requiredCounts.govLib}`);
   }
-  if (authorityAuth.length < requiredCounts.authAuth) {
-    console.warn(`⚠️ Not enough authority authoritarian questions: ${authorityAuth.length}/${requiredCounts.authAuth}`);
+  if (governanceAuth.length < requiredCounts.govAuth) {
+    debugWarn(`⚠️ Not enough governance authoritarian questions: ${governanceAuth.length}/${requiredCounts.govAuth}`);
   }
-  if (culturalProg.length < requiredCounts.cultProg) {
-    console.warn(`⚠️ Not enough cultural progressive questions: ${culturalProg.length}/${requiredCounts.cultProg}`);
+  if (socialProgPool.length < requiredCounts.socProg) {
+    debugWarn(`⚠️ Not enough social progressive questions: ${socialProgPool.length}/${requiredCounts.socProg}`);
   }
-  if (culturalTrad.length < requiredCounts.cultTrad) {
-    console.warn(`⚠️ Not enough cultural traditional questions: ${culturalTrad.length}/${requiredCounts.cultTrad}`);
+  if (socialTradPool.length < requiredCounts.socTrad) {
+    debugWarn(`⚠️ Not enough social traditional questions: ${socialTradPool.length}/${requiredCounts.socTrad}`);
   }
   
   // Track indices for pulling from each subcategory
   const indices = {
     econLeft: 0, econRight: 0,
-    authLib: 0, authAuth: 0,
-    cultProg: 0, cultTrad: 0
+    govLib: 0, govAuth: 0,
+    socProg: 0, socTrad: 0
   };
   
   // Build questions for each screen with balanced distribution
   const finalQuestions: Question[] = [];
   
-  // SCREEN-BY-SCREEN DISTRIBUTION PLAN - FIRST 4 SCREENS ONLY (20 questions)
-  // Distribution: 7 econ (4L, 3R), 7 auth (4A, 3L), 6 cultural (3P, 3T)
+  // NEW SCREEN-BY-SCREEN DISTRIBUTION PLAN - 3 SCREENS (36 questions)
+  // Each screen: 4 econ (2L, 2R), 4 gov (2L, 2A), 4 social (2P, 2T) = 12 per screen
+  // Total: 12 econ (6L, 6R), 12 gov (6L, 6A), 12 social (6P, 6T)
   const screenPlans = [
-    // Screen 1 (Q1-5): 2E(1L,1R), 2A(1L,1A), 1C(P)
-    { econLeft: 1, econRight: 1, authLib: 1, authAuth: 1, cultProg: 1, cultTrad: 0 },
-    // Screen 2 (Q6-10): 2E(1L,1R), 2A(1L,1A), 1C(T)
-    { econLeft: 1, econRight: 1, authLib: 1, authAuth: 1, cultProg: 0, cultTrad: 1 },
-    // Screen 3 (Q11-15): 2E(2L,0R), 2A(0L,2A), 1C(P)
-    { econLeft: 2, econRight: 0, authLib: 0, authAuth: 2, cultProg: 1, cultTrad: 0 },
-    // Screen 4 (Q16-20): 1E(0L,1R), 1A(1L,0A), 3C(1P,2T)
-    { econLeft: 0, econRight: 1, authLib: 1, authAuth: 0, cultProg: 1, cultTrad: 2 }
-    // Total: 7 econ (4L, 3R), 7 auth (3L, 4A), 6 cultural (3P, 3T)
+    // Screen 1 (Q1-12): 4E(2L,2R), 4A(2L,2A), 4C(2P,2T)
+    { econLeft: 2, econRight: 2, govLib: 2, govAuth: 2, socProg: 2, socTrad: 2 },
+    // Screen 2 (Q13-24): 4E(2L,2R), 4A(2L,2A), 4C(2P,2T)
+    { econLeft: 2, econRight: 2, govLib: 2, govAuth: 2, socProg: 2, socTrad: 2 },
+    // Screen 3 (Q25-36): 4E(2L,2R), 4A(2L,2A), 4C(2P,2T)
+    { econLeft: 2, econRight: 2, govLib: 2, govAuth: 2, socProg: 2, socTrad: 2 }
+    // Total: 12 econ (6L, 6R), 12 gov (6L, 6A), 12 social (6P, 6T)
   ];
   
   // Generate questions for each screen
@@ -221,24 +309,24 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
         screenQuestions.push(shuffledEconRight[indices.econRight++]);
       }
     }
-    for (let i = 0; i < plan.authLib; i++) {
-      if (indices.authLib < shuffledAuthLib.length) {
-        screenQuestions.push(shuffledAuthLib[indices.authLib++]);
+    for (let i = 0; i < plan.govLib; i++) {
+      if (indices.govLib < shuffledGovLib.length) {
+        screenQuestions.push(shuffledGovLib[indices.govLib++]);
       }
     }
-    for (let i = 0; i < plan.authAuth; i++) {
-      if (indices.authAuth < shuffledAuthAuth.length) {
-        screenQuestions.push(shuffledAuthAuth[indices.authAuth++]);
+    for (let i = 0; i < plan.govAuth; i++) {
+      if (indices.govAuth < shuffledGovAuth.length) {
+        screenQuestions.push(shuffledGovAuth[indices.govAuth++]);
       }
     }
-    for (let i = 0; i < plan.cultProg; i++) {
-      if (indices.cultProg < shuffledCultProg.length) {
-        screenQuestions.push(shuffledCultProg[indices.cultProg++]);
+    for (let i = 0; i < plan.socProg; i++) {
+      if (indices.socProg < socialProgPool.length) {
+        screenQuestions.push(socialProgPool[indices.socProg++]);
       }
     }
-    for (let i = 0; i < plan.cultTrad; i++) {
-      if (indices.cultTrad < shuffledCultTrad.length) {
-        screenQuestions.push(shuffledCultTrad[indices.cultTrad++]);
+    for (let i = 0; i < plan.socTrad; i++) {
+      if (indices.socTrad < socialTradPool.length) {
+        screenQuestions.push(socialTradPool[indices.socTrad++]);
       }
     }
     
@@ -247,26 +335,26 @@ export async function generateLongQuizQuestions(): Promise<Question[]> {
     finalQuestions.push(...shuffledScreen);
   }
   
-  // Log distribution per screen for verification
-  console.log(`📝 Phase 1 Initial: ${finalQuestions.length} questions (first 4 screens only)`);
-  for (let i = 0; i < Math.ceil(finalQuestions.length / 5); i++) {
-    const screenQuestions = finalQuestions.slice(i * 5, (i + 1) * 5);
+  // Log distribution per screen for verification (NEW: 12 questions per screen)
+  debugLog(`📝 Phase 1 Initial: ${finalQuestions.length} questions (3 screens @ 12 per screen)`);
+  for (let i = 0; i < 3; i++) {
+    const screenQuestions = finalQuestions.slice(i * 12, (i + 1) * 12);
     const e = screenQuestions.filter(q => q.axis === 'economic').length;
-    const a = screenQuestions.filter(q => q.axis === 'authority').length;
-    const c = screenQuestions.filter(q => q.axis === 'cultural').length;
+    const g = screenQuestions.filter(q => q.axis === 'governance').length;
+    const s = screenQuestions.filter(q => q.axis === 'social').length;
     const left = screenQuestions.filter(q => q.agreeDir === -1).length;
     const right = screenQuestions.filter(q => q.agreeDir === 1).length;
-    console.log(`Screen ${i + 1}: E:${e} A:${a} C:${c} | L:${left} R:${right}`);
+    debugLog(`Screen ${i + 1} (Q${i*12+1}-${(i+1)*12}): E:${e} G:${g} S:${s} | L:${left} R:${right}`);
   }
   
-  // Overall balance check for first 20 questions
+  // Overall balance check for first 36 questions
   const totalEcon = finalQuestions.filter(q => q.axis === 'economic').length;
-  const totalAuth = finalQuestions.filter(q => q.axis === 'authority').length;
-  const totalCult = finalQuestions.filter(q => q.axis === 'cultural').length;
+  const totalGov = finalQuestions.filter(q => q.axis === 'governance').length;
+  const totalSoc = finalQuestions.filter(q => q.axis === 'social').length;
   const totalLeft = finalQuestions.filter(q => q.agreeDir === -1).length;
   const totalRight = finalQuestions.filter(q => q.agreeDir === 1).length;
-  console.log(`✅ First 20 questions generated: ${totalEcon} econ, ${totalAuth} auth, ${totalCult} cultural`);
-  console.log(`✅ Direction balance: ${totalLeft} left-leaning, ${totalRight} right-leaning`);
+  debugLog(`✅ First 36 questions generated: ${totalEcon} econ, ${totalGov} gov, ${totalSoc} social`);
+  debugLog(`✅ Direction balance: ${totalLeft} left-leaning, ${totalRight} right-leaning`);
   
   return finalQuestions;
 }
@@ -276,7 +364,7 @@ export async function generateFinal10Questions(
   usedQuestions: Question[], // Questions already used in first 20
   tiebreakerQuestions: Question[] = []
 ): Promise<Question[]> {
-  console.log('🎯 Generating final 10 questions (screens 5-6) after tiebreaker evaluation...');
+  debugLog('🎯 Generating final 10 questions (screens 5-6) after tiebreaker evaluation...');
   
   // Get all Phase 1 questions
   const allP1Questions = await getPhase1QuestionsAsync();
@@ -285,26 +373,26 @@ export async function generateFinal10Questions(
   const usedIds = new Set(usedQuestions.map(q => q.id));
   const unusedQuestions = allP1Questions.filter(q => !usedIds.has(q.id));
   
-  console.log(`📋 ${unusedQuestions.length} unused questions remaining for screens 5-6`);
+  debugLog(`📋 ${unusedQuestions.length} unused questions remaining for screens 5-6`);
   
   // Separate remaining questions by axis and direction
   const remainingEconLeft = unusedQuestions.filter(q => q.axis === 'economic' && q.agreeDir === -1);
   const remainingEconRight = unusedQuestions.filter(q => q.axis === 'economic' && q.agreeDir === 1);
-  const remainingAuthLib = unusedQuestions.filter(q => q.axis === 'authority' && q.agreeDir === -1);
-  const remainingAuthAuth = unusedQuestions.filter(q => q.axis === 'authority' && q.agreeDir === 1);
-  const remainingCultProg = unusedQuestions.filter(q => q.axis === 'cultural' && q.agreeDir === -1);
-  const remainingCultTrad = unusedQuestions.filter(q => q.axis === 'cultural' && q.agreeDir === 1);
+  const remainingGovLib = unusedQuestions.filter(q => q.axis === 'governance' && q.agreeDir === -1);
+  const remainingGovAuth = unusedQuestions.filter(q => q.axis === 'governance' && q.agreeDir === 1);
+  const remainingSocProg = unusedQuestions.filter(q => q.axis === 'social' && q.agreeDir === -1);
+  const remainingSocTrad = unusedQuestions.filter(q => q.axis === 'social' && q.agreeDir === 1);
   
-  console.log(`📊 Remaining - EL:${remainingEconLeft.length} ER:${remainingEconRight.length} AL:${remainingAuthLib.length} AA:${remainingAuthAuth.length} CP:${remainingCultProg.length} CT:${remainingCultTrad.length}`);
+  debugLog(`📊 Remaining - EL:${remainingEconLeft.length} ER:${remainingEconRight.length} GL:${remainingGovLib.length} GA:${remainingGovAuth.length} SP:${remainingSocProg.length} ST:${remainingSocTrad.length}`);
   
   // Shuffle remaining questions
   const shuffledRemaining = [
     ...shuffleArray(remainingEconLeft),
     ...shuffleArray(remainingEconRight),
-    ...shuffleArray(remainingAuthLib),
-    ...shuffleArray(remainingAuthAuth),
-    ...shuffleArray(remainingCultProg),
-    ...shuffleArray(remainingCultTrad)
+    ...shuffleArray(remainingGovLib),
+    ...shuffleArray(remainingGovAuth),
+    ...shuffleArray(remainingSocProg),
+    ...shuffleArray(remainingSocTrad)
   ];
   
   // Take first 10 questions (or however many we have)
@@ -313,14 +401,14 @@ export async function generateFinal10Questions(
   // Replace some questions with tiebreakers if provided
   if (tiebreakerQuestions.length > 0) {
     const maxReplacements = Math.min(tiebreakerQuestions.length, 4); // Max 4 tiebreakers
-    console.log(`🔄 Replacing ${maxReplacements} questions with tiebreakers`);
+    debugLog(`🔄 Replacing ${maxReplacements} questions with tiebreakers`);
     
-    // Replace cultural questions first (they're least important for macro positioning)
+    // Replace social questions first (they're least important for macro positioning)
     for (let i = 0; i < maxReplacements && i < final10.length; i++) {
-      const culturalIndex = final10.findIndex(q => q.axis === 'cultural');
-      if (culturalIndex >= 0 && i < tiebreakerQuestions.length) {
-        final10[culturalIndex] = tiebreakerQuestions[i];
-        console.log(`✅ Replaced cultural question with tiebreaker: "${tiebreakerQuestions[i].question.substring(0, 50)}..."`);
+      const socialIndex = final10.findIndex(q => q.axis === 'social');
+      if (socialIndex >= 0 && i < tiebreakerQuestions.length) {
+        final10[socialIndex] = tiebreakerQuestions[i];
+        debugLog(`✅ Replaced social question with tiebreaker: "${tiebreakerQuestions[i].question.substring(0, 50)}..."`);
       }
     }
   }
@@ -328,7 +416,7 @@ export async function generateFinal10Questions(
   // Final shuffle
   final10 = shuffleArray(final10);
   
-  console.log(`✅ Generated ${final10.length} questions for screens 5-6`);
+  debugLog(`✅ Generated ${final10.length} questions for screens 5-6`);
   return final10;
 }
 
@@ -338,62 +426,58 @@ export async function adjustForTiebreakers(
   economicScore: number,
   governanceScore: number
 ): Promise<Question[]> {
-  console.log('🎯 Checking for tiebreaker needs...');
-  console.log(`Current scores - Economic: ${economicScore.toFixed(2)}, Governance: ${governanceScore.toFixed(2)}`);
+  debugLog('🎯 Checking for tiebreaker needs...');
+  debugLog(`Current scores - Economic: ${economicScore.toFixed(2)}, Governance: ${governanceScore.toFixed(2)}`);
   
   // Check proximity to macro cell boundaries (±33.33 for 3x3 grid)
-  // If within ±15 of boundary, we need tiebreakers
-  const BOUNDARY_THRESHOLD = 15;
-  const MACRO_BOUNDARY = 33.33;
-  
-  // Detect which specific boundaries we're near
+  // New threshold system: -56 to -22 and +22 to +56 (macro boundaries remain ±33.33)
   const boundaries: string[] = [];
   
-  // Economic boundaries
-  if (Math.abs(economicScore + MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+  // Economic tiebreaker zones
+  if (economicScore >= -56 && economicScore <= -22) {
     boundaries.push('LEFT_CENTER');
-    console.log('📍 Near Left-Center economic boundary');
+    debugLog('📍 In Left-Center economic tiebreaker zone');
   }
-  if (Math.abs(economicScore - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+  if (economicScore >= 22 && economicScore <= 56) {
     boundaries.push('CENTER_RIGHT');
-    console.log('📍 Near Center-Right economic boundary');
+    debugLog('📍 In Center-Right economic tiebreaker zone');
   }
   
-  // Authority boundaries
-  if (Math.abs(governanceScore + MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+  // Authority tiebreaker zones
+  if (governanceScore >= -56 && governanceScore <= -22) {
     boundaries.push('LIB_CENTER');
-    console.log('📍 Near Lib-Center authority boundary');
+    debugLog('📍 In Lib-Center authority tiebreaker zone');
   }
-  if (Math.abs(governanceScore - MACRO_BOUNDARY) <= BOUNDARY_THRESHOLD) {
+  if (governanceScore >= 22 && governanceScore <= 56) {
     boundaries.push('CENTER_AUTH');
-    console.log('📍 Near Center-Auth authority boundary');
+    debugLog('📍 In Center-Auth authority tiebreaker zone');
   }
   
   if (boundaries.length === 0) {
-    console.log('✅ No tiebreakers needed - clear positioning');
+    debugLog('✅ No tiebreakers needed - clear positioning');
     return remainingQuestions;
   }
   
-  console.log(`🎯 Selecting targeted tiebreakers for boundaries: ${boundaries.join(', ')}`);
+  debugLog(`🎯 Selecting targeted tiebreakers for boundaries: ${boundaries.join(', ')}`);
   
   // Get relevant tiebreaker questions for detected boundaries from TSV
   const relevantTiebreakers = await getTiebreakerQuestionsAsync(boundaries);
   
-  console.log(`Found ${relevantTiebreakers.length} relevant tiebreaker questions`);
+  debugLog(`Found ${relevantTiebreakers.length} relevant tiebreaker questions`);
   
-  // Count available cultural questions to replace
-  const culturalIndices = remainingQuestions
-    .map((q, i) => q.axis === 'cultural' ? i : -1)
+  // Count available social questions to replace
+  const socialIndices = remainingQuestions
+    .map((q, i) => q.axis === 'social' ? i : -1)
     .filter(i => i !== -1);
   
-  const maxReplacements = Math.min(relevantTiebreakers.length, culturalIndices.length, 4);
-  console.log(`Will replace up to ${maxReplacements} cultural questions with tiebreakers`);
+  const maxReplacements = Math.min(relevantTiebreakers.length, socialIndices.length, 4);
+  debugLog(`Will replace up to ${maxReplacements} social questions with tiebreakers`);
   
-  // Replace cultural questions with targeted tiebreakers
+  // Replace social questions with targeted tiebreakers
   let adjustedQuestions = [...remainingQuestions];
   for (let i = 0; i < maxReplacements; i++) {
-    adjustedQuestions[culturalIndices[i]] = relevantTiebreakers[i];
-    console.log(`✅ Added tiebreaker: "${relevantTiebreakers[i].question.substring(0, 50)}..."`);
+    adjustedQuestions[socialIndices[i]] = relevantTiebreakers[i];
+    debugLog(`✅ Added tiebreaker: "${relevantTiebreakers[i].question.substring(0, 50)}..."`);
   }
   
   return adjustedQuestions;
@@ -409,7 +493,7 @@ export interface Phase2Question extends Question {
 async function loadPhase2QuestionsFromTSV(): Promise<Map<string, Phase2Question[]>> {
   try {
     // Use cached fetch to avoid repeated requests
-    const text = await fetchTSVWithCache('/political_quiz_final.tsv');
+    const text = await fetchTSVWithCache('/VotelyQuestionsNewestQuestions.tsv');
     const lines = text.trim().split('\n');
     const headers = lines[0].split('\t');
     
@@ -417,26 +501,33 @@ async function loadPhase2QuestionsFromTSV(): Promise<Map<string, Phase2Question[
     
     for (let i = 1; i < lines.length; i++) {
       const row = lines[i].split('\t');
-      const phase = row[3]; // phase column
-      
+      const phase = row[8]; // phase column (index 8)
+
       if (phase === '2') {
-        const id = row[0]; // Question ID like ELGL-A-01
-        const text = row[1];
-        const supplementAxis = row[2]; // This contains the supplementary axis code like ELGL-A
-        const agreeDir = parseInt(row[6]); // agree_dir column
+        const id = row[1]; // id_code column like ERGL-A-01
+        const text = row[2]; // text column (index 2)
+        const supplementAxis = row[10]; // axis_code column (index 10) contains supplementary axis like ERGL-A
+        const agreeDir = parseInt(row[6]) || 1; // agree_dir column (index 6)
         
         // Generate a unique numeric ID for the question
-        const numericId = 1000 + i; // Start Phase 2 questions at ID 1000+
+        // Phase 2 questions should start at 45 (after 44 Phase 1 questions)
+        let totalPhase2Count = 0;
+        for (const questions of phase2Map.values()) {
+          totalPhase2Count += questions.length;
+        }
+        const numericId = 45 + totalPhase2Count;
         
         const question: Phase2Question = {
           id: numericId,
+          originalId: id, // Store the original ID from TSV
           question: text,
+          description: row[3], // Description column (index 3)
           axis: 'supplementary' as any, // Mark as supplementary axis
           supplementAxis: supplementAxis,
           agreeDir: agreeDir as -1 | 1
         };
         
-        // Group by supplementary axis code (e.g., ELGL-A)
+        // Group by supplementary axis code (e.g., ELGA-A)
         if (!phase2Map.has(supplementAxis)) {
           phase2Map.set(supplementAxis, []);
         }
@@ -446,65 +537,96 @@ async function loadPhase2QuestionsFromTSV(): Promise<Map<string, Phase2Question[
     
     return phase2Map;
   } catch (error) {
-    console.error('Error loading Phase 2 questions:', error);
+    debugError('Error loading Phase 2 questions:', error);
     return new Map();
   }
 }
 
-// Map of supplementary axis names from supplement-axes.tsv
+// Map of supplementary axis names from supplement-axes.tsv (updated for 6-axis system)
 const SUPPLEMENTARY_AXES: Record<string, string> = {
-  'ELGL-A': 'Leadership Model',
-  'ELGL-B': 'National vs International', 
-  'ELGL-C': 'Urban vs Rural Base',
-  'ELGL-D': 'Class vs Ethno-Populism',
-  'EMGL-A': 'Religious Legitimacy',
-  'EMGL-B': 'Ethno-Racial Emphasis',
-  'EMGL-C': 'State vs Market Control',
-  'EMGL-D': 'Tradition vs Modernization',
-  'ERGL-A': 'Source of Rule',
-  'ERGL-B': 'Religious Centrality',
-  'ERGL-C': 'Economic Direction',
-  'ERGL-D': 'Modernization vs Heritage',
+  // EL-GA: Revolutionary Communism & State Socialism
+  'ELGA-A': 'Leadership Model',
+  'ELGA-B': 'National vs International',
+  'ELGA-C': 'Urban vs Rural Base',
+  'ELGA-D': 'Class vs Ethno-Populism',
+  'ELGA-E': 'Military Role',
+  'ELGA-F': 'Cultural Policy',
+  // EM-GA: Authoritarian Statist Centrism
+  'EMGA-A': 'Source of Authority',
+  'EMGA-B': 'Economic Coordination',
+  'EMGA-C': 'Revolutionary Origin',
+  'EMGA-D': 'Tradition vs Modernization',
+  'EMGA-E': 'Racial/Universal Vision',
+  'EMGA-F': 'Mass Mobilization',
+  // ER-GA: Authoritarian Right & Corporatist Monarchism
+  'ERGA-A': 'Source of Rule',
+  'ERGA-B': 'Religious Centrality',
+  'ERGA-C': 'Economic Direction',
+  'ERGA-D': 'Modernization vs Heritage',
+  'ERGA-E': 'Mass Politics',
+  'ERGA-F': 'Constitutional Limits',
+  // EL-GM: Democratic Socialism & Left Populism
   'ELGM-A': 'Reform vs Revolution',
-  'ELGM-B': 'Central vs Local Power',
+  'ELGM-B': 'Decision Structure',
   'ELGM-C': 'Market Usage',
-  'ELGM-D': 'Futurism vs Pragmatism',
+  'ELGM-D': 'Ownership Model',
+  'ELGM-E': 'Party vs Union',
+  'ELGM-F': 'International Strategy',
+  // EM-GM: Mixed-Economy Liberal Center
   'EMGM-A': 'Market Freedom',
-  'EMGM-B': 'Welfare Commitment',
+  'EMGM-B': 'Economic Rights',
   'EMGM-C': 'Globalism vs Domestic',
-  'EMGM-D': 'Democracy Model',
-  'ERGM-A': 'Social Control',
-  'ERGM-B': 'Cultural Focus',
-  'ERGM-C': 'Corporate Role',
-  'ERGM-D': 'Nationalism Type',
-  'ELGR-A': 'Organization Model',
-  'ELGR-B': 'Violence Stance',
-  'ELGR-C': 'Technology View',
-  'ELGR-D': 'Solidarity Scope',
-  'EMGR-A': 'State Size',
-  'EMGR-B': 'Community Scale',
-  'EMGR-C': 'Economic Localism',
-  'EMGR-D': 'Social Values',
-  'ERGR-A': 'Property Absolutism',
-  'ERGR-B': 'Authority Source',
-  'ERGR-C': 'Corporate Power',
-  'ERGR-D': 'Social Hierarchy'
+  'EMGM-D': 'Democratic Form',
+  'EMGM-E': 'Welfare Model',
+  'EMGM-F': 'Cultural Policy',
+  // ER-GM: Conservative Capitalism & National Conservatism
+  'ERGM-A': 'Government Scope',
+  'ERGM-B': 'National Priority',
+  'ERGM-C': 'Change Pace',
+  'ERGM-D': 'Corporatist Coordination',
+  'ERGM-E': 'Social Values',
+  'ERGM-F': 'Economic Freedom',
+  // EL-GL: Libertarian Socialism & Anarcho-Communism
+  'ELGL-A': 'Transition Strategy',
+  'ELGL-B': 'Violence vs Pacifism',
+  'ELGL-C': 'Eco Priority',
+  'ELGL-D': 'Local vs Network',
+  'ELGL-E': 'Production Organization',
+  'ELGL-F': 'Minimal State',
+  // EM-GL: Social-Market Libertarianism
+  'EMGL-A': 'Resource Commons',
+  'EMGL-B': 'Welfare Provision',
+  'EMGL-C': 'Market Purpose',
+  'EMGL-D': 'Market Intervention',
+  'EMGL-E': 'Land Policy',
+  'EMGL-F': 'State Scope',
+  // ER-GL: Anarcho-Capitalism & Ultra-Free-Market Libertarianism
+  'ERGL-A': 'Enforcement Mechanism',
+  'ERGL-B': 'Property Absolutism',
+  'ERGL-C': 'Moral Traditionalism',
+  'ERGL-D': 'Corporate Power',
+  'ERGL-E': 'Immigration Policy',
+  'ERGL-F': 'Natural Law'
 };
 
 // Function to get Phase 2 questions for a specific macro cell
+// Current system: 4 axes (A,B,C,D) with 5 questions each = 20 total
+// NEW TARGET: 6 axes (A,B,C,D,E,F) with 4 questions each = 24 total
 export async function getPhase2Questions(macroCellCode: string): Promise<Phase2Question[]> {
-  console.log('🎯 Loading Phase 2 questions for macro cell:', macroCellCode);
+  debugLog('🎯 Loading Phase 2 questions for macro cell:', macroCellCode);
   
   const phase2Map = await loadPhase2QuestionsFromTSV();
   
   // Get the axis codes for this macro cell
+  // OLD: 4 axes (A,B,C,D) NEW: 6 axes (A,B,C,D,E,F)
   const axisPrefix = macroCellCode.replace('-', '');
-  const relevantAxes = [`${axisPrefix}-A`, `${axisPrefix}-B`, `${axisPrefix}-C`, `${axisPrefix}-D`];
+  const relevantAxes = [`${axisPrefix}-A`, `${axisPrefix}-B`, `${axisPrefix}-C`, `${axisPrefix}-D`, `${axisPrefix}-E`, `${axisPrefix}-F`];
   
-  console.log('📐 Supplementary axes for refinement:');
+  debugLog('📐 Supplementary axes for refinement (6-axis system):');
   relevantAxes.forEach(axis => {
     const axisName = SUPPLEMENTARY_AXES[axis] || 'Unknown Axis';
-    console.log(`  • ${axis}: ${axisName}`);
+    const questionsForAxis = phase2Map.get(axis) || [];
+    debugLog(`  • ${axis}: ${axisName} (${questionsForAxis.length} questions found)`);
   });
   
   const phase2Questions: Phase2Question[] = [];
@@ -518,46 +640,103 @@ export async function getPhase2Questions(macroCellCode: string): Promise<Phase2Q
     phase2Questions.push(...questions);
   }
   
-  console.log(`📋 Loaded ${phase2Questions.length} Phase 2 questions for supplementary axes`);
+  debugLog(`📋 Loaded ${phase2Questions.length} Phase 2 questions for supplementary axes`);
   
-  // Ensure balanced distribution across axes
-  // We want 5 questions from each of the 4 axes
-  const questionsPerAxis = 5;
+  // Ensure balanced distribution across axes with proper shuffling
+  // NEW: 4 questions from each of 6 axes = 24 total
+  // Each screen should have 1 question with agreeDir=-1 and 1 with agreeDir=1 from each axis
+  const questionsPerAxis = 4;
   const finalPhase2: Phase2Question[] = [];
-  
-  // Shuffle questions within each axis first
-  const questionsByAxis = new Map<string, Phase2Question[]>();
+
+  // Separate questions by axis AND direction for balanced distribution
+  const questionsByAxisAndDir = new Map<string, { left: Phase2Question[], right: Phase2Question[] }>();
+
   for (const axis of relevantAxes) {
     const axisQuestions = phase2Questions.filter(q => q.supplementAxis === axis);
-    questionsByAxis.set(axis, shuffleArray(axisQuestions));
+    const leftQuestions = axisQuestions.filter(q => q.agreeDir === -1);
+    const rightQuestions = axisQuestions.filter(q => q.agreeDir === 1);
+
+    questionsByAxisAndDir.set(axis, {
+      left: shuffleArray(leftQuestions),
+      right: shuffleArray(rightQuestions)
+    });
+
+    debugLog(`  ${axis}: ${leftQuestions.length} left (-1), ${rightQuestions.length} right (+1) questions`);
+  }
+
+  // Build screens with balanced distribution
+  // 2 screens total, 12 questions per screen (2 per axis, 1 left + 1 right)
+  const screensNeeded = 2;
+  const questionsPerScreen = 12; // 6 axes * 2 questions per axis
+
+  for (let screenIdx = 0; screenIdx < screensNeeded; screenIdx++) {
+    const screenQuestions: Phase2Question[] = [];
+
+    // For each axis, add 1 left and 1 right question
+    for (const axis of relevantAxes) {
+      const axisData = questionsByAxisAndDir.get(axis)!;
+
+      // Add one left-leaning question if available
+      if (axisData.left.length > screenIdx) {
+        screenQuestions.push(axisData.left[screenIdx]);
+      }
+
+      // Add one right-leaning question if available
+      if (axisData.right.length > screenIdx) {
+        screenQuestions.push(axisData.right[screenIdx]);
+      }
+    }
+
+    // Shuffle questions within this screen to randomize presentation
+    const shuffledScreen = shuffleArray(screenQuestions);
+    finalPhase2.push(...shuffledScreen);
+
+    debugLog(`Screen ${screenIdx + 1}: ${shuffledScreen.length} questions (balanced across axes)`);
   }
   
-  // Take 5 questions from each axis
-  for (const [axis, axisQuestions] of questionsByAxis) {
-    finalPhase2.push(...axisQuestions.slice(0, questionsPerAxis));
-  }
-  
-  // Final shuffle to mix questions from different axes
-  const shuffledPhase2 = shuffleArray(finalPhase2);
-  
-  console.log(`✅ Phase 2: ${shuffledPhase2.length} questions ready for 4D positioning within macro cell`);
-  console.log('🧮 These will create 4 additional axes for Euclidean distance calculation to find specific ideology');
-  
+  debugLog(`✅ Phase 2: ${finalPhase2.length} questions ready for 6D positioning within macro cell`);
+  debugLog('🧮 These will create 6 axes for Euclidean distance calculation to find specific ideology');
+
   // Log distribution
-  console.log('📊 Phase 2 question distribution:');
+  debugLog('📊 Phase 2 question distribution:');
   for (const axis of relevantAxes) {
-    const count = shuffledPhase2.filter(q => q.supplementAxis === axis).length;
+    const count = finalPhase2.filter(q => q.supplementAxis === axis).length;
     const axisName = SUPPLEMENTARY_AXES[axis] || 'Unknown';
-    console.log(`  ${axis} (${axisName}): ${count} questions`);
+    const leftCount = finalPhase2.filter(q => q.supplementAxis === axis && q.agreeDir === -1).length;
+    const rightCount = finalPhase2.filter(q => q.supplementAxis === axis && q.agreeDir === 1).length;
+    debugLog(`  ${axis} (${axisName}): ${count} questions (${leftCount} left, ${rightCount} right)`);
   }
-  
+
+  // Log screen distribution for verification
+  debugLog('📺 Phase 2 screen distribution:');
+  for (let i = 0; i < 2; i++) {
+    const screenQuestions = finalPhase2.slice(i * 12, (i + 1) * 12);
+    const axisDistribution = new Map<string, { left: number, right: number }>();
+
+    for (const q of screenQuestions) {
+      if (!axisDistribution.has(q.supplementAxis)) {
+        axisDistribution.set(q.supplementAxis, { left: 0, right: 0 });
+      }
+      if (q.agreeDir === -1) {
+        axisDistribution.get(q.supplementAxis)!.left++;
+      } else {
+        axisDistribution.get(q.supplementAxis)!.right++;
+      }
+    }
+
+    debugLog(`  Screen ${i + 1} (Q${i*12+1}-${(i+1)*12}):`);
+    for (const [axis, counts] of axisDistribution) {
+      debugLog(`    ${axis}: ${counts.left}L + ${counts.right}R`);
+    }
+  }
+
   // Log first few questions to show variety
-  console.log('🎲 First 5 Phase 2 questions (showing variety):');
-  shuffledPhase2.slice(0, 5).forEach((q, i) => {
-    console.log(`  ${i+1}. [${q.supplementAxis}] "${q.question.substring(0, 50)}..."`);
+  debugLog('🎲 First 5 Phase 2 questions (showing variety):');
+  finalPhase2.slice(0, 5).forEach((q, i) => {
+    debugLog(`  ${i+1}. [${q.supplementAxis}] [${q.agreeDir === -1 ? 'L' : 'R'}] "${q.question.substring(0, 50)}..."`);
   });
-  
-  return shuffledPhase2;
+
+  return finalPhase2;
 }
 
 // Static fallback for long quiz (backwards compatibility)

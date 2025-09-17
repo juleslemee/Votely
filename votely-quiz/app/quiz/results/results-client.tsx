@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import {
   ANSWER_SCORES,
-  QUESTION_CONFIG,
   MAX_ECONOMIC_SCORE,
   MAX_SOCIAL_SCORE,
   normalizeScore,
@@ -15,20 +14,21 @@ import {
 import { PoliticalCompassSvg } from '../../../lib/political-compass-svg';
 import { AdaptivePoliticalCompass } from '../../../lib/adaptive-political-compass';
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react';
-import { loadGridData, findIdeologyByPosition, findDetailedIdeology, findDetailedIdeologyWithSupplementary, GridCellData } from '@/lib/grid-data-loader';
+import { loadGridData, findIdeologyByPosition, findDetailedIdeology, findDetailedIdeologyWithSupplementary, findDetailedIdeologyWithPredefinedMacroCell, GridCellData } from '@/lib/grid-data-loader';
 import { getSessionById, QuizSession } from '@/lib/quiz-session';
+import { debugLog, debugWarn, debugError } from '@/lib/debug-logger';
 
 // Macro cell colors from the political compass
 const MACRO_CELL_COLORS = {
-  'EL-GL': '#ff9ea0',   // Revolutionary Communism & State Socialism
-  'EM-GL': '#ff9fff',   // Authoritarian Statist Centrism
-  'ER-GL': '#9f9fff',   // Authoritarian Right & Corporatist Monarchism
+  'EL-GA': '#ff9ea0',   // Revolutionary Communism & State Socialism
+  'EM-GA': '#ff9fff',   // Authoritarian Statist Centrism
+  'ER-GA': '#9f9fff',   // Authoritarian Right & Corporatist Monarchism
   'EL-GM': '#ffcfa1',   // Democratic Socialism & Left Populism
   'EM-GM': '#e5e5e5',   // Mixed-Economy Liberal Center
   'ER-GM': '#9ffffe',   // Conservative Capitalism & National Conservatism
-  'EL-GR': '#9fff9e',   // Libertarian Socialism & Anarcho-Communism
-  'EM-GR': '#d4fe9a',   // Social-Market Libertarianism
-  'ER-GR': '#ffff9f'    // Anarcho-Capitalism & Ultra-Free-Market Libertarianism
+  'EL-GL': '#9fff9e',   // Libertarian Socialism & Anarcho-Communism
+  'EM-GL': '#d4fe9a',   // Social-Market Libertarianism
+  'ER-GL': '#ffff9f'    // Anarcho-Capitalism & Ultra-Free-Market Libertarianism
 };
 
 // Helper function to get macro cell color
@@ -77,13 +77,13 @@ function ImagePreloader() {
   return null;
 }
 
-async function calculateScores(answers: number[], questionIds: number[], quizType: string = 'short', phase2Data?: Map<number, { supplementAxis: string; agreeDir: -1 | 1 }>, debugMode: boolean = false, questionData?: any[]) {
+export async function calculateScores(answers: number[], questionIds: number[], quizType: string = 'short', phase2Data?: Map<number, { supplementAxis: string; agreeDir: -1 | 1 }>, debugMode: boolean = false, questionData?: any[]) {
   let economicScore = 0;
+  let governanceScore = 0;
   let socialScore = 0;
-  let progressiveScore = 0;
   let economicQuestions = 0;
+  let governanceQuestions = 0;
   let socialQuestions = 0;
-  let progressiveQuestions = 0;
 
   // Phase 2 scoring for supplementary axes
   const supplementaryScores: Record<string, { score: number; count: number }> = {};
@@ -103,45 +103,97 @@ async function calculateScores(answers: number[], questionIds: number[], quizTyp
   }
 
   // Load Phase 2 data if needed and not provided
-  if (!phase2Data && questionIds.some(id => id >= 1000)) {
+  if (!phase2Data && questionIds.some(id => id >= 45)) {
     phase2Data = await loadPhase2QuestionData();
   }
 
   if (debugMode) {
-    console.log('🔍 DEBUG MODE - Scoring Details:');
-    console.log(`Quiz Type: ${quizType}`);
-    console.log(`Total Answers: ${answers.length}`);
-    console.log(`Question IDs: ${questionIds.length > 0 ? questionIds.join(', ') : 'Legacy mode'}`);
+    debugLog('\n🔍 ================== DEBUG SCORING AUDIT ==================');
+    debugLog(`Quiz Type: ${quizType}`);
+    debugLog(`Total Answers: ${answers.length}`);
+    debugLog(`Question IDs: ${questionIds.length > 0 ? `${questionIds.length} questions` : 'Legacy mode'}`);
+
+    // Count null vs non-null answers
+    const nullAnswers = answers.filter(a => a === null || a === undefined).length;
+    const validAnswers = answers.length - nullAnswers;
+    debugLog(`📊 Answer Status: ${validAnswers} answered, ${nullAnswers} skipped`);
+
+    // Show first few answers to verify structure
+    debugLog('📋 Answer Array Sample (first 10):');
+    answers.slice(0, 10).forEach((answer, i) => {
+      const status = answer === null || answer === undefined ? 'SKIPPED' : 'ANSWERED';
+      const qId = questionIds[i] || 'unknown';
+      debugLog(`  [${i}] Q${qId}: ${status} (value: ${answer})`);
+    });
+
+    debugLog('\n📋 QUESTION-BY-QUESTION BREAKDOWN:');
+    debugLog('Index | QID   | Axis        | Answer | Score | AgreeDir | Source    | Contribution');
+    debugLog('------|-------|-------------|--------|-------|----------|-----------|-------------');
   }
 
+  // Track running totals and validation issues
+  const runningTotals = { economic: 0, governance: 0, social: 0 };
+  const validationIssues: string[] = [];
+  let questionIndex = 0;
+
   // Process each answer with its corresponding question ID
+  // Note: Skipped questions are now filtered out completely before reaching here
   answers.forEach((continuousValue, index) => {
     if (index >= questionIds.length) return; // Skip if we don't have a question ID
-    if (isNaN(continuousValue)) return; // Skip NaN values
+    if (continuousValue === null || continuousValue === undefined || isNaN(continuousValue)) {
+      if (debugMode) {
+        const questionId = questionIds[index];
+        debugLog(`⚠️  INVALID Q${questionId}: value=${continuousValue} (unexpected - should be filtered)`);
+      }
+      return; // Skip invalid values (shouldn't happen with new approach)
+    }
     
     const questionId = questionIds[index];
     const score = convertToScore(continuousValue);
     
-    // Check if this is a Phase 2 question (ID >= 1000)
-    if (questionId >= 1000) {
+    // Check if this is a Phase 2 question (ID >= 45)
+    if (questionId >= 45) {
       // Handle Phase 2 supplementary axis questions
-      // First check if we have supplementAxis in questionData (from session)
-      if (questionData && questionData[index] && questionData[index].supplementAxis) {
-        const { supplementAxis, agreeDir } = questionData[index];
-        
+      // Use ID-based lookup instead of index-based to handle filtered data correctly
+      const questionInfo = questionData?.find(q => q.id === questionId);
+      if (debugMode && questionId >= 45) {
+        debugLog(`🔍 Looking for Q${questionId} in questionData (length: ${questionData?.length || 0})`);
+        debugLog(`🔍 Found questionInfo:`, questionInfo ? `Q${questionInfo.id} suppAxis=${questionInfo.supplementAxis}` : 'NOT FOUND');
+      }
+      if (questionInfo && questionInfo.supplementAxis) {
+        const { supplementAxis, agreeDir } = questionInfo;
+
         // Initialize axis if not exists
         if (!supplementaryScores[supplementAxis]) {
           supplementaryScores[supplementAxis] = { score: 0, count: 0 };
         }
-        
+
         // Apply agree direction: -1 means agreeing is negative on axis, 1 means agreeing is positive
         const contribution = (agreeDir || 1) * score;
         supplementaryScores[supplementAxis].score += contribution;
         supplementaryScores[supplementAxis].count++;
-        
+
         if (debugMode) {
-          console.log(`  Q${questionId} (${supplementAxis}): Answer=${continuousValue.toFixed(2)}, Score=${score.toFixed(2)}, AgreeDir=${agreeDir}, Contribution=${contribution.toFixed(2)}`);
+          const paddedIndex = String(questionIndex).padStart(2, ' ');
+          const paddedQID = String(questionId).padStart(5, ' ');
+          const paddedAxis = supplementAxis.padEnd(11, ' ');
+          const paddedAnswer = continuousValue.toFixed(3).padStart(6, ' ');
+          const paddedScore = score.toFixed(2).padStart(5, ' ');
+          const paddedDir = String(agreeDir).padStart(8, ' ');
+          const paddedContrib = contribution.toFixed(2).padStart(11, ' ');
+          debugLog(`${paddedIndex}    | ${paddedQID} | ${paddedAxis} | ${paddedAnswer} | ${paddedScore} | ${paddedDir} | ID-Based  | ${paddedContrib}`);
+          debugLog(`🔄 ${supplementAxis} running total: ${supplementaryScores[supplementAxis].score.toFixed(2)} (count: ${supplementaryScores[supplementAxis].count})`);
         }
+
+        // Validation
+        if (!agreeDir || (agreeDir !== -1 && agreeDir !== 1)) {
+          validationIssues.push(`Q${questionId}: Invalid agreeDir (${agreeDir})`);
+        }
+        if (continuousValue < 0 || continuousValue > 1) {
+          validationIssues.push(`Q${questionId}: Answer out of bounds (${continuousValue})`);
+        }
+
+        questionIndex++;
       } else if (phase2Data) {
         // Fallback to phase2Data if available
         const phase2Question = phase2Data.get(questionId);
@@ -159,104 +211,150 @@ async function calculateScores(answers: number[], questionIds: number[], quizTyp
           supplementaryScores[supplementAxis].count++;
           
           if (debugMode) {
-            console.log(`  Q${questionId} (${supplementAxis}): Answer=${continuousValue.toFixed(2)}, Score=${score.toFixed(2)}, AgreeDir=${agreeDir}, Contribution=${contribution.toFixed(2)}`);
+            const paddedIndex = String(questionIndex).padStart(2, ' ');
+            const paddedQID = String(questionId).padStart(5, ' ');
+            const paddedAxis = supplementAxis.padEnd(11, ' ');
+            const paddedAnswer = continuousValue.toFixed(3).padStart(6, ' ');
+            const paddedScore = score.toFixed(2).padStart(5, ' ');
+            const paddedDir = String(agreeDir).padStart(8, ' ');
+            const paddedContrib = contribution.toFixed(2).padStart(11, ' ');
+            debugLog(`${paddedIndex}    | ${paddedQID} | ${paddedAxis} | ${paddedAnswer} | ${paddedScore} | ${paddedDir} | Fallback  | ${paddedContrib}`);
           }
+
+          // Validation
+          if (!agreeDir || (agreeDir !== -1 && agreeDir !== 1)) {
+            validationIssues.push(`Q${questionId}: Invalid agreeDir (${agreeDir})`);
+          }
+          if (continuousValue < 0 || continuousValue > 1) {
+            validationIssues.push(`Q${questionId}: Answer out of bounds (${continuousValue})`);
+          }
+
+          questionIndex++;
         } else {
-          console.warn(`Phase 2 question ${questionId} not found in data`);
+          debugWarn(`Phase 2 question ${questionId} not found in data`);
+          validationIssues.push(`Q${questionId}: Phase 2 question not found in fallback data`);
         }
       } else {
-        console.warn(`Phase 2 question ${questionId} has no supplementAxis data`);
+        debugWarn(`Phase 2 question ${questionId} has no supplementAxis data`);
+        validationIssues.push(`Q${questionId}: No supplementAxis data available`);
       }
+      questionIndex++;
       return;
     }
     
-    // Try to use question data if provided, otherwise fall back to config
-    let config = null;
-    let agreeDir = 1;
-    
-    if (questionData && questionData[index]) {
-      const qData = questionData[index];
-      config = { axis: qData.axis };
-      agreeDir = qData.agreeDir || 1;
-    } else {
-      // Find the config for Phase 1 questions
-      config = QUESTION_CONFIG.find(c => c.id === questionId);
-      if (!config) {
-        console.warn(`No config found for question ID ${questionId}`);
-        return;
-      }
-      // Convert old agreeDirection format to numeric agreeDir
-      if (config.axis === 'economic') {
-        agreeDir = config.agreeDirection === 'left' ? -1 : 1;
-      } else if (config.axis === 'authority') {
-        agreeDir = config.agreeDirection === 'authoritarian' ? 1 : -1;
-      } else if (config.axis === 'cultural') {
-        agreeDir = config.agreeDirection === 'progressive' ? -1 : 1;
-      }
+    // Use ID-based lookup instead of index-based to handle filtered data correctly
+    const qData = questionData?.find(q => q.id === questionId);
+    if (!qData) {
+      debugWarn(`No question data found for question ID ${questionId}`);
+      return;
     }
+    const config = { axis: qData.axis };
+    const agreeDir = qData.agreeDir || 1;
 
     let contribution = 0;
     let axisName = '';
+    let dataSource = 'QuestionData';
 
     if (config.axis === 'economic') {
       contribution = score * agreeDir;
       economicScore += contribution;
       economicQuestions++;
       axisName = 'Economic';
-    } else if (config.axis === 'authority') {
+      runningTotals.economic += contribution;
+    } else if (config.axis === 'governance') {
+      contribution = score * agreeDir;
+      governanceScore += contribution;
+      governanceQuestions++;
+      axisName = 'Governance';
+      runningTotals.governance += contribution;
+    } else if (config.axis === 'social') {
       contribution = score * agreeDir;
       socialScore += contribution;
       socialQuestions++;
-      axisName = 'Authority';
-    } else if (config.axis === 'cultural') {
-      contribution = score * agreeDir;
-      progressiveScore += contribution;
-      progressiveQuestions++;
-      axisName = 'Cultural';
+      axisName = 'Social';
+      runningTotals.social += contribution;
     }
     
     if (debugMode) {
-      console.log(`  Q${questionId} (${axisName}): Answer=${continuousValue.toFixed(2)}, Score=${score.toFixed(2)}, AgreeDir=${agreeDir}, Contribution=${contribution.toFixed(2)}`);
+      const paddedIndex = String(questionIndex).padStart(2, ' ');
+      const paddedQID = String(questionId).padStart(5, ' ');
+      const paddedAxis = axisName.padEnd(11, ' ');
+      const paddedAnswer = continuousValue.toFixed(3).padStart(6, ' ');
+      const paddedScore = score.toFixed(2).padStart(5, ' ');
+      const paddedDir = String(agreeDir).padStart(8, ' ');
+      const paddedSource = dataSource.padEnd(9, ' ');
+      const paddedContrib = contribution.toFixed(2).padStart(11, ' ');
+      debugLog(`${paddedIndex}    | ${paddedQID} | ${paddedAxis} | ${paddedAnswer} | ${paddedScore} | ${paddedDir} | ${paddedSource} | ${paddedContrib}`);
     }
+
+    // Validation for Phase 1 questions
+    if (!agreeDir || (agreeDir !== -1 && agreeDir !== 1)) {
+      validationIssues.push(`Q${questionId}: Invalid agreeDir (${agreeDir})`);
+    }
+    if (continuousValue < 0 || continuousValue > 1) {
+      validationIssues.push(`Q${questionId}: Answer out of bounds (${continuousValue})`);
+    }
+    if (!config || !config.axis) {
+      validationIssues.push(`Q${questionId}: Missing axis configuration`);
+    }
+
+    questionIndex++;
   });
 
   // Calculate max possible scores based on number of questions answered
   const maxEconomicScore = economicQuestions * 2;
+  const maxGovernanceScore = governanceQuestions * 2;
   const maxSocialScore = socialQuestions * 2;
-  const maxProgressiveScore = progressiveQuestions * 2;
 
   // Prevent division by zero
   const economic = maxEconomicScore > 0 ? normalizeScore(economicScore, maxEconomicScore) : 0;
+  const governance = maxGovernanceScore > 0 ? normalizeScore(governanceScore, maxGovernanceScore) : 0;
   const social = maxSocialScore > 0 ? normalizeScore(socialScore, maxSocialScore) : 0;
-  const progressive = maxProgressiveScore > 0 ? normalizeScore(progressiveScore, maxProgressiveScore) : 0;
 
   // Convert supplementary scores to normalized values
   const supplementary: Record<string, number> = {};
   if (debugMode && Object.keys(supplementaryScores).length > 0) {
-    console.log('🔍 Supplementary scores before normalization:', supplementaryScores);
+    debugLog('🔍 Supplementary scores before normalization:', supplementaryScores);
   }
   Object.entries(supplementaryScores).forEach(([axis, data]) => {
     if (data.count > 0) {
       const maxScore = data.count * 2;
-      supplementary[axis] = normalizeScore(data.score, maxScore);
+      // Use the same normalization as quiz page: account for negative range (-2 to +2)
+      supplementary[axis] = (data.score + maxScore) / (maxScore * 2) * 100;
     }
   });
 
   if (debugMode) {
-    console.log('\n📊 Final Scores:');
-    console.log(`  Economic: ${economic.toFixed(1)} (Raw: ${economicScore}/${maxEconomicScore})`);
-    console.log(`  Authority: ${social.toFixed(1)} (Raw: ${socialScore}/${maxSocialScore})`);
-    console.log(`  Cultural: ${progressive.toFixed(1)} (Raw: ${progressiveScore}/${maxProgressiveScore})`);
+    debugLog('\n📊 ==================== SCORING SUMMARY ====================');
+    debugLog('\n🎯 PHASE 1 SCORES (Main Political Compass):');
+    debugLog(`   Economic:  ${economic.toFixed(1)}/100  (Raw: ${economicScore.toFixed(2)}/${maxEconomicScore}, ${economicQuestions} questions)`);
+    debugLog(`   Authority: ${governance.toFixed(1)}/100  (Raw: ${governanceScore.toFixed(2)}/${maxGovernanceScore}, ${governanceQuestions} questions)`);
+    debugLog(`   Social:  ${social.toFixed(1)}/100  (Raw: ${socialScore.toFixed(2)}/${maxSocialScore}, ${socialQuestions} questions)`);
+    
     if (Object.keys(supplementary).length > 0) {
-      console.log('\n  Supplementary Axes:');
+      debugLog('\n🎯 PHASE 2 SCORES (Supplementary Axes):');
       Object.entries(supplementary).forEach(([axis, score]) => {
         const rawData = supplementaryScores[axis];
-        console.log(`    ${axis}: ${score.toFixed(1)} (Raw: ${rawData.score}/${rawData.count * 2})`);
+        debugLog(`   ${axis.padEnd(12, ' ')}: ${score.toFixed(1)}/100  (Raw: ${rawData.score.toFixed(2)}/${rawData.count * 2}, ${rawData.count} questions)`);
       });
     }
+
+    debugLog('\n🏃 RUNNING TOTALS VERIFICATION:');
+    debugLog(`   Economic:  ${runningTotals.economic.toFixed(2)} (should match raw score above)`);
+    debugLog(`   Governance: ${runningTotals.governance.toFixed(2)} (should match raw score above)`);
+    debugLog(`   Social:    ${runningTotals.social.toFixed(2)} (should match raw score above)`);
+
+    if (validationIssues.length > 0) {
+      debugLog('\n⚠️  VALIDATION ISSUES FOUND:');
+      validationIssues.forEach(issue => debugLog(`   ❌ ${issue}`));
+    } else {
+      debugLog('\n✅ NO VALIDATION ISSUES FOUND');
+    }
+    
+    debugLog('\n================================================================');
   }
 
-  return { economic, social, progressive, supplementary };
+  return { economic, governance, social, supplementary };
 }
 
 
@@ -376,14 +474,15 @@ export default function ResultsClient() {
   const [ideologyData, setIdeologyData] = useState<GridCellData | null>(null);
   const [supplementAxes, setSupplementAxes] = useState<any[]>([]);
   const [supplementScores, setSupplementScores] = useState<Record<string, number>>({});
+  const [sessionMacroCellCode, setSessionMacroCellCode] = useState<string | null>(null);
   const hasLoadedAnalytics = useRef(false);
   const [isLoadingFirebase, setIsLoadingFirebase] = useState(false);
   
   // Store calculated scores
   const [scores, setScores] = useState<{
     economic: number;
+    governance: number;
     social: number;
-    progressive: number;
     supplementary: Record<string, number>;
   } | null>(null);
 
@@ -401,20 +500,22 @@ export default function ResultsClient() {
     
     // First priority: Load from Firebase if ID provided
     if (firebaseId) {
-      console.log('🔥 Loading result from Firebase:', firebaseId);
+      debugLog('🔥 Loading result from Firebase:', firebaseId);
       setIsLoadingFirebase(true);
       
       getQuizResultById(firebaseId)
         .then(data => {
           if (data) {
-            console.log('✅ Loaded from Firebase:', data);
+            debugLog('✅ Loaded from Firebase:', data);
             
             // Set the pre-calculated scores directly
             if (data.result) {
+              // Handle both old and new data formats
+              const isNewFormat = data.result.governanceScore !== undefined;
               setScores({
                 economic: data.result.economicScore,
-                social: data.result.socialScore,
-                progressive: data.result.progressiveScore || 0,
+                governance: isNewFormat ? data.result.governanceScore : data.result.socialScore, // New format or old authority score
+                social: isNewFormat ? data.result.socialScore : (data.result.progressiveScore || 0), // New format or old cultural score
                 supplementary: data.result.supplementaryScores || {}
               });
               
@@ -449,11 +550,11 @@ export default function ResultsClient() {
             // Mark as already saved
             hasSaved.current = true;
           } else {
-            console.error('No data found for Firebase ID:', firebaseId);
+            debugError('No data found for Firebase ID:', firebaseId);
           }
         })
         .catch(error => {
-          console.error('Error loading from Firebase:', error);
+          debugError('Error loading from Firebase:', error);
         })
         .finally(() => {
           setIsLoadingFirebase(false);
@@ -463,21 +564,21 @@ export default function ResultsClient() {
     }
     
     if (sessionIdParam) {
-      console.log('🔍 Attempting to load session:', sessionIdParam);
-      console.log('Window defined?', typeof window !== 'undefined');
+      debugLog('🔍 Attempting to load session:', sessionIdParam);
+      debugLog('Window defined?', typeof window !== 'undefined');
       
       // Load from session
       const session = getSessionById(sessionIdParam);
-      console.log('Session loaded?', !!session);
+      debugLog('Session loaded?', !!session);
       
       if (session) {
-        console.log('📂 Loading results from session:', sessionIdParam);
-        console.log('Session questions:', session.questions?.length || 0);
-        console.log('Session answers:', Object.keys(session.answers || {}).length);
+        debugLog('📂 Loading results from session:', sessionIdParam);
+        debugLog('Session questions:', session.questions?.length || 0);
+        debugLog('Session answers:', Object.keys(session.answers || {}).length);
         
         // Validate session has required data
         if (!session.questions || !session.answers) {
-          console.error('Session missing questions or answers:', session);
+          debugError('Session missing questions or answers:', session);
           return;
         }
         
@@ -492,26 +593,61 @@ export default function ResultsClient() {
           supplementAxis: q.supplementAxis
         }));
         
-        console.log('Parsed answers:', parsedAnswers.length);
-        console.log('Parsed question IDs:', parsedQuestionIds.length);
+        debugLog('Parsed answers:', parsedAnswers.length);
+        debugLog('Parsed question IDs:', parsedQuestionIds.length);
+
+        // Store the macro cell from the session if it's a long quiz
+        if (session.macroCellCode && session.type === 'long') {
+          setSessionMacroCellCode(session.macroCellCode);
+          debugLog('📍 Using macro cell from session:', session.macroCellCode);
+        }
       } else {
-        console.error('Session not found:', sessionIdParam);
-        console.log('Checking localStorage directly...');
+        debugError('Session not found:', sessionIdParam);
+        debugLog('Checking localStorage directly...');
         const stored = localStorage.getItem('votely_quiz_session_all');
         if (stored) {
           const all = JSON.parse(stored);
-          console.log('Available sessions:', Object.keys(all));
+          debugLog('Available sessions:', Object.keys(all));
         }
       }
     } else if (dataParam) {
       // New format: decode base64 question data
       try {
         const decoded = JSON.parse(atob(decodeURIComponent(dataParam)));
-        parsedQuestionData = decoded;
-        parsedAnswers = decoded.map((q: any) => q.answer);
-        parsedQuestionIds = decoded.map((q: any) => q.id);
+
+        // Check if this is the new format with skipStats or the old format
+        if (decoded.questionData && decoded.skipStats) {
+          // New format with skip statistics
+          parsedQuestionData = decoded.questionData;
+          parsedAnswers = decoded.questionData.map((q: any) => q.answer);
+          parsedQuestionIds = decoded.questionData.map((q: any) => q.id);
+
+          // DEBUG: Log the received data structure
+          debugLog('🔍 RECEIVED DATA STRUCTURE (New Format):');
+          debugLog('📊 Skip statistics:', decoded.skipStats);
+          debugLog('📋 QuestionData length:', decoded.questionData.length);
+          debugLog('📋 Sample questionData entries:');
+          decoded.questionData.slice(0, 5).forEach((q: any, i: number) => {
+            debugLog(`  [${i}] Q${q.id}: answer=${q.answer}, axis=${q.axis}, suppAxis=${q.supplementAxis}`);
+          });
+          debugLog('📊 Parsed answers:', parsedAnswers.slice(0, 10));
+          debugLog('📊 Null/undefined answers:', parsedAnswers.filter(a => a === null || a === undefined).length);
+
+          // Store skip statistics for later use (e.g., Firebase analytics)
+          if (decoded.skipStats) {
+            // We'll use these when saving to Firebase
+            (window as any).__skipStats = decoded.skipStats;
+          }
+        } else if (Array.isArray(decoded)) {
+          // Old format (backward compatibility)
+          parsedQuestionData = decoded;
+          parsedAnswers = decoded.map((q: any) => q.answer);
+          parsedQuestionIds = decoded.map((q: any) => q.id);
+        } else {
+          debugError('Unknown data format');
+        }
       } catch (error) {
-        console.error('Failed to decode question data:', error);
+        debugError('Failed to decode question data:', error);
       }
     } else if (answersParam) {
       // Legacy format: separate answers and question IDs
@@ -523,13 +659,13 @@ export default function ResultsClient() {
       
       // For legacy URLs with 50 answers but no question IDs, try to reconstruct
       if (parsedAnswers.length === 50 && parsedQuestionIds.length === 0 && quizType === 'long') {
-        console.log('⚠️ Reconstructing quiz from legacy URL with 50 answers');
+        debugLog('⚠️ Reconstructing quiz from legacy URL with 50 answers');
         // Phase 1: 30 questions with standard IDs
         const phase1Ids = [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30];
-        // Phase 2: 20 questions with high IDs (we'll assign generic ones)
-        const phase2Ids = Array.from({length: 20}, (_, i) => 1000 + i);
+        // Phase 2: 24 questions with high IDs (we'll assign generic ones)
+        const phase2Ids = Array.from({length: 24}, (_, i) => 45 + i);
         parsedQuestionIds = [...phase1Ids, ...phase2Ids];
-        console.log('🔄 Using reconstructed question IDs for scoring');
+        debugLog('🔄 Using reconstructed question IDs for scoring');
       }
     }
     
@@ -537,7 +673,15 @@ export default function ResultsClient() {
     setQuestionIds(parsedQuestionIds);
     setQuestionData(parsedQuestionData);
     setDataLoaded(true);
-    console.log('Data loaded:', { answers: parsedAnswers.length, questionIds: parsedQuestionIds.length });
+
+    // DEBUG: Comprehensive data loading log
+    debugLog('📥 DATA PARSING COMPLETE:');
+    debugLog('📊 Parsed answers length:', parsedAnswers.length);
+    debugLog('📊 Parsed questionIds length:', parsedQuestionIds.length);
+    debugLog('📊 Parsed questionData length:', parsedQuestionData.length);
+    debugLog('📊 Setting dataLoaded to: true');
+    debugLog('📊 Sample parsed answers:', parsedAnswers.slice(0, 10));
+    debugLog('📊 Null answers in parsed data:', parsedAnswers.filter(a => a === null || a === undefined).length);
   }, [sessionIdParam, dataParam, answersParam, questionIdsParam, quizType]);
 
   useEffect(() => {
@@ -548,22 +692,44 @@ export default function ResultsClient() {
   
   // Calculate scores when data is loaded
   useEffect(() => {
+    // DEBUG: Log useEffect trigger conditions
+    debugLog('🔄 RESULTS useEffect triggered:', {
+      dataLoaded,
+      answersLength: answers.length,
+      questionIdsLength: questionIds.length,
+      questionDataLength: questionData.length,
+      quizType,
+      isDebugMode
+    });
+
     // Wait for data to be loaded and check if we have answers
-    if (!dataLoaded || answers.length === 0) return;
+    if (!dataLoaded || answers.length === 0) {
+      debugLog('❌ Skipping computeScores - dataLoaded:', dataLoaded, 'answers.length:', answers.length);
+      return;
+    }
     
     async function computeScores() {
-      console.log('Computing scores with:', { answers: answers.length, questionIds: questionIds.length });
+      debugLog('Computing scores with:', { answers: answers.length, questionIds: questionIds.length });
       const result = await calculateScores(answers, questionIds, quizType, undefined, isDebugMode, questionData);
+
+      // DEBUG: Log the actual calculated scores vs what gets displayed
+      debugLog('🎯 CALCULATED SCORES RESULT:');
+      debugLog('📊 Main axes:', { economic: result.economic, governance: result.governance, social: result.social });
+      debugLog('📊 Supplementary scores:', result.supplementary);
+
       setScores(result);
       setSupplementScores(result.supplementary);
+
+      // DEBUG: Log what gets set in state
+      debugLog('📊 Setting supplementScores state to:', result.supplementary);
     }
     computeScores();
   }, [dataLoaded, answers, questionIds, questionData, quizType, isDebugMode]);
   
   // Extract scores safely
   const economic = scores?.economic || 0;
+  const governance = scores?.governance || 0;
   const social = scores?.social || 0;
-  const progressive = scores?.progressive || 0;
 
   // Load grid data and find matching ideology
   useEffect(() => {
@@ -571,22 +737,63 @@ export default function ResultsClient() {
       try {
         const data = await loadGridData(quizType as 'short' | 'long');
         setGridData(data);
+
+        // Calculate macro cell code from coordinates
+        const calculateMacroCellCode = (econ: number, gov: number): string => {
+          let econCode: 'EL' | 'EM' | 'ER';
+          if (econ < -33) econCode = 'EL';
+          else if (econ > 33) econCode = 'ER';
+          else econCode = 'EM';
+
+          let authCode: 'GL' | 'GM' | 'GA';
+          if (gov > 33) authCode = 'GA'; // More authoritarian
+          else if (gov < -33) authCode = 'GL'; // More libertarian
+          else authCode = 'GM';
+
+          return `${econCode}-${authCode}`;
+        };
         
         let ideology;
         if (quizType === 'long' && Object.keys(supplementScores).length > 0) {
           // Use weighted distance calculation with supplementary scores
-          ideology = await findDetailedIdeologyWithSupplementary(
-            data, 
-            economic, 
-            social, 
-            supplementScores
-          );
+          if (sessionMacroCellCode) {
+            // Validate session macro cell against current scores
+            const recalculatedMacroCell = calculateMacroCellCode(economic, governance);
+            if (sessionMacroCellCode === recalculatedMacroCell) {
+              // Session macro cell matches - use it
+              debugLog('🎯 Using validated macro cell from session:', sessionMacroCellCode);
+              ideology = await findDetailedIdeologyWithPredefinedMacroCell(
+                data,
+                sessionMacroCellCode,
+                supplementScores
+              );
+            } else {
+              // Session macro cell is wrong - recalculate
+              debugLog('⚠️ Session macro cell mismatch! Session:', sessionMacroCellCode, 'Recalculated:', recalculatedMacroCell);
+              debugLog('🔄 Using recalculated macro cell instead');
+              ideology = await findDetailedIdeologyWithSupplementary(
+                data,
+                economic,
+                governance,
+                supplementScores
+              );
+            }
+          } else {
+            // Fallback to recalculating macro cell (shouldn't happen in normal flow)
+            debugLog('⚠️ Recalculating macro cell (no session data)');
+            ideology = await findDetailedIdeologyWithSupplementary(
+              data,
+              economic,
+              governance,
+              supplementScores
+            );
+          }
         } else if (quizType === 'long') {
           // Long quiz but no supplementary scores yet - use Phase 1 only
-          ideology = findDetailedIdeology(data, economic, social, progressive);
+          ideology = findDetailedIdeology(data, economic, governance, social);
         } else {
           // Short quiz
-          ideology = findIdeologyByPosition(data, economic, social);
+          ideology = findIdeologyByPosition(data, economic, governance);
         }
         
         setIdeologyData(ideology);
@@ -598,17 +805,17 @@ export default function ResultsClient() {
           setSupplementAxes(macroAxes);
         }
       } catch (error) {
-        console.error('Error loading ideology data:', error);
+        debugError('Error loading ideology data:', error);
       }
     }
     
     loadIdeologyData();
-  }, [economic, social, progressive, quizType, scores, supplementScores]);
+  }, [economic, governance, social, quizType, scores, supplementScores, sessionMacroCellCode]);
   
   // Calculate display coordinates - for long quiz, adjust to cell position; for short quiz, use actual coordinates
   let displayX = economic;
-  let displayY = social;
-  let displayProgressive = progressive;
+  let displayY = governance;
+  let displaySocial = social;
   
   if (quizType === 'long' && ideologyData?.coordinateRange) {
     // Parse the coordinate range to get cell boundaries
@@ -623,47 +830,63 @@ export default function ResultsClient() {
       // Get cell center as the base position
       const centerX = (xMin + xMax) / 2;
       const centerY = (yMin + yMax) / 2;
-      
+
       // Convert user's actual position to -10 to +10 scale for calculation
       const userX = economic / 10;
-      const userY = social / 10;
-      
-      // Calculate user's offset from cell center with muted influence (0.75 effect)
-      const userOffsetX = (userX - centerX) * 0.75;
-      const userOffsetY = (userY - centerY) * 0.75;
-      
-      // Apply the muted offset to the center position
-      let adjustedX = centerX + userOffsetX;
-      let adjustedY = centerY + userOffsetY;
-      
-      // Clamp within cell boundaries to ensure we don't go outside
-      adjustedX = Math.max(xMin, Math.min(xMax, adjustedX));
-      adjustedY = Math.max(yMin, Math.min(yMax, adjustedY));
-      
-      // Add slight inward padding if at exact boundaries
+      const userY = governance / 10;
+
+      // Calculate cell dimensions
       const cellWidth = xMax - xMin;
       const cellHeight = yMax - yMin;
-      const padding = 0.05; // 5% padding from edges (reduced)
-      
-      if (adjustedX === xMin) adjustedX = adjustedX + (cellWidth * padding);
-      if (adjustedX === xMax) adjustedX = adjustedX - (cellWidth * padding);
-      if (adjustedY === yMin) adjustedY = adjustedY + (cellHeight * padding);
-      if (adjustedY === yMax) adjustedY = adjustedY - (cellHeight * padding);
+
+      // Define safe zone with generous padding (20% from each edge)
+      const padding = 0.2; // 20% padding from edges for safe zone
+      const paddedXMin = xMin + (cellWidth * padding);
+      const paddedXMax = xMax - (cellWidth * padding);
+      const paddedYMin = yMin + (cellHeight * padding);
+      const paddedYMax = yMax - (cellHeight * padding);
+
+      // Calculate safe zone dimensions
+      const safeWidth = paddedXMax - paddedXMin;
+      const safeHeight = paddedYMax - paddedYMin;
+      const safeCenterX = (paddedXMin + paddedXMax) / 2;
+      const safeCenterY = (paddedYMin + paddedYMax) / 2;
+
+      // Calculate user's offset from safe zone center with reduced influence (0.3 effect)
+      const userOffsetX = (userX - centerX) * 0.3;
+      const userOffsetY = (userY - centerY) * 0.3;
+
+      // Add a small random offset within the safe zone
+      const maxRandomOffset = 0.2; // 20% of safe zone dimension for randomization
+
+      // Create a consistent random offset based on user's scores (deterministic per user)
+      const seedX = Math.abs(economic * 137 + governance * 211) % 1000;
+      const seedY = Math.abs(economic * 317 + governance * 419) % 1000;
+      const randomOffsetX = (seedX / 1000 - 0.5) * safeWidth * maxRandomOffset;
+      const randomOffsetY = (seedY / 1000 - 0.5) * safeHeight * maxRandomOffset;
+
+      // Apply positioning within safe zone
+      let adjustedX = safeCenterX + userOffsetX + randomOffsetX;
+      let adjustedY = safeCenterY + userOffsetY + randomOffsetY;
+
+      // Ensure we stay within the safe zone boundaries
+      adjustedX = Math.max(paddedXMin, Math.min(paddedXMax, adjustedX));
+      adjustedY = Math.max(paddedYMin, Math.min(paddedYMax, adjustedY));
       
       // Convert back to -100 to +100 scale
       displayX = adjustedX * 10;
       displayY = adjustedY * 10;
       
-      // For cultural/social score, also apply muted positioning within reasonable bounds
+      // For social/social score, also apply muted positioning within reasonable bounds
       // This ensures 3D cube positioning is also consistent
-      displayProgressive = progressive * 0.75;
+      displaySocial = social * 0.75;
     }
   }
   
   // Convert to -10..10 scale for Vision alignment and display
   const x = toVisionScale(displayX);
   const y = toVisionScale(displayY);
-  const z = toVisionScale(displayProgressive);
+  const z = toVisionScale(displaySocial);
   const alignment = findVisionAlignment(x, y, z);
 
   // Save the quiz result (skip if this is a shared result or debug mode)
@@ -675,7 +898,7 @@ export default function ResultsClient() {
     
     if (hasSaved.current || isShared || isDebugMode) {
       if (isDebugMode && !hasSaved.current) {
-        console.log('🐛 DEBUG MODE: Skipping Firebase save');
+        debugLog('🐛 DEBUG MODE: Skipping Firebase save');
         hasSaved.current = true;
       }
       return;
@@ -683,31 +906,35 @@ export default function ResultsClient() {
     hasSaved.current = true;
     
     // Calculate macro cell code from coordinates as fallback
-    const calculateMacroCellCode = (econ: number, soc: number): string => {
+    const calculateMacroCellCode = (econ: number, gov: number): string => {
       let econCode: 'EL' | 'EM' | 'ER';
       if (econ < -33) econCode = 'EL';
       else if (econ > 33) econCode = 'ER';
       else econCode = 'EM';
-      
-      let authCode: 'GL' | 'GM' | 'GR';
-      if (soc > 33) authCode = 'GL';
-      else if (soc < -33) authCode = 'GR';
+
+      let authCode: 'GL' | 'GM' | 'GA';
+      if (gov > 33) authCode = 'GA'; // More authoritarian
+      else if (gov < -33) authCode = 'GL'; // More libertarian
       else authCode = 'GM';
-      
+
       return `${econCode}-${authCode}`;
     };
+
+    const macroCellCode = ideologyData?.macroCellCode || calculateMacroCellCode(economic, governance);
     
-    const macroCellCode = ideologyData?.macroCellCode || calculateMacroCellCode(economic, social);
-    
+    // Get skip statistics if available
+    const skipStats = (window as any).__skipStats;
+
     saveQuizResult({
       answers,
       quizType: quizType as 'short' | 'long',
       questionData: questionData.length > 0 ? questionData : undefined,
+      skipStats: skipStats || undefined,
       result: {
         economicScore: economic,
+        governanceScore: governance,
         socialScore: social,
-        progressiveScore: progressive,
-        alignmentLabel: ideologyData?.ideology || ideologyData?.friendlyLabel || alignment.label,
+        alignmentLabel: ideologyData?.ideology || alignment.label,
         alignmentDescription: ideologyData?.explanation || alignment.description,
         macroCellCode: macroCellCode,
         ...(scores?.supplementary && Object.keys(scores.supplementary).length > 0 && {
@@ -721,7 +948,7 @@ export default function ResultsClient() {
       phase: quizType === 'long' && scores?.supplementary && Object.keys(scores.supplementary).length > 0 ? 2 : 1
     })
       .then(id => {
-        console.log('Quiz result saved successfully with ID:', id);
+        debugLog('Quiz result saved successfully with ID:', id);
         setDocId(id);
         
         // Update URL to use Firebase ID for permanent access
@@ -739,8 +966,8 @@ export default function ResultsClient() {
         }
       })
       .catch(error => {
-        console.error('Failed to save quiz result:', error);
-        console.error('Error details:', error.message, error.code);
+        debugError('Failed to save quiz result:', error);
+        debugError('Error details:', error.message, error.code);
       });
   }, [answers, economic, social, alignment, isShared, dataLoaded]);
 
@@ -754,28 +981,28 @@ export default function ResultsClient() {
     hasLoadedAnalytics.current = true;
     
     const loadAnalyticsData = async () => {
-      console.log('Starting analytics data load...');
+      debugLog('Starting analytics data load...');
       
       // First test the basic Firebase connection
       const isConnected = await testFirebaseConnection();
       if (!isConnected) {
-        console.error('Firebase connection test failed, aborting analytics load');
+        debugError('Firebase connection test failed, aborting analytics load');
         return;
       }
 
       // Load all analytics data in parallel
       const [percentage, totalCount, groupMatches, waitlist] = await Promise.all([
-        getCoordinateRangePercentage(economic, social, quizType as 'short' | 'long'),
+        getCoordinateRangePercentage(economic, governance, quizType as 'short' | 'long'),
         getTotalQuizCount(),
-        getPoliticalGroupMatches(economic, social, progressive),
+        getPoliticalGroupMatches(economic, governance, social),
         getWaitlistCount()
       ]);
       
       // Get surprising alignments, excluding the groups already shown in "You Align With"
       const excludeGroups = groupMatches.map(group => group.name);
-      const surprisingMatches = await getSurprisingAlignments(economic, social, progressive, excludeGroups);
+      const surprisingMatches = await getSurprisingAlignments(economic, governance, social, excludeGroups);
 
-      console.log('Analytics data loaded:', { percentage, totalCount, groupMatches, surprisingMatches });
+      debugLog('Analytics data loaded:', { percentage, totalCount, groupMatches, surprisingMatches });
 
       setResultPercentage(percentage);
       setTotalQuizCount(totalCount);
@@ -785,9 +1012,9 @@ export default function ResultsClient() {
     };
 
     loadAnalyticsData().catch(error => {
-      console.error('Error loading analytics data:', error);
+      debugError('Error loading analytics data:', error);
     });
-  }, [economic, social, progressive, quizType, ideologyData]);
+  }, [economic, governance, social, quizType, ideologyData]);
 
 
 
@@ -922,7 +1149,20 @@ export default function ResultsClient() {
           <h1 className="text-4xl font-bold text-foreground">Your Political Alignment</h1>
           <p className="text-foreground/60 mt-2">
             <span className="inline-flex items-center gap-1">
-              <span>👥</span> You're {totalQuizCount !== null && Number(totalQuizCount) > 0 ? `1 of ${Number(totalQuizCount).toLocaleString()}` : 'joining'} quiz takers
+              <span>👥</span> You're {(() => {
+                if (totalQuizCount === null) {
+                  return 'joining thousands of';
+                }
+                if (typeof totalQuizCount === 'string') {
+                  return `1 of ${totalQuizCount}`;
+                }
+                const count = Number(totalQuizCount);
+                // Never show "1 of 1" - fallback to a sensible default
+                if (count <= 1) {
+                  return '1 of thousands of';
+                }
+                return `1 of ${count.toLocaleString()}`;
+              })()} quiz takers
             </span>
           </p>
         </div>
@@ -961,16 +1201,16 @@ export default function ResultsClient() {
                   {typeof window !== 'undefined' && 'WebGLRenderingContext' in window ? (
                     <ResultCube
                       x={economic}
-                      y={social}
-                      z={progressive}
+                      y={governance}
+                      z={social}
                       ideologyLabel={alignment.label}
-                      onInteraction={(type) => console.log('Interaction:', type)}
+                      onInteraction={(type) => debugLog('Interaction:', type)}
                     />
                   ) : (
                     <ResultCubeFallback
                       x={economic}
-                      y={social}
-                      z={progressive}
+                      y={governance}
+                      z={social}
                       ideologyLabel={alignment.label}
                     />
                   )}
@@ -1101,15 +1341,15 @@ export default function ResultsClient() {
                 <div>
                   <div className="flex justify-between mb-2 flex-wrap gap-1">
                     <span className="text-xs md:text-sm font-medium text-purple-600">Social Score</span>
-                    <span className="text-xs md:text-sm text-foreground/60">{displayProgressive < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(displayProgressive).toFixed(1)}%)</span>
+                    <span className="text-xs md:text-sm text-foreground/60">{displaySocial < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(displaySocial).toFixed(1)}%)</span>
                   </div>
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-2.5 relative">
                       <div 
                         className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
                         style={{ 
-                          width: `${Math.abs(displayProgressive) / 2}%`,
-                          marginLeft: displayProgressive < 0 ? `${50 - Math.abs(displayProgressive) / 2}%` : '50%'
+                          width: `${Math.abs(displaySocial) / 2}%`,
+                          marginLeft: displaySocial < 0 ? `${50 - Math.abs(displaySocial) / 2}%` : '50%'
                         }}
                       />
                     </div>
@@ -1221,12 +1461,12 @@ export default function ResultsClient() {
                     <span>🎯</span> Want More Accurate Results?
                   </h3>
                   <p className="text-foreground/80 mb-4">
-                    This 10-question quiz mapped you to one of 9 general regions. But political ideologies aren't monolithic. 
+                    This 12-question quiz mapped you to one of 9 general regions. But political ideologies aren't monolithic. 
                     Each region contains rich internal debates and variations.
                   </p>
                   <div className="bg-purple-50 rounded-lg p-4 mb-6">
                     <p className="text-sm text-purple-900">
-                      <strong>The 50-question quiz reveals:</strong>
+                      <strong>The 60-question quiz reveals:</strong>
                     </p>
                     <ul className="mt-2 space-y-1 text-sm text-purple-800">
                       <li>• Your specific ideology within your region (81 total possibilities)</li>
@@ -1238,7 +1478,7 @@ export default function ResultsClient() {
                     onClick={() => router.push('/quiz?type=long')}
                     className="w-full bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                   >
-                    Take the Full 50-Question Quiz
+                    Take the Full 60-Question Quiz
                     <span className="text-sm font-normal opacity-90">(free, 5-10 minutes)</span>
                   </button>
                 </div>
@@ -1258,8 +1498,8 @@ export default function ResultsClient() {
           onClose={() => setShowShareModal(false)}
           alignment={alignment}
           economic={displayX}
-          social={displayY}
-          progressive={displayProgressive}
+          governance={displayY}
+          social={displaySocial}
           x={x}
           y={y}
           z={z}

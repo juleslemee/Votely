@@ -12,54 +12,7 @@ export interface QuadrantInfo {
 }
 
 
-// Question scoring configuration
-export interface QuestionConfig {
-  id: number;
-  axis: 'economic' | 'authority' | 'cultural';
-  agreeDirection: 'left' | 'right' | 'libertarian' | 'authoritarian' | 'progressive' | 'conservative';
-}
-
-export const QUESTION_CONFIG: QuestionConfig[] = [
-  // ECONOMIC QUESTIONS
-  { id: 1, axis: 'economic', agreeDirection: 'left' }, // Wealth redistribution
-  { id: 2, axis: 'economic', agreeDirection: 'right' }, // Tax cuts
-  { id: 3, axis: 'economic', agreeDirection: 'right' }, // Free market
-  { id: 4, axis: 'economic', agreeDirection: 'left' }, // Business regulation
-  { id: 5, axis: 'economic', agreeDirection: 'left' }, // Government healthcare
-  { id: 6, axis: 'economic', agreeDirection: 'right' }, // Welfare skepticism
-  { id: 7, axis: 'economic', agreeDirection: 'left' }, // Labor unions
-  { id: 8, axis: 'economic', agreeDirection: 'right' }, // Privatization
-  { id: 25, axis: 'economic', agreeDirection: 'left' }, // Progressive taxation
-  { id: 26, axis: 'economic', agreeDirection: 'right' }, // Regulation burden
-  { id: 31, axis: 'economic', agreeDirection: 'left' }, // Environment over growth
-  { id: 32, axis: 'economic', agreeDirection: 'right' }, // Trade protectionism
-
-  // AUTHORITY QUESTIONS  
-  { id: 9, axis: 'authority', agreeDirection: 'authoritarian' }, // Surveillance
-  { id: 10, axis: 'authority', agreeDirection: 'libertarian' }, // Limited government
-  { id: 11, axis: 'authority', agreeDirection: 'authoritarian' }, // Censorship
-  { id: 12, axis: 'authority', agreeDirection: 'libertarian' }, // Personal freedom
-  { id: 13, axis: 'authority', agreeDirection: 'authoritarian' }, // Emergency powers
-  { id: 14, axis: 'authority', agreeDirection: 'libertarian' }, // Civil disobedience
-  { id: 15, axis: 'authority', agreeDirection: 'authoritarian' }, // Centralized government
-  { id: 16, axis: 'authority', agreeDirection: 'libertarian' }, // Gun rights
-  { id: 27, axis: 'authority', agreeDirection: 'authoritarian' }, // Mandatory service
-  { id: 28, axis: 'authority', agreeDirection: 'libertarian' }, // Local governance
-  { id: 33, axis: 'authority', agreeDirection: 'authoritarian' }, // Expert governance
-  { id: 34, axis: 'authority', agreeDirection: 'libertarian' }, // Resist government
-
-  // CULTURAL QUESTIONS
-  { id: 17, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional family
-  { id: 18, axis: 'cultural', agreeDirection: 'progressive' }, // Diversity strength
-  { id: 19, axis: 'cultural', agreeDirection: 'progressive' }, // Reproductive rights
-  { id: 20, axis: 'cultural', agreeDirection: 'conservative' }, // Political correctness
-  { id: 21, axis: 'cultural', agreeDirection: 'progressive' }, // Secularism
-  { id: 22, axis: 'cultural', agreeDirection: 'progressive' }, // Gender identity
-  { id: 23, axis: 'cultural', agreeDirection: 'conservative' }, // Immigration limits
-  { id: 24, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional values
-  { id: 29, axis: 'cultural', agreeDirection: 'conservative' }, // Traditional morality
-  { id: 30, axis: 'cultural', agreeDirection: 'progressive' }, // Historical awareness
-];
+// Question scoring will use dynamically loaded question data only
 
 // Scoring constants
 export const ANSWER_SCORES = {

@@ -33,7 +33,7 @@ export function TooltipTrigger({ children, asChild = false, ...props }: {
   const context = useContext(TooltipContext);
   if (!context) throw new Error('TooltipTrigger must be used within Tooltip');
 
-  const { setOpen } = context;
+  const { open, setOpen } = context;
 
   const triggerProps = {
     onMouseEnter: () => {
@@ -54,7 +54,7 @@ export function TooltipTrigger({ children, asChild = false, ...props }: {
     },
     onClick: () => {
       console.log('Click - toggling tooltip');
-      setOpen(prev => !prev);
+      setOpen(!open);
     },
     ...props
   };

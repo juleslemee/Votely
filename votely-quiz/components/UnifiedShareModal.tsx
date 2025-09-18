@@ -79,16 +79,17 @@ const ResultCube = React.lazy(() => import('./ResultCube'));
 const ResultCubeFallback = React.lazy(() => import('./ResultCubeFallback'));
 
 // Macro cell colors from the political compass
+// Note: GA = Authoritarian (top), GM = Moderate (middle), GL = Libertarian (bottom)
 const MACRO_CELL_COLORS = {
-  'EL-GL': '#ff9ea0',   // Revolutionary Communism & State Socialism
-  'EM-GL': '#ff9fff',   // Authoritarian Statist Centrism
-  'ER-GL': '#9f9fff',   // Authoritarian Right & Corporatist Monarchism
+  'EL-GA': '#ff9ea0',   // Revolutionary Communism & State Socialism (Authoritarian)
+  'EM-GA': '#ff9fff',   // Authoritarian Statist Centrism
+  'ER-GA': '#9f9fff',   // Authoritarian Right & Corporatist Monarchism
   'EL-GM': '#ffcfa1',   // Democratic Socialism & Left Populism
   'EM-GM': '#e5e5e5',   // Mixed-Economy Liberal Center
   'ER-GM': '#9ffffe',   // Conservative Capitalism & National Conservatism
-  'EL-GR': '#9fff9e',   // Libertarian Socialism & Anarcho-Communism
-  'EM-GR': '#d4fe9a',   // Social-Market Libertarianism
-  'ER-GR': '#ffff9f'    // Anarcho-Capitalism & Ultra-Free-Market Libertarianism
+  'EL-GL': '#9fff9e',   // Libertarian Socialism & Anarcho-Communism
+  'EM-GL': '#d4fe9a',   // Social-Market Libertarianism
+  'ER-GL': '#ffff9f'    // Anarcho-Capitalism & Ultra-Free-Market Libertarianism
 };
 
 // Helper function to get macro cell color
@@ -452,9 +453,9 @@ export default function UnifiedShareModal({
             </div>
 
             {/* Main content area */}
-            <div className="p-6 h-[calc(1080px-80px-96px)] flex gap-6">
+            <div className="p-4 h-[calc(1080px-80px-96px)] flex gap-4">
               {/* Left: 3D Cube at specific rotation angle */}
-              <div className="w-[540px] flex-shrink-0 flex items-center justify-center">
+              <div className="w-[520px] flex-shrink-0 flex items-center justify-center">
                 <div style={{ width: '540px', height: '540px' }}>
                   <Suspense fallback={<div className="w-full h-full bg-gray-100 rounded-lg" />}>
                     {typeof window !== 'undefined' && 'WebGLRenderingContext' in window ? (
@@ -481,78 +482,101 @@ export default function UnifiedShareModal({
               </div>
 
               {/* Right: Results panel - matching exact structure from results page */}
-              <div className="w-[480px] flex-shrink-0">
-                <div className="bg-white rounded-lg p-5 h-full overflow-hidden">
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">
+              <div className="w-[500px] flex-shrink-0">
+                <div className="bg-white rounded-lg p-3 h-full overflow-hidden">
+                  <h2 className="text-lg font-bold text-gray-900 mb-1">
                     {quizType === 'short' ? 
                       (ideologyData?.macroCellLabel || alignment.label) : 
                       (ideologyData?.ideology || alignment.label)
                     }
                   </h2>
                   {resultPercentage !== null && (
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-xs text-gray-600 mb-2">
                       {resultPercentage}% of quiz takers get this result
                     </p>
                   )}
                   
                   {/* Recent Examples Section */}
                   {ideologyData?.examples && (
-                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                    <div className="mb-2">
                       <h3 className="text-xs font-semibold text-gray-600 mb-1">Recent Examples</h3>
-                      <p className="text-xs text-gray-700 leading-tight">{ideologyData.examples}</p>
+                      <p className="text-xs text-gray-700" style={{ lineHeight: '1.3' }}>{ideologyData.examples}</p>
                     </div>
                   )}
                   
-                  {/* Scores */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ 
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '8px',
-                      padding: '10px',
-                      marginBottom: '6px',
-                      fontSize: '10px',
-                      lineHeight: '14px'
-                    }}>
-                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Economic Score:</span> {economic < 0 ? 'Left' : 'Right'} ({Math.abs(economic).toFixed(1)}%)
+                  {/* Description */}
+                  {(ideologyData?.explanation || alignment.description) && (
+                    <p className="text-xs text-gray-700 mb-2" style={{ lineHeight: '1.3' }}>
+                      {ideologyData?.explanation || alignment.description}
+                    </p>
+                  )}
+
+                  {/* Scores with sliders - matching static layout */}
+                  <div style={{ marginBottom: '8px' }}>
+                    {/* Economic Score */}
+                    <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '500', color: '#9333ea', lineHeight: '16px' }}>Economic Score</span>
+                        <span style={{ fontSize: '12px', color: '#4b5563', whiteSpace: 'nowrap', lineHeight: '16px' }}>
+                          {economic < 0 ? 'Left' : 'Right'} ({Math.abs(economic).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'visible' }}>
+                        <div style={{ position: 'absolute', height: '6px', borderRadius: '9999px', backgroundColor: '#a855f7',
+                          left: economic < 0 ? `${50 + economic/2}%` : '50%', width: `${Math.abs(economic)/2}%`, top: '0' }} />
+                        <div style={{ position: 'absolute', width: '2px', height: '8px', backgroundColor: '#9ca3af',
+                          borderRadius: '9999px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+                      </div>
                     </div>
-                    <div style={{ 
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '8px',
-                      padding: '10px',
-                      marginBottom: '6px',
-                      fontSize: '10px',
-                      lineHeight: '14px'
-                    }}>
-                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Governance Score:</span> {governance > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(governance).toFixed(1)}%)
+                    {/* Governance Score */}
+                    <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '500', color: '#9333ea', lineHeight: '16px' }}>Governance Score</span>
+                        <span style={{ fontSize: '12px', color: '#4b5563', whiteSpace: 'nowrap', lineHeight: '16px' }}>
+                          {governance > 0 ? 'Authoritarian' : 'Libertarian'} ({Math.abs(governance).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'visible' }}>
+                        <div style={{ position: 'absolute', height: '6px', borderRadius: '9999px', backgroundColor: '#a855f7',
+                          left: governance < 0 ? `${50 + governance/2}%` : '50%', width: `${Math.abs(governance)/2}%`, top: '0' }} />
+                        <div style={{ position: 'absolute', width: '2px', height: '8px', backgroundColor: '#9ca3af',
+                          borderRadius: '9999px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+                      </div>
                     </div>
-                    <div style={{ 
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '8px',
-                      padding: '10px',
-                      fontSize: '10px',
-                      lineHeight: '14px'
-                    }}>
-                      <span style={{ fontWeight: '500', color: '#9333ea' }}>Social Score:</span> {social < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(social).toFixed(1)}%)
+                    {/* Social Score */}
+                    <div style={{ paddingTop: '4px', paddingBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '500', color: '#9333ea', lineHeight: '16px' }}>Social Score</span>
+                        <span style={{ fontSize: '12px', color: '#4b5563', whiteSpace: 'nowrap', lineHeight: '16px' }}>
+                          {social < 0 ? 'Progressive' : 'Conservative'} ({Math.abs(social).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'visible' }}>
+                        <div style={{ position: 'absolute', height: '6px', borderRadius: '9999px', backgroundColor: '#a855f7',
+                          left: social < 0 ? `${50 + social/2}%` : '50%', width: `${Math.abs(social)/2}%`, top: '0' }} />
+                        <div style={{ position: 'absolute', width: '2px', height: '8px', backgroundColor: '#9ca3af',
+                          borderRadius: '9999px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+                      </div>
                     </div>
                   </div>
 
                   {/* Supplement Axes for Long Quiz */}
                   {quizType === 'long' && supplementAxes.length > 0 && (
-                    <div style={{ marginBottom: '12px', marginTop: '6px' }}>
-                      <h3 style={{ 
-                        fontSize: '10px', 
+                    <div style={{ marginBottom: '8px', marginTop: '4px' }}>
+                      <h3 style={{
+                        fontSize: '11px',
                         fontWeight: '600',
                         color: '#111827',
-                        marginBottom: '8px',
+                        marginBottom: '6px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '3px',
-                        lineHeight: '14px'
+                        gap: '4px',
+                        lineHeight: '16px'
                       }}>
-                        <span style={{ fontSize: '10px' }}>🎯</span> Your Detailed Position
+                        <span>🎯</span> Your Detailed Position
                       </h3>
                       <div>
-                        {supplementAxes.slice(0, 4).map((axis) => {
+                        {supplementAxes.map((axis) => {
                           const score = supplementScores[axis.code] || 0;
                           const isNegative = score < 0;
                           const displayScore = Math.abs(score);
@@ -560,45 +584,45 @@ export default function UnifiedShareModal({
                           const displayColor = ensureContrast(macroCellColor);
                           
                           return (
-                            <div key={axis.code} style={{ 
-                              paddingTop: '3px',
-                              paddingBottom: '3px'
+                            <div key={axis.code} style={{
+                              paddingTop: '4px',
+                              paddingBottom: '4px'
                             }}>
-                              <div style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
                                 alignItems: 'flex-start',
-                                gap: '6px',
-                                marginBottom: '4px'
+                                gap: '8px',
+                                marginBottom: '6px'
                               }}>
-                                <span style={{ 
-                                  fontSize: '10px', 
+                                <span style={{
+                                  fontSize: '12px',
                                   fontWeight: '500',
                                   color: displayColor,
-                                  lineHeight: '14px',
+                                  lineHeight: '16px',
                                   display: 'block'
                                 }}>{axis.axis}</span>
-                                <span style={{ 
-                                  fontSize: '10px', 
+                                <span style={{
+                                  fontSize: '12px',
                                   color: '#4b5563',
                                   whiteSpace: 'nowrap',
-                                  lineHeight: '14px',
+                                  lineHeight: '16px',
                                   display: 'block'
                                 }}>
                                   {isNegative ? axis.negativeAnchor : axis.positiveAnchor} ({displayScore.toFixed(1)}%)
                                 </span>
                               </div>
-                              <div style={{ 
+                              <div style={{
                                 position: 'relative',
-                                height: '4px',
+                                height: '6px',
                                 backgroundColor: '#e5e7eb',
                                 borderRadius: '9999px',
                                 overflow: 'visible'
                               }}>
-                                <div 
-                                  style={{ 
+                                <div
+                                  style={{
                                     position: 'absolute',
-                                    height: '4px',
+                                    height: '6px',
                                     borderRadius: '9999px',
                                     backgroundColor: displayColor,
                                     left: isNegative ? `${50 - displayScore/2}%` : '50%',
@@ -606,10 +630,10 @@ export default function UnifiedShareModal({
                                     top: '0'
                                   }}
                                 />
-                                <div style={{ 
+                                <div style={{
                                   position: 'absolute',
                                   width: '2px',
-                                  height: '6px',
+                                  height: '8px',
                                   backgroundColor: '#9ca3af',
                                   borderRadius: '9999px',
                                   left: '50%',
@@ -624,29 +648,21 @@ export default function UnifiedShareModal({
                     </div>
                   )}
 
-                  {/* Description */}
-                  {(ideologyData?.explanation || alignment.description) && (
-                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <p className="text-xs text-gray-700 leading-tight">
-                        {ideologyData?.explanation || alignment.description}
-                      </p>
-                    </div>
-                  )}
 
                   {/* You Align With - using exact card style from results page */}
                   {ideologyData?.alignIdeology1 && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <h3 style={{ 
+                    <div style={{ marginBottom: '8px' }}>
+                      <h3 style={{
                         fontSize: '11px',
-                        fontWeight: '700',
+                        fontWeight: '600',
                         color: '#111827',
-                        marginBottom: '8px',
+                        marginBottom: '4px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
-                        lineHeight: '14px'
+                        lineHeight: '16px'
                       }}>
-                        <span style={{ fontSize: '12px' }}>👥</span> You Align With
+                        <span>👥</span> You Align With
                       </h3>
                       {(() => {
                         let alignmentData = null;
@@ -676,25 +692,25 @@ export default function UnifiedShareModal({
                             backgroundColor: '#f9fafb'
                           }}>
                             <tr>
-                              <td style={{ 
-                                padding: '8px 10px',
+                              <td style={{
+                                padding: '6px 8px',
                                 verticalAlign: 'top',
                                 borderTopRightRadius: '0.5rem',
                                 borderBottomRightRadius: '0.5rem'
                               }}>
-                                <div style={{ 
-                                  fontWeight: '600', 
-                                  color: '#111827', 
-                                  fontSize: '10px', 
+                                <div style={{
+                                  fontWeight: '600',
+                                  color: '#111827',
+                                  fontSize: '10px',
                                   lineHeight: '13px',
-                                  marginBottom: '3px'
+                                  marginBottom: '2px'
                                 }}>
                                   {alignmentLabel}
                                 </div>
-                                <div style={{ 
-                                  fontSize: '10px', 
-                                  color: '#4b5563', 
-                                  lineHeight: '13px'
+                                <div style={{
+                                  fontSize: '9px',
+                                  color: '#4b5563',
+                                  lineHeight: '12px'
                                 }}>
                                   {ideologyData.alignIdeology1Text}
                                 </div>
@@ -709,17 +725,17 @@ export default function UnifiedShareModal({
                   {/* What Might Surprise You */}
                   {ideologyData?.surpriseIdeology1 && (
                     <div>
-                      <h4 style={{ 
+                      <h4 style={{
                         fontSize: '11px',
                         fontWeight: '600',
                         color: '#111827',
-                        marginBottom: '8px',
+                        marginBottom: '4px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
-                        lineHeight: '14px'
+                        lineHeight: '16px'
                       }}>
-                        <span style={{ fontSize: '12px' }}>💭</span> What Might Surprise You
+                        <span>💭</span> What Might Surprise You
                       </h4>
                       {(() => {
                         let surpriseData = null;
@@ -749,25 +765,25 @@ export default function UnifiedShareModal({
                             backgroundColor: '#f9fafb'
                           }}>
                             <tr>
-                              <td style={{ 
-                                padding: '8px 10px',
+                              <td style={{
+                                padding: '6px 8px',
                                 verticalAlign: 'top',
                                 borderTopRightRadius: '0.5rem',
                                 borderBottomRightRadius: '0.5rem'
                               }}>
-                                <div style={{ 
-                                  fontWeight: '600', 
-                                  color: '#111827', 
-                                  fontSize: '10px', 
+                                <div style={{
+                                  fontWeight: '600',
+                                  color: '#111827',
+                                  fontSize: '10px',
                                   lineHeight: '13px',
-                                  marginBottom: '3px'
+                                  marginBottom: '2px'
                                 }}>
                                   {surpriseLabel}
                                 </div>
-                                <div style={{ 
-                                  fontSize: '10px', 
-                                  color: '#4b5563', 
-                                  lineHeight: '13px'
+                                <div style={{
+                                  fontSize: '9px',
+                                  color: '#4b5563',
+                                  lineHeight: '12px'
                                 }}>
                                   {ideologyData.surpriseIdeology1Text}
                                 </div>
@@ -995,7 +1011,7 @@ export default function UnifiedShareModal({
       </div>
 
       {/* Main content area */}
-      <div className="p-6 h-[calc(1080px-80px-96px)] flex gap-6">
+      <div className="p-4 h-[calc(1080px-80px-96px)] flex gap-4">
         {/* Left: Visualization - Fixed size */}
         <div className="w-[540px] flex-shrink-0 flex items-center justify-center">
           <div style={{ width: '540px', height: '540px' }}>
@@ -1030,37 +1046,37 @@ export default function UnifiedShareModal({
         </div>
 
         {/* Right: Results - matching exact structure from results page */}
-        <div className="w-[480px] flex-shrink-0">
-          <div className="bg-white rounded-lg p-5 h-full overflow-auto">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
+        <div className="w-[500px] flex-shrink-0">
+          <div className="bg-white rounded-lg p-3 h-full overflow-auto">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">
               {quizType === 'short' ? 
                 (ideologyData?.macroCellLabel || alignment.label) : 
                 (ideologyData?.ideology || alignment.label)
               }
             </h2>
             {resultPercentage !== null && (
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-xs text-gray-600 mb-2">
                 {resultPercentage}% of quiz takers get this result
               </p>
             )}
             
             {/* Description - moved up to match results page */}
             {(ideologyData?.explanation || alignment.description) && (
-              <p className="text-xs text-gray-700 mb-4" style={{ lineHeight: '1.4' }}>
+              <p className="text-xs text-gray-700 mb-2" style={{ lineHeight: '1.3' }}>
                 {ideologyData?.explanation || alignment.description}
               </p>
             )}
             
             {/* Recent Examples Section - inline style */}
             {ideologyData?.examples && (
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-600 mb-1.5">Recent Examples</h3>
-                <p className="text-xs text-gray-700" style={{ lineHeight: '1.4' }}>{ideologyData.examples}</p>
+              <div className="mb-2">
+                <h3 className="text-xs font-semibold text-gray-600 mb-1">Recent Examples</h3>
+                <p className="text-xs text-gray-700" style={{ lineHeight: '1.3' }}>{ideologyData.examples}</p>
               </div>
             )}
             
             {/* Scores with sliders */}
-            <div style={{ marginBottom: '12px' }}>
+            <div style={{ marginBottom: '8px' }}>
               {/* Economic Score */}
               <div style={{ 
                 paddingTop: '4px',
@@ -1232,12 +1248,12 @@ export default function UnifiedShareModal({
 
             {/* Supplement Axes for Long Quiz */}
             {quizType === 'long' && supplementAxes.length > 0 && (
-              <div style={{ marginBottom: '12px', marginTop: '8px' }}>
-                <h3 style={{ 
-                  fontSize: '12px', 
+              <div style={{ marginBottom: '8px', marginTop: '4px' }}>
+                <h3 style={{
+                  fontSize: '11px',
                   fontWeight: '600',
                   color: '#111827',
-                  marginBottom: '12px',
+                  marginBottom: '6px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
@@ -1320,12 +1336,12 @@ export default function UnifiedShareModal({
 
             {/* You Align With - using exact card style from results page */}
             {ideologyData?.alignIdeology1 && (
-              <div style={{ marginBottom: '12px' }}>
-                <h3 style={{ 
-                  fontSize: '13px',
+              <div style={{ marginBottom: '8px' }}>
+                <h3 style={{
+                  fontSize: '11px',
                   fontWeight: '600',
                   color: '#111827',
-                  marginBottom: '8px',
+                  marginBottom: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
@@ -1361,25 +1377,25 @@ export default function UnifiedShareModal({
                       backgroundColor: '#f9fafb'
                     }}>
                       <tr>
-                        <td style={{ 
-                          padding: '10px 12px',
+                        <td style={{
+                          padding: '6px 8px',
                           verticalAlign: 'top',
                           borderTopRightRadius: '0.5rem',
                           borderBottomRightRadius: '0.5rem'
                         }}>
-                          <div style={{ 
-                            fontWeight: '600', 
-                            color: '#111827', 
-                            fontSize: '12px', 
-                            lineHeight: '16px',
-                            marginBottom: '4px'
+                          <div style={{
+                            fontWeight: '600',
+                            color: '#111827',
+                            fontSize: '10px',
+                            lineHeight: '13px',
+                            marginBottom: '2px'
                           }}>
                             {alignmentLabel}
                           </div>
-                          <div style={{ 
-                            fontSize: '11px', 
-                            color: '#4b5563', 
-                            lineHeight: '15px'
+                          <div style={{
+                            fontSize: '9px',
+                            color: '#4b5563',
+                            lineHeight: '12px'
                           }}>
                             {ideologyData.alignIdeology1Text}
                           </div>
@@ -1394,11 +1410,11 @@ export default function UnifiedShareModal({
             {/* What Might Surprise You */}
             {ideologyData?.surpriseIdeology1 && (
               <div>
-                <h4 style={{ 
-                  fontSize: '13px',
+                <h4 style={{
+                  fontSize: '11px',
                   fontWeight: '600',
                   color: '#111827',
-                  marginBottom: '8px',
+                  marginBottom: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
@@ -1434,25 +1450,25 @@ export default function UnifiedShareModal({
                       backgroundColor: '#f9fafb'
                     }}>
                       <tr>
-                        <td style={{ 
-                          padding: '10px 12px',
+                        <td style={{
+                          padding: '6px 8px',
                           verticalAlign: 'top',
                           borderTopRightRadius: '0.5rem',
                           borderBottomRightRadius: '0.5rem'
                         }}>
-                          <div style={{ 
-                            fontWeight: '600', 
-                            color: '#111827', 
-                            fontSize: '12px', 
-                            lineHeight: '16px',
-                            marginBottom: '4px'
+                          <div style={{
+                            fontWeight: '600',
+                            color: '#111827',
+                            fontSize: '10px',
+                            lineHeight: '13px',
+                            marginBottom: '2px'
                           }}>
                             {surpriseLabel}
                           </div>
-                          <div style={{ 
-                            fontSize: '11px', 
-                            color: '#4b5563', 
-                            lineHeight: '15px'
+                          <div style={{
+                            fontSize: '9px',
+                            color: '#4b5563',
+                            lineHeight: '12px'
                           }}>
                             {ideologyData.surpriseIdeology1Text}
                           </div>

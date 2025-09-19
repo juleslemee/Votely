@@ -133,13 +133,17 @@ export default function QuizPageClient() {
     loadQuestions();
   }, [quizType]);
 
-  // Load Phase 2 questions when Phase 1 is complete (36 questions answered)
+  // Load Phase 2 questions when Phase 1 is complete (36 questions answered or skipped)
   useEffect(() => {
     if (quizType !== 'long' || phase2QuestionsLoaded || questions.length !== 36) return;
-    
-    const answeredCount = Object.keys(answers).length;
-    if (answeredCount === 36) {
-      debugLog('🚀 Phase 1 complete (36 questions answered) - Loading Phase 2 questions...');
+
+    // Count questions that are either answered (non-null) or explicitly skipped
+    const answeredOrSkippedCount = questions.slice(0, 36).filter(q =>
+      (answers[q.id] !== undefined && answers[q.id] !== null) || skippedQuestions.has(q.id)
+    ).length;
+
+    if (answeredOrSkippedCount === 36) {
+      debugLog(`🚀 Phase 1 complete (${answeredOrSkippedCount} questions answered/skipped) - Loading Phase 2 questions...`);
       
       // Calculate scores from the 36 Phase 1 questions
       const calculateScores = () => {
@@ -227,7 +231,7 @@ export default function QuizPageClient() {
       
       loadPhase2();
     }
-  }, [answers, questions, quizType, phase2QuestionsLoaded]);
+  }, [answers, questions, quizType, phase2QuestionsLoaded, skippedQuestions]);
 
   const handleAnswerSelect = (questionId: number, value: AnswerValue | null) => {
     // DEBUG: Log answer changes

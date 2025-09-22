@@ -1016,9 +1016,9 @@ export default function UnifiedShareModal({
         <div className="w-[540px] flex-shrink-0 flex items-center justify-center">
           <div style={{ width: '540px', height: '540px' }}>
             {type === '2d' ? (
-              <AdaptivePoliticalCompass 
-                point={{ x, y }} 
-                quizType="long" // Always use detailed view for screenshots
+              <AdaptivePoliticalCompass
+                point={{ x, y }}
+                quizType={quizType === 'short' ? 'short' : 'long'}
               />
             ) : (
               <Suspense fallback={<div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">Loading 3D...</div>}>

@@ -1120,7 +1120,7 @@ export default function QuizPageClient() {
                           </TooltipTrigger>
                           <TooltipContent
                             side="left"
-                            className="w-[28rem] text-sm leading-relaxed"
+                            className="w-[min(28rem,calc(100vw-6rem))] text-sm leading-relaxed"
                             sideOffset={8}
                           >
                             {question.description || `Test tooltip for question ${question.id}`}

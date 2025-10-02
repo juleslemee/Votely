@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Ubuntu, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import GoogleTagManager from "@/lib/GoogleTagManager";
+import HotJar from "@/lib/HotJar";
 import StructuredData from "@/components/StructuredData";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -122,6 +123,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <GoogleTagManager />
+        <HotJar />
         <StructuredData />
         <Breadcrumbs />
         {children}

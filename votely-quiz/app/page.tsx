@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import Script from 'next/script';
+import { usePostHog } from 'posthog-js/react';
 
 interface Star {
   top: number;
@@ -106,6 +107,7 @@ const faqItems = [
 ];
 
 export default function Home() {
+  const posthog = usePostHog();
   const [showQuizOptions, setShowQuizOptions] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   
@@ -163,13 +165,19 @@ export default function Home() {
                 </div>
                 <div className="flex gap-3">
                   <Link href="/quiz?type=short" className="flex-1">
-                    <button className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-500 text-white hover:bg-purple-600 transition">
+                    <button
+                      onClick={() => posthog?.capture('quiz_started', { quiz_type: 'short' })}
+                      className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-500 text-white hover:bg-purple-600 transition"
+                    >
                       Shortform<br />
                       <span className="text-sm opacity-90">(12 Questions)</span>
                     </button>
                   </Link>
                   <Link href="/quiz?type=long" className="flex-1">
-                    <button className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition">
+                    <button
+                      onClick={() => posthog?.capture('quiz_started', { quiz_type: 'long' })}
+                      className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition"
+                    >
                       Longform<br />
                       <span className="text-sm opacity-90">(60 Questions)</span>
                     </button>

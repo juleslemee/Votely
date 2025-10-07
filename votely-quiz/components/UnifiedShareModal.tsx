@@ -3,6 +3,7 @@
 import React, { useState, useRef, Suspense, useEffect } from 'react';
 import { AdaptivePoliticalCompass } from '../lib/adaptive-political-compass';
 import { debugLog, debugError } from '../lib/debug-logger';
+import { usePostHog } from 'posthog-js/react';
 
 /**
  * UnifiedShareModal - Comprehensive sharing functionality for quiz results
@@ -315,6 +316,7 @@ export default function UnifiedShareModal({
   supplementAxes = [],
   supplementScores = {}
 }: UnifiedShareModalProps) {
+  const posthog = usePostHog();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingType, setGeneratingType] = useState<'2d' | '3d' | 'gif' | null>(null);
   const [gifProgress, setGifProgress] = useState(0);
@@ -371,7 +373,18 @@ export default function UnifiedShareModal({
   const generateScreenshot = async (type: '2d' | '3d') => {
     const ref = type === '2d' ? share2DRef.current : share3DRef.current;
     if (!ref) return;
-    
+
+    // Track download
+    const resultLabel = quizType === 'short' ?
+      (ideologyData?.macroCellLabel || alignment.label) :
+      (ideologyData?.ideology || alignment.label);
+
+    posthog?.capture('share_clicked', {
+      share_type: type === '2d' ? 'download_2d' : 'download_3d',
+      quiz_type: quizType,
+      ideology: resultLabel
+    });
+
     setIsGenerating(true);
     setGeneratingType(type);
     
@@ -857,6 +870,17 @@ export default function UnifiedShareModal({
   };
 
   const generateGif = async () => {
+    // Track GIF download
+    const resultLabel = quizType === 'short' ?
+      (ideologyData?.macroCellLabel || alignment.label) :
+      (ideologyData?.ideology || alignment.label);
+
+    posthog?.capture('share_clicked', {
+      share_type: 'download_gif',
+      quiz_type: quizType,
+      ideology: resultLabel
+    });
+
     setIsGenerating(true);
     setGeneratingType('gif');
     setGifProgress(0);
@@ -930,13 +954,20 @@ export default function UnifiedShareModal({
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('shared', 'true');
     const shareUrl = currentUrl.toString();
-    
-    const resultLabel = quizType === 'short' ? 
-      (ideologyData?.macroCellLabel || alignment.label) : 
+
+    const resultLabel = quizType === 'short' ?
+      (ideologyData?.macroCellLabel || alignment.label) :
       (ideologyData?.ideology || alignment.label);
-    
+
     const shareTitle = 'My Votely Political Quiz Results';
     const shareText = `I got "${resultLabel}" on the Votely Political Quiz!`;
+
+    // Track share link click
+    posthog?.capture('share_clicked', {
+      share_type: 'link',
+      quiz_type: quizType,
+      ideology: resultLabel
+    });
     
     // Check if we can use Web Share API
     // Requirements: HTTPS (or localhost), user interaction, and browser support

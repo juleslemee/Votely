@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { usePostHog } from 'posthog-js/react';
 import {
   ANSWER_SCORES,
   MAX_ECONOMIC_SCORE,
@@ -454,6 +455,7 @@ function getOrdinalSuffix(n: number): string {
 }
 
 export default function ResultsClient() {
+  const posthog = usePostHog();
   const router = useRouter();
   const searchParams = useSearchParams();
   const firebaseId = searchParams.get('id'); // Firebase document ID
@@ -797,7 +799,17 @@ export default function ResultsClient() {
         }
         
         setIdeologyData(ideology);
-        
+
+        // Track results viewed
+        posthog?.capture('quiz_results_viewed', {
+          quiz_type: quizType,
+          ideology: ideology?.ideology || ideology?.macroCellLabel || 'Unknown',
+          economic_score: economic,
+          governance_score: governance,
+          social_score: social,
+          is_shared: isShared
+        });
+
         // Load supplement axes for long quiz
         if (quizType === 'long' && ideology?.macroCellCode) {
           const axesMap = await loadSupplementAxes();

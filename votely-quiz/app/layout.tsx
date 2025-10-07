@@ -5,6 +5,7 @@ import GoogleTagManager from "@/lib/GoogleTagManager";
 import HotJar from "@/lib/HotJar";
 import StructuredData from "@/components/StructuredData";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 const ubuntu = Ubuntu({
   weight: ['300', '400', '500', '700'],
@@ -122,11 +123,13 @@ export default function RootLayout({
         className={`${ubuntu.variable} ${notoSans.variable} antialiased`}
         suppressHydrationWarning
       >
-        <GoogleTagManager />
-        <HotJar />
-        <StructuredData />
-        <Breadcrumbs />
-        {children}
+        <PostHogProvider>
+          <GoogleTagManager />
+          <HotJar />
+          <StructuredData />
+          <Breadcrumbs />
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   );

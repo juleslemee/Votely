@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Info, Ban, Check } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { Question, Phase2Question, generateShortQuizQuestions, generateLongQuizQuestions, generateFinal10Questions, getTiebreakerQuestionsAsync, adjustForTiebreakers, getPhase2Questions } from './questions';
 import { 
   generateSessionId, 
@@ -52,6 +53,7 @@ const getSliderColor = (value: number): string => {
 const QUESTIONS_PER_SCREEN = 12;
 
 export default function QuizPageClient() {
+  const posthog = usePostHog();
   const router = useRouter();
   const searchParams = useSearchParams();
   const quizType = searchParams.get('type') || 'short';
@@ -890,6 +892,15 @@ export default function QuizPageClient() {
     const answeredCount = questions.length - skippedQuestions.size;
     const skippedCount = skippedQuestions.size;
     debugLog(`📊 Final Quiz: ${answeredCount} questions answered, ${skippedCount} skipped (${quizType === 'long' ? 'Phase 1: 36, Phase 2: 24' : 'Short quiz: 12'})`);
+
+    // Track quiz completion
+    posthog?.capture('quiz_completed', {
+      quiz_type: quizType,
+      questions_answered: answeredCount,
+      questions_skipped: skippedCount,
+      total_questions: questions.length,
+      completion_rate: (answeredCount / questions.length) * 100
+    });
 
     // Mark session as complete locally (for cleanup)
     completeSession();

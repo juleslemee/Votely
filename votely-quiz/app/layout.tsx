@@ -6,6 +6,7 @@ import HotJar from "@/lib/HotJar";
 import StructuredData from "@/components/StructuredData";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { PostHogProvider } from "@/components/PostHogProvider";
+import { PostHogPageviewTracker } from "@/components/PostHogPageviewTracker";
 
 const ubuntu = Ubuntu({
   weight: ['300', '400', '500', '700'],
@@ -124,6 +125,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <PostHogProvider>
+          <PostHogPageviewTracker />
           <GoogleTagManager />
           <HotJar />
           <StructuredData />

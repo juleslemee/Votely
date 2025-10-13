@@ -77,6 +77,10 @@ export default function QuizPageClient() {
   const [tiebreakerChecked, setTiebreakerChecked] = useState(false);
   const [liveScores, setLiveScores] = useState<{economic: number, governance: number, social: number} | null>(null);
   const [skipWarning, setSkipWarning] = useState<string | null>(null);
+  const answeredQuestionsRef = useRef<Set<number>>(new Set());
+  const lastTrackedQuizType = useRef<string | null>(null);
+  const phase2TrackedRef = useRef(false);
+  const lastSkipWarningRef = useRef<string | null>(null);
 
   
   // Initialize randomized questions and session
@@ -105,6 +109,9 @@ export default function QuizPageClient() {
         
         setQuestions(randomizedQuestions);
         setOriginalQuestions([...randomizedQuestions]);
+        answeredQuestionsRef.current.clear();
+        phase2TrackedRef.current = false;
+        lastSkipWarningRef.current = null;
         
         // Save session (only for current quiz, not for resume)
         const session: QuizSession = {
@@ -125,6 +132,13 @@ export default function QuizPageClient() {
         saveQuizSession(session);
         debugLog(`🎮 New quiz session created: ${session.sessionId}`);
         debugLog(`📋 ${randomizedQuestions.length} questions loaded`);
+        if (posthog && lastTrackedQuizType.current !== quizType) {
+          posthog.capture('quiz_session_started', {
+            quiz_type: quizType,
+            question_count: randomizedQuestions.length
+          });
+          lastTrackedQuizType.current = quizType;
+        }
         setIsLoading(false);
       } catch (error) {
         debugError('❌ Failed to load quiz questions:', error);
@@ -133,7 +147,7 @@ export default function QuizPageClient() {
       }
     };
     loadQuestions();
-  }, [quizType]);
+  }, [quizType, posthog]);
 
   // Load Phase 2 questions when Phase 1 is complete (36 questions answered or skipped)
   useEffect(() => {
@@ -208,6 +222,14 @@ export default function QuizPageClient() {
           const extendedQuestions = [...questions, ...phase2Questions];
           setQuestions(extendedQuestions);
           setPhase2QuestionsLoaded(true);
+          if (posthog && !phase2TrackedRef.current) {
+            posthog.capture('phase2_loaded', {
+              quiz_type: quizType,
+              macro_cell_code: macroCellCode,
+              phase2_question_count: phase2Questions.length
+            });
+            phase2TrackedRef.current = true;
+          }
           
           // Add Phase 2 questions to session
           const phase2SessionQuestions: QuizQuestion[] = phase2Questions.map(q => ({
@@ -233,7 +255,7 @@ export default function QuizPageClient() {
       
       loadPhase2();
     }
-  }, [answers, questions, quizType, phase2QuestionsLoaded, skippedQuestions]);
+  }, [answers, questions, quizType, phase2QuestionsLoaded, skippedQuestions, posthog]);
 
   const handleAnswerSelect = (questionId: number, value: AnswerValue | null) => {
     // DEBUG: Log answer changes
@@ -255,6 +277,32 @@ export default function QuizPageClient() {
 
     // DEBUG: Log what we're updating in session
     debugLog(`🔄 Updating session with: { ${questionId}: ${value} }`);
+
+    if (value !== null && posthog && !answeredQuestionsRef.current.has(questionId)) {
+      const questionMeta = questions.find(q => q.id === questionId);
+      const isPhase2Question = questionId >= 45 || (questionMeta && (questionMeta as any).phase === 2);
+      const axis = isPhase2Question
+        ? (questionMeta as any)?.supplementAxis || 'supplementary'
+        : questionMeta?.axis || 'unknown';
+      const questionType = isPhase2Question
+        ? 'refine'
+        : questionMeta?.boundary
+          ? 'tiebreaker'
+          : 'core';
+      const bucket = getValueLabel(value);
+      const percentage = Math.round(Math.abs((value - 0.5) * 200));
+
+      answeredQuestionsRef.current.add(questionId);
+      posthog.capture('question_answered', {
+        quiz_type: quizType,
+        question_id: questionId,
+        question_axis: axis,
+        question_type: questionType,
+        answer_value: value,
+        answer_bucket: bucket,
+        answer_percent: percentage,
+      });
+    }
 
     // Remove from skipped set if answering after skip
     if (value !== null && skippedQuestions.has(questionId)) {
@@ -343,6 +391,16 @@ export default function QuizPageClient() {
         setSkipWarning(`⚠️ Cannot skip: You've already skipped 50% of ${targetAxis} questions (${currentSkips}/${totalQuestions}). This would reduce accuracy too much.`);
         // Auto-hide after 3 seconds
         setTimeout(() => setSkipWarning(null), 3000);
+        if (posthog) {
+          posthog.capture('skip_limit_blocked', {
+            quiz_type: quizType,
+            question_id: questionId,
+            axis: targetAxis,
+            current_skip_percentage: wouldBeSkipPercentage,
+            current_skips: currentSkips,
+            total_axis_questions: totalQuestions
+          });
+        }
         return; // Don't allow the skip
       }
     } else {
@@ -351,6 +409,22 @@ export default function QuizPageClient() {
 
     // Allow the skip - only update skippedQuestions Set, don't modify answers
     setSkippedQuestions(newSkipped);
+    if (posthog) {
+      const axis = questionId < 45
+        ? question?.axis || 'unknown'
+        : (question as any)?.supplementAxis || 'supplementary';
+      const questionType = questionId >= 45
+        ? 'refine'
+        : question?.boundary
+          ? 'tiebreaker'
+          : 'core';
+      posthog.capture('question_skipped', {
+        quiz_type: quizType,
+        question_id: questionId,
+        axis,
+        question_type: questionType
+      });
+    }
 
     // Recalculate scores immediately with the new skipped set
     const recalculatedScores = calculateCurrentScores(true, newSkipped);
@@ -488,11 +562,20 @@ export default function QuizPageClient() {
     }
 
     if (warnings.length > 0) {
-      setSkipWarning(`ℹ️ ${warnings.join(' ')}`);
+      const warningMessage = `ℹ️ ${warnings.join(' ')}`;
+      setSkipWarning(warningMessage);
       // Auto-hide info warnings after 5 seconds
       setTimeout(() => setSkipWarning(null), 5000);
+      if (posthog && lastSkipWarningRef.current !== warningMessage) {
+        posthog.capture('skip_limit_warning', {
+          quiz_type: quizType,
+          warnings: warnings,
+        });
+        lastSkipWarningRef.current = warningMessage;
+      }
     } else {
       setSkipWarning(null);
+      lastSkipWarningRef.current = null;
     }
   };
 
@@ -686,6 +769,20 @@ export default function QuizPageClient() {
     const startIdx = screen * QUESTIONS_PER_SCREEN;
     const endIdx = startIdx + QUESTIONS_PER_SCREEN;
     const currentScreenQuestions = questions.slice(startIdx, endIdx);
+    const answeredOnScreen = currentScreenQuestions.filter(q =>
+      answers[q.id] !== undefined && answers[q.id] !== null && !skippedQuestions.has(q.id)
+    ).length;
+    const skippedOnScreen = currentScreenQuestions.filter(q => skippedQuestions.has(q.id)).length;
+    const isPhase2Screen = phase2QuestionsLoaded && startIdx >= 36;
+
+    posthog?.capture('screen_advanced', {
+      quiz_type: quizType,
+      from_screen: screen,
+      to_screen: screen + 1,
+      answered_on_screen: answeredOnScreen,
+      skipped_on_screen: skippedOnScreen,
+      phase: isPhase2Screen ? 'phase2' : 'phase1'
+    });
     
     // Check for tiebreakers after screen 1 (24 questions answered)
     // This will potentially modify questions 25-36 on screen 2
@@ -732,6 +829,13 @@ export default function QuizPageClient() {
         debugLog(`⚖️ TIEBREAKERS NEEDED! Near ${boundaries.length} boundary(ies): ${boundaries.join(', ')}`);
         const tiebreakerQuestions = await getTiebreakerQuestionsAsync(boundaries);
         debugLog(`📌 Loading ${tiebreakerQuestions.length} tiebreaker questions to clarify position`);
+        if (posthog) {
+          posthog.capture('tiebreaker_loaded', {
+            quiz_type: quizType,
+            boundaries,
+            tiebreaker_count: tiebreakerQuestions.length
+          });
+        }
         
         // Integrate tiebreaker questions into questions 25-36 based on removal priority
         const questionsToModify = [...questions.slice(24, 36)]; // Questions 25-36 (make a copy)
@@ -863,6 +967,13 @@ export default function QuizPageClient() {
       const macroCellCode = `${econCode}-${authCode}`;
       debugLog(`📍 Macro cell determined: ${macroCellCode}`);
       debugLog('⏳ Phase 2 questions will load automatically via useEffect...');
+      posthog?.capture('phase1_completed', {
+        quiz_type: quizType,
+        macro_cell_code: macroCellCode,
+        economic_score: scores.economic,
+        governance_score: scores.governance,
+        social_score: scores.social
+      });
     }
     
     // Always proceed to next screen (we handle button visibility separately now)
@@ -878,6 +989,11 @@ export default function QuizPageClient() {
 
   const handleBack = () => {
     if (screen > 0) {
+      posthog?.capture('screen_back', {
+        quiz_type: quizType,
+        from_screen: screen,
+        to_screen: screen - 1
+      });
       setScreen(screen - 1);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {

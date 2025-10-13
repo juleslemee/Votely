@@ -110,6 +110,30 @@ export default function Home() {
   const posthog = usePostHog();
   const [showQuizOptions, setShowQuizOptions] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const handlePrimaryStart = () => {
+    posthog?.capture('cta_start_clicked', {
+      location: 'hero_start_button'
+    });
+    setShowQuizOptions(true);
+  };
+
+  const handleFaqToggle = (index: number) => {
+    const isCurrentlyOpen = openFaqIndex === index;
+    const nextIndex = isCurrentlyOpen ? null : index;
+    setOpenFaqIndex(nextIndex);
+    posthog?.capture('faq_toggled', {
+      question: faqItems[index].question,
+      is_open: !isCurrentlyOpen
+    });
+  };
+
+  const handleLogoClick = () => {
+    posthog?.capture('external_link_clicked', {
+      destination: 'https://getvotely.com',
+      location: 'hero_logo'
+    });
+  };
   
   return (
     <div className="min-h-screen bg-background relative">
@@ -141,6 +165,7 @@ export default function Home() {
               href="https://getvotely.com" 
               target="_blank" 
               rel="noopener noreferrer"
+              onClick={handleLogoClick}
               className="w-32 h-32 md:w-44 md:h-44 mb-8 relative block hover:scale-105 transition-transform"
             >
               <Image src="/logo.svg" alt="Votely Logo" fill className="object-contain" priority />
@@ -153,7 +178,7 @@ export default function Home() {
             <div className="flex flex-col gap-4 w-full max-w-xs md:max-w-md">
             {!showQuizOptions ? (
               <button 
-                onClick={() => setShowQuizOptions(true)}
+                onClick={handlePrimaryStart}
                 className="w-full py-4 text-xl md:text-2xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition"
               >
                 Start Quiz
@@ -204,7 +229,7 @@ export default function Home() {
             {faqItems.map((item, index) => (
               <div key={index} className="border-b border-gray-200 last:border-0 pb-4 last:pb-0">
                 <button
-                  onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                  onClick={() => handleFaqToggle(index)}
                   className="w-full text-left flex justify-between items-center py-2 hover:text-purple-600 transition-colors"
                 >
                   <h3 className="text-lg font-semibold pr-4">{item.question}</h3>

@@ -479,6 +479,8 @@ export default function ResultsClient() {
   const [sessionMacroCellCode, setSessionMacroCellCode] = useState<string | null>(null);
   const hasLoadedAnalytics = useRef(false);
   const [isLoadingFirebase, setIsLoadingFirebase] = useState(false);
+  const viewModeTracked = useRef(false);
+  const shareModalPrevious = useRef(false);
   
   // Store calculated scores
   const [scores, setScores] = useState<{
@@ -900,6 +902,39 @@ export default function ResultsClient() {
   const y = toVisionScale(displayY);
   const z = toVisionScale(displaySocial);
   const alignment = findVisionAlignment(x, y, z);
+  const resultLabel = quizType === 'short'
+    ? (ideologyData?.macroCellLabel || alignment.label)
+    : (ideologyData?.ideology || alignment.label);
+
+  const handleCubeInteraction = (type: 'rotate' | 'tooltip') => {
+    posthog?.capture('cube_interaction', {
+      quiz_type: quizType,
+      interaction_type: type,
+      result_label: resultLabel
+    });
+  };
+
+  useEffect(() => {
+    if (!posthog) return;
+    posthog.capture('results_view_mode_toggled', {
+      quiz_type: quizType,
+      view: view3D ? '3d' : '2d',
+      is_initial: !viewModeTracked.current,
+      result_label: resultLabel
+    });
+    viewModeTracked.current = true;
+  }, [view3D, posthog, quizType, resultLabel]);
+
+  useEffect(() => {
+    if (!posthog) return;
+    if (shareModalPrevious.current === showShareModal) return;
+    shareModalPrevious.current = showShareModal;
+    const eventName = showShareModal ? 'share_modal_opened' : 'share_modal_closed';
+    posthog.capture(eventName, {
+      quiz_type: quizType,
+      result_label: resultLabel
+    });
+  }, [showShareModal, posthog, quizType, resultLabel]);
 
   // Save the quiz result (skip if this is a shared result or debug mode)
   useEffect(() => {
@@ -961,6 +996,13 @@ export default function ResultsClient() {
     })
       .then(id => {
         debugLog('Quiz result saved successfully with ID:', id);
+        posthog?.capture('quiz_result_saved', {
+          quiz_type: quizType,
+          document_id: id,
+          answers_count: answers.length,
+          skipped_count: skipStats?.totalSkipped ?? 0,
+          phase: quizType === 'long' && scores?.supplementary && Object.keys(scores.supplementary).length > 0 ? 'phase2' : 'phase1'
+        });
         setDocId(id);
         
         // Update URL to use Firebase ID for permanent access
@@ -980,6 +1022,11 @@ export default function ResultsClient() {
       .catch(error => {
         debugError('Failed to save quiz result:', error);
         debugError('Error details:', error.message, error.code);
+        posthog?.capture('quiz_result_save_failed', {
+          quiz_type: quizType,
+          error_message: error?.message,
+          error_code: error?.code
+        });
       });
   }, [answers, economic, social, alignment, isShared, dataLoaded]);
 
@@ -1216,7 +1263,7 @@ export default function ResultsClient() {
                       y={governance}
                       z={social}
                       ideologyLabel={alignment.label}
-                      onInteraction={(type) => debugLog('Interaction:', type)}
+                      onInteraction={handleCubeInteraction}
                     />
                   ) : (
                     <ResultCubeFallback
@@ -1269,6 +1316,11 @@ export default function ResultsClient() {
                 <button 
                   className="w-full bg-white text-purple-600 font-semibold py-3 px-6 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
                   onClick={() => {
+                    posthog?.capture('founding_supporter_cta_clicked', {
+                      quiz_type: quizType,
+                      result_label: resultLabel,
+                      has_doc_id: Boolean(docId)
+                    });
                     if (docId) {
                       router.push(`/quiz/next?resultId=${docId}`);
                     } else {
@@ -1487,7 +1539,12 @@ export default function ResultsClient() {
                     </ul>
                   </div>
                   <button
-                    onClick={() => router.push('/quiz?type=long')}
+                    onClick={() => {
+                      posthog?.capture('long_quiz_cta_clicked', {
+                        result_label: resultLabel
+                      });
+                      router.push('/quiz?type=long');
+                    }}
                     className="w-full bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                   >
                     Take the Full 60-Question Quiz

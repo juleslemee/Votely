@@ -2,10 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
 import { saveEmailToWaitlist } from '@/lib/quiz';
 import { debugError } from '@/lib/debug-logger';
 import { Rocket, Target, Users, Lightbulb, Heart, Shield, Lock } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 
 const carouselScreenshots = [
   { src: '/Page 1 - Learn.png', alt: 'Learn civics screenshot' },
@@ -14,6 +14,7 @@ const carouselScreenshots = [
 ];
 
 function NextStepsContent() {
+  const posthog = usePostHog();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -49,30 +50,58 @@ function NextStepsContent() {
   useEffect(() => {
     if (!autoSlide) return;
     const timer = setTimeout(() => {
-      setCarouselIdx((prev) => (prev + 1) % carouselScreenshots.length);
+      setCarouselIdx((prev) => {
+        const nextIndex = (prev + 1) % carouselScreenshots.length;
+        posthog?.capture('carousel_changed', {
+          slide_index: nextIndex,
+          source: 'auto'
+        });
+        return nextIndex;
+      });
     }, 4000);
     return () => clearTimeout(timer);
-  }, [carouselIdx, autoSlide]);
+  }, [carouselIdx, autoSlide, posthog]);
 
   const handleArrow = (dir: -1 | 1) => {
     setAutoSlide(false);
-    setCarouselIdx((prev) => (prev + dir + carouselScreenshots.length) % carouselScreenshots.length);
+    setCarouselIdx((prev) => {
+      const nextIndex = (prev + dir + carouselScreenshots.length) % carouselScreenshots.length;
+      posthog?.capture('carousel_changed', {
+        slide_index: nextIndex,
+        source: 'arrow'
+      });
+      return nextIndex;
+    });
   };
   const handleDot = (idx: number) => {
     setAutoSlide(false);
     setCarouselIdx(idx);
+    posthog?.capture('carousel_changed', {
+      slide_index: idx,
+      source: 'dot'
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || isSubmitting) return;
+    const emailDomain = email.includes('@') ? email.split('@')[1]?.toLowerCase() : 'invalid';
     try {
       setIsSubmitting(true);
       // Add to waitlist (emails are no longer associated with quiz results)
       await saveEmailToWaitlist(email);
       setIsSuccess(true);
+      posthog?.capture('waitlist_submit', {
+        result: 'success',
+        email_domain: emailDomain
+      });
     } catch (error) {
       debugError('Error saving email:', error);
+      posthog?.capture('waitlist_submit', {
+        result: 'error',
+        email_domain: emailDomain,
+        error_message: error instanceof Error ? error.message : String(error)
+      });
       // You might want to show an error message to the user here
     } finally {
       setIsSubmitting(false);

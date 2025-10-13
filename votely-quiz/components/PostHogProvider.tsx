@@ -5,7 +5,10 @@ import { PostHogProvider as PHProvider } from "posthog-js/react"
 import { useEffect } from "react"
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY
-const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || "/ingest"
+const POSTHOG_HOST =
+  process.env.NEXT_PUBLIC_POSTHOG_API_HOST ||
+  process.env.NEXT_PUBLIC_POSTHOG_HOST ||
+  "/ingest"
 
 type PostHogWindow = typeof window & {
   posthog?: typeof posthog
@@ -34,7 +37,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     const apiHost = POSTHOG_HOST.startsWith("http")
       ? POSTHOG_HOST
-      : `${window.location.origin}${POSTHOG_HOST}`
+      : POSTHOG_HOST.startsWith("/")
+        ? `${window.location.origin}${POSTHOG_HOST}`
+        : `https://${POSTHOG_HOST}`
 
     posthog.init(POSTHOG_KEY, {
       api_host: apiHost,

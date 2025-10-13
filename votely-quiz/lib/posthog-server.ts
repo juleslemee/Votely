@@ -7,7 +7,9 @@ const API_KEY =
   process.env.NEXT_PUBLIC_POSTHOG_KEY ||
   "";
 const HOST =
+  process.env.POSTHOG_API_HOST ||
   process.env.POSTHOG_HOST ||
+  process.env.NEXT_PUBLIC_POSTHOG_API_HOST ||
   process.env.NEXT_PUBLIC_POSTHOG_HOST ||
   "https://us.i.posthog.com";
 
@@ -20,7 +22,11 @@ function ensureClient(): PostHog | null {
 
   if (!client) {
     client = new PostHog(API_KEY, {
-      host: HOST.startsWith("http") ? HOST : `https://${HOST.replace(/^\/+/, "")}`,
+      host: HOST.startsWith("http")
+        ? HOST
+        : HOST.startsWith("/")
+          ? `https://${HOST.replace(/^\/+/, "")}`
+          : `https://${HOST}`,
     });
   }
 

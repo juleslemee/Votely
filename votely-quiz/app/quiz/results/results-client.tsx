@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { usePostHog } from 'posthog-js/react';
+import { capturePosthogEvent } from '@/lib/posthog-client';
 import {
   ANSWER_SCORES,
   MAX_ECONOMIC_SCORE,
@@ -803,14 +804,14 @@ export default function ResultsClient() {
         setIdeologyData(ideology);
 
         // Track results viewed
-        posthog?.capture('quiz_results_viewed', {
+        capturePosthogEvent(posthog, 'quiz_results_viewed', {
           quiz_type: quizType,
           ideology: ideology?.ideology || ideology?.macroCellLabel || 'Unknown',
           economic_score: economic,
           governance_score: governance,
           social_score: social,
           is_shared: isShared
-        });
+        }, { sendToServer: true });
 
         // Load supplement axes for long quiz
         if (quizType === 'long' && ideology?.macroCellCode) {
@@ -907,7 +908,7 @@ export default function ResultsClient() {
     : (ideologyData?.ideology || alignment.label);
 
   const handleCubeInteraction = (type: 'rotate' | 'tooltip') => {
-    posthog?.capture('cube_interaction', {
+    capturePosthogEvent(posthog, 'cube_interaction', {
       quiz_type: quizType,
       interaction_type: type,
       result_label: resultLabel
@@ -915,8 +916,7 @@ export default function ResultsClient() {
   };
 
   useEffect(() => {
-    if (!posthog) return;
-    posthog.capture('results_view_mode_toggled', {
+    capturePosthogEvent(posthog, 'results_view_mode_toggled', {
       quiz_type: quizType,
       view: view3D ? '3d' : '2d',
       is_initial: !viewModeTracked.current,
@@ -926,11 +926,10 @@ export default function ResultsClient() {
   }, [view3D, posthog, quizType, resultLabel]);
 
   useEffect(() => {
-    if (!posthog) return;
     if (shareModalPrevious.current === showShareModal) return;
     shareModalPrevious.current = showShareModal;
     const eventName = showShareModal ? 'share_modal_opened' : 'share_modal_closed';
-    posthog.capture(eventName, {
+    capturePosthogEvent(posthog, eventName, {
       quiz_type: quizType,
       result_label: resultLabel
     });
@@ -996,13 +995,13 @@ export default function ResultsClient() {
     })
       .then(id => {
         debugLog('Quiz result saved successfully with ID:', id);
-        posthog?.capture('quiz_result_saved', {
+        capturePosthogEvent(posthog, 'quiz_result_saved', {
           quiz_type: quizType,
           document_id: id,
           answers_count: answers.length,
           skipped_count: skipStats?.totalSkipped ?? 0,
           phase: quizType === 'long' && scores?.supplementary && Object.keys(scores.supplementary).length > 0 ? 'phase2' : 'phase1'
-        });
+        }, { sendToServer: true });
         setDocId(id);
         
         // Update URL to use Firebase ID for permanent access
@@ -1022,11 +1021,11 @@ export default function ResultsClient() {
       .catch(error => {
         debugError('Failed to save quiz result:', error);
         debugError('Error details:', error.message, error.code);
-        posthog?.capture('quiz_result_save_failed', {
+        capturePosthogEvent(posthog, 'quiz_result_save_failed', {
           quiz_type: quizType,
           error_message: error?.message,
           error_code: error?.code
-        });
+        }, { sendToServer: true });
       });
   }, [answers, economic, social, alignment, isShared, dataLoaded]);
 
@@ -1316,11 +1315,11 @@ export default function ResultsClient() {
                 <button 
                   className="w-full bg-white text-purple-600 font-semibold py-3 px-6 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
                   onClick={() => {
-                    posthog?.capture('founding_supporter_cta_clicked', {
+                    capturePosthogEvent(posthog, 'founding_supporter_cta_clicked', {
                       quiz_type: quizType,
                       result_label: resultLabel,
                       has_doc_id: Boolean(docId)
-                    });
+                    }, { sendToServer: true });
                     if (docId) {
                       router.push(`/quiz/next?resultId=${docId}`);
                     } else {
@@ -1540,9 +1539,9 @@ export default function ResultsClient() {
                   </div>
                   <button
                     onClick={() => {
-                      posthog?.capture('long_quiz_cta_clicked', {
+                      capturePosthogEvent(posthog, 'long_quiz_cta_clicked', {
                         result_label: resultLabel
-                      });
+                      }, { sendToServer: true });
                       router.push('/quiz?type=long');
                     }}
                     className="w-full bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Ubuntu, Noto_Sans } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import GoogleTagManager from "@/lib/GoogleTagManager";
 import HotJar from "@/lib/HotJar";
@@ -125,7 +126,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <PostHogProvider>
-          <PostHogPageviewTracker />
+          <Suspense fallback={null}>
+            <PostHogPageviewTracker />
+          </Suspense>
           <GoogleTagManager />
           <HotJar />
           <StructuredData />

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { usePostHog } from "posthog-js/react"
+import { capturePosthogEvent } from "@/lib/posthog-client"
 
 /**
  * Tracks client-side navigation changes and records PostHog pageviews.
@@ -33,7 +34,7 @@ export function PostHogPageviewTracker() {
       }
     }
 
-    posthog.capture("$pageview", {
+    capturePosthogEvent(posthog, "$pageview", {
       $current_url: fullUrl,
       $pathname: window.location.pathname,
       $referrer: referrer || undefined,
@@ -41,7 +42,7 @@ export function PostHogPageviewTracker() {
     })
 
     if (previousUrlRef.current !== null) {
-      posthog.capture("route_changed", {
+      capturePosthogEvent(posthog, "route_changed", {
         current_url: fullUrl,
         pathname: window.location.pathname,
         search: window.location.search,

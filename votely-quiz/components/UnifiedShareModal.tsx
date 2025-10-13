@@ -4,6 +4,7 @@ import React, { useState, useRef, Suspense, useEffect } from 'react';
 import { AdaptivePoliticalCompass } from '../lib/adaptive-political-compass';
 import { debugLog, debugError } from '../lib/debug-logger';
 import { usePostHog } from 'posthog-js/react';
+import { capturePosthogEvent } from '@/lib/posthog-client';
 
 /**
  * UnifiedShareModal - Comprehensive sharing functionality for quiz results
@@ -379,11 +380,11 @@ export default function UnifiedShareModal({
       (ideologyData?.macroCellLabel || alignment.label) :
       (ideologyData?.ideology || alignment.label);
 
-    posthog?.capture('share_clicked', {
+    capturePosthogEvent(posthog, 'share_clicked', {
       share_type: type === '2d' ? 'download_2d' : 'download_3d',
       quiz_type: quizType,
       ideology: resultLabel
-    });
+    }, { sendToServer: true });
 
     setIsGenerating(true);
     setGeneratingType(type);
@@ -875,11 +876,11 @@ export default function UnifiedShareModal({
       (ideologyData?.macroCellLabel || alignment.label) :
       (ideologyData?.ideology || alignment.label);
 
-    posthog?.capture('share_clicked', {
+    capturePosthogEvent(posthog, 'share_clicked', {
       share_type: 'download_gif',
       quiz_type: quizType,
       ideology: resultLabel
-    });
+    }, { sendToServer: true });
 
     setIsGenerating(true);
     setGeneratingType('gif');
@@ -963,11 +964,11 @@ export default function UnifiedShareModal({
     const shareText = `I got "${resultLabel}" on the Votely Political Quiz!`;
 
     // Track share link click
-    posthog?.capture('share_clicked', {
+    capturePosthogEvent(posthog, 'share_clicked', {
       share_type: 'link',
       quiz_type: quizType,
       ideology: resultLabel
-    });
+    }, { sendToServer: true });
     
     // Check if we can use Web Share API
     // Requirements: HTTPS (or localhost), user interaction, and browser support

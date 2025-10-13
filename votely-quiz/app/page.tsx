@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import Script from 'next/script';
 import { usePostHog } from 'posthog-js/react';
+import { capturePosthogEvent } from '@/lib/posthog-client';
 
 interface Star {
   top: number;
@@ -112,9 +113,9 @@ export default function Home() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const handlePrimaryStart = () => {
-    posthog?.capture('cta_start_clicked', {
+    capturePosthogEvent(posthog, 'cta_start_clicked', {
       location: 'hero_start_button'
-    });
+    }, { sendToServer: true });
     setShowQuizOptions(true);
   };
 
@@ -122,17 +123,23 @@ export default function Home() {
     const isCurrentlyOpen = openFaqIndex === index;
     const nextIndex = isCurrentlyOpen ? null : index;
     setOpenFaqIndex(nextIndex);
-    posthog?.capture('faq_toggled', {
+    capturePosthogEvent(posthog, 'faq_toggled', {
       question: faqItems[index].question,
       is_open: !isCurrentlyOpen
     });
   };
 
   const handleLogoClick = () => {
-    posthog?.capture('external_link_clicked', {
+    capturePosthogEvent(posthog, 'external_link_clicked', {
       destination: 'https://getvotely.com',
       location: 'hero_logo'
-    });
+    }, { sendToServer: true });
+  };
+
+  const handleQuizStart = (quizType: 'short' | 'long') => {
+    capturePosthogEvent(posthog, 'quiz_started', {
+      quiz_type: quizType
+    }, { sendToServer: true });
   };
   
   return (
@@ -191,7 +198,7 @@ export default function Home() {
                 <div className="flex gap-3">
                   <Link href="/quiz?type=short" className="flex-1">
                     <button
-                      onClick={() => posthog?.capture('quiz_started', { quiz_type: 'short' })}
+                      onClick={() => handleQuizStart('short')}
                       className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-500 text-white hover:bg-purple-600 transition"
                     >
                       Shortform<br />
@@ -200,7 +207,7 @@ export default function Home() {
                   </Link>
                   <Link href="/quiz?type=long" className="flex-1">
                     <button
-                      onClick={() => posthog?.capture('quiz_started', { quiz_type: 'long' })}
+                      onClick={() => handleQuizStart('long')}
                       className="w-full py-4 text-lg md:text-xl font-semibold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition"
                     >
                       Longform<br />

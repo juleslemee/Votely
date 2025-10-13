@@ -6,6 +6,7 @@ import { saveEmailToWaitlist } from '@/lib/quiz';
 import { debugError } from '@/lib/debug-logger';
 import { Rocket, Target, Users, Lightbulb, Heart, Shield, Lock } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
+import { capturePosthogEvent } from '@/lib/posthog-client';
 
 const carouselScreenshots = [
   { src: '/Page 1 - Learn.png', alt: 'Learn civics screenshot' },
@@ -52,7 +53,7 @@ function NextStepsContent() {
     const timer = setTimeout(() => {
       setCarouselIdx((prev) => {
         const nextIndex = (prev + 1) % carouselScreenshots.length;
-        posthog?.capture('carousel_changed', {
+        capturePosthogEvent(posthog, 'carousel_changed', {
           slide_index: nextIndex,
           source: 'auto'
         });
@@ -66,7 +67,7 @@ function NextStepsContent() {
     setAutoSlide(false);
     setCarouselIdx((prev) => {
       const nextIndex = (prev + dir + carouselScreenshots.length) % carouselScreenshots.length;
-      posthog?.capture('carousel_changed', {
+      capturePosthogEvent(posthog, 'carousel_changed', {
         slide_index: nextIndex,
         source: 'arrow'
       });
@@ -76,7 +77,7 @@ function NextStepsContent() {
   const handleDot = (idx: number) => {
     setAutoSlide(false);
     setCarouselIdx(idx);
-    posthog?.capture('carousel_changed', {
+    capturePosthogEvent(posthog, 'carousel_changed', {
       slide_index: idx,
       source: 'dot'
     });
@@ -91,17 +92,17 @@ function NextStepsContent() {
       // Add to waitlist (emails are no longer associated with quiz results)
       await saveEmailToWaitlist(email);
       setIsSuccess(true);
-      posthog?.capture('waitlist_submit', {
+      capturePosthogEvent(posthog, 'waitlist_submit', {
         result: 'success',
         email_domain: emailDomain
-      });
+      }, { sendToServer: true });
     } catch (error) {
       debugError('Error saving email:', error);
-      posthog?.capture('waitlist_submit', {
+      capturePosthogEvent(posthog, 'waitlist_submit', {
         result: 'error',
         email_domain: emailDomain,
         error_message: error instanceof Error ? error.message : String(error)
-      });
+      }, { sendToServer: true });
       // You might want to show an error message to the user here
     } finally {
       setIsSubmitting(false);

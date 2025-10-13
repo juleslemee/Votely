@@ -48,6 +48,11 @@ export async function captureServerEvent(payload: ServerCapturePayload) {
     timestamp: timestamp ? new Date(timestamp) : undefined,
   });
 
-  // Flush immediately in serverless environments to avoid dropped events
-  await posthog.flushAsync();
+  try {
+    await new Promise<void>((resolve) => posthog.flush(resolve));
+  } catch (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[PostHog] flush failed", error);
+    }
+  }
 }

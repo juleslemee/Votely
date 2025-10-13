@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Info, Ban, Check } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';

@@ -49,7 +49,7 @@ export async function captureServerEvent(payload: ServerCapturePayload) {
   });
 
   try {
-    await new Promise<void>((resolve) => posthog.flush(resolve));
+    posthog.flush();
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.warn("[PostHog] flush failed", error);

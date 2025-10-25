@@ -543,8 +543,10 @@ export default function ResultsClient() {
                 setQuestionIds(data.questionData.map((q: any) => q.id));
               } else if (data.quizType) {
                 // Fallback: reconstruct questionIds based on quiz type if questionData not saved
+                const longQuizPhase1Ids = [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30];
+                const longQuizPhase2Ids = Array.from({ length: 24 }, (_, i) => 45 + i);
                 const reconstructedIds = data.quizType === 'long' 
-                  ? [1, 9, 17, 2, 10, 18, 3, 11, 19, 4, 12, 20, 5, 13, 21, 6, 14, 22, 7, 15, 23, 8, 16, 24, 25, 27, 29, 26, 28, 30]
+                  ? [...longQuizPhase1Ids, ...longQuizPhase2Ids]
                   : [1, 2, 3, 4, 9, 10, 11, 12, 17, 18];
                 setQuestionIds(reconstructedIds.slice(0, data.answers.length));
               }
@@ -942,7 +944,7 @@ export default function ResultsClient() {
       return;
     }
     
-    if (hasSaved.current || isShared || isDebugMode) {
+    if (firebaseId || hasSaved.current || isShared || isDebugMode) {
       if (isDebugMode && !hasSaved.current) {
         debugLog('🐛 DEBUG MODE: Skipping Firebase save');
         hasSaved.current = true;
@@ -1027,7 +1029,7 @@ export default function ResultsClient() {
           error_code: error?.code
         }, { sendToServer: true });
       });
-  }, [answers, economic, social, alignment, isShared, dataLoaded]);
+  }, [answers, economic, social, alignment, isShared, dataLoaded, firebaseId]);
 
   // Load analytics data
   useEffect(() => {

@@ -23,6 +23,9 @@ import { calculateScores } from './results/results-client';
 import { DebugPanel } from '@/components/DebugPanel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { debugLog, debugWarn, debugError } from '@/lib/debug-logger';
+import { saveQuizResult } from '@/lib/quiz';
+import { loadGridData, findIdeologyByPosition, findDetailedIdeology, findDetailedIdeologyWithSupplementary } from '@/lib/grid-data-loader';
+import { findVisionAlignment, toVisionScale } from './results/types';
 
 // Continuous answer value (0.0 to 1.0)
 type AnswerValue = number;
@@ -49,6 +52,20 @@ const getSliderColor = (value: number): string => {
   const g = Math.round(213 - (213 - 51) * distance);
   const b = Math.round(255 - (255 - 234) * distance);
   return `rgb(${r} ${g} ${b})`;
+};
+
+const calculateMacroCellCode = (economic: number, governance: number): string => {
+  let econCode: 'EL' | 'EM' | 'ER';
+  if (economic < -33) econCode = 'EL';
+  else if (economic > 33) econCode = 'ER';
+  else econCode = 'EM';
+
+  let authCode: 'GL' | 'GM' | 'GA';
+  if (governance > 33) authCode = 'GA';
+  else if (governance < -33) authCode = 'GL';
+  else authCode = 'GM';
+
+  return `${econCode}-${authCode}`;
 };
 
 const QUESTIONS_PER_SCREEN = 12;
@@ -78,6 +95,7 @@ export default function QuizPageClient() {
   const [tiebreakerChecked, setTiebreakerChecked] = useState(false);
   const [liveScores, setLiveScores] = useState<{economic: number, governance: number, social: number} | null>(null);
   const [skipWarning, setSkipWarning] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const answeredQuestionsRef = useRef<Set<number>>(new Set());
   const lastTrackedQuizType = useRef<string | null>(null);
   const phase2TrackedRef = useRef(false);
@@ -999,6 +1017,11 @@ export default function QuizPageClient() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      debugLog('⏳ Submission already in progress, ignoring duplicate submit');
+      return;
+    }
+    setIsSubmitting(true);
     debugLog('🏁 Quiz Complete!');
     const answeredCount = questions.length - skippedQuestions.size;
     const skippedCount = skippedQuestions.size;
@@ -1063,11 +1086,85 @@ export default function QuizPageClient() {
     };
 
     const encodedData = btoa(JSON.stringify(submissionData));
-
-    // Navigate to results with encoded data
-    // The results page will save to Firebase and get the docId
     const debugParam = isDebugMode ? '&debug=true' : '';
-    router.push(`/quiz/results?data=${encodeURIComponent(encodedData)}&type=${quizType}${debugParam}`);
+    const answersArray = questionData.map(q => q.answer ?? 0.5);
+    const questionIds = questionData.map(q => q.id);
+
+    if (typeof window !== 'undefined') {
+      (window as any).__skipStats = skipStats;
+    }
+
+    try {
+      const scores = await calculateScores(answersArray, questionIds, quizType, undefined, false, questionData);
+      const gridData = await loadGridData(quizType as 'short' | 'long');
+      let ideologyForSave = null;
+
+      if (quizType === 'long') {
+        const hasSupplementary = scores.supplementary && Object.keys(scores.supplementary).length > 0;
+        if (hasSupplementary) {
+          ideologyForSave = await findDetailedIdeologyWithSupplementary(
+            gridData,
+            scores.economic,
+            scores.governance,
+            scores.supplementary
+          );
+        }
+        if (!ideologyForSave) {
+          ideologyForSave = findDetailedIdeology(gridData, scores.economic, scores.governance, scores.social);
+        }
+      } else {
+        ideologyForSave = findIdeologyByPosition(gridData, scores.economic, scores.governance);
+      }
+
+      const macroCellCode = ideologyForSave?.macroCellCode || calculateMacroCellCode(scores.economic, scores.governance);
+      const alignmentVector = findVisionAlignment(
+        toVisionScale(scores.economic),
+        toVisionScale(scores.governance),
+        toVisionScale(scores.social)
+      );
+      const alignmentLabel = quizType === 'short'
+        ? (ideologyForSave?.macroCellLabel || alignmentVector.label)
+        : (ideologyForSave?.ideology || alignmentVector.label);
+      const alignmentDescription = ideologyForSave?.explanation || alignmentVector.description;
+      const hasSupplementary = quizType === 'long' && scores.supplementary && Object.keys(scores.supplementary).length > 0;
+      const phase = hasSupplementary ? 2 : 1;
+
+      const docId = await saveQuizResult({
+        answers: answersArray,
+        quizType: quizType as 'short' | 'long',
+        questionData,
+        skipStats,
+        result: {
+          economicScore: scores.economic,
+          governanceScore: scores.governance,
+          socialScore: scores.social,
+          alignmentLabel,
+          alignmentDescription,
+          macroCellCode,
+          ...(hasSupplementary && { supplementaryScores: scores.supplementary }),
+          gridPosition: {
+            economic: scores.economic,
+            social: scores.social
+          }
+        },
+        phase
+      });
+
+      capturePosthogEvent(posthog, 'quiz_result_saved', {
+        quiz_type: quizType,
+        document_id: docId,
+        answers_count: answersArray.length,
+        skipped_count: skipStats.totalSkipped,
+        phase: hasSupplementary ? 'phase2' : 'phase1'
+      }, { sendToServer: true });
+
+      router.push(`/quiz/results?id=${docId}&type=${quizType}${debugParam}`);
+    } catch (error) {
+      debugError('❌ Failed to pre-save quiz result, falling back to encoded data:', error);
+      router.push(`/quiz/results?data=${encodeURIComponent(encodedData)}&type=${quizType}${debugParam}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const startIdx = screen * QUESTIONS_PER_SCREEN;

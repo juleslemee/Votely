@@ -11,7 +11,7 @@ export type QuizResult = {
     id: number;
     axis: string;
     agreeDir: number;
-    answer: number;
+    answer: number | null;
     supplementAxis?: string;
   }>;
   result: {

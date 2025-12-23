@@ -73,7 +73,7 @@ export default function JobPageClient({ job }: Props) {
     <main className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <Link
               href="/jobs"
@@ -103,24 +103,26 @@ export default function JobPageClient({ job }: Props) {
       </header>
 
       {/* Job Title */}
-      <div className="max-w-6xl mx-auto px-6 pt-8 pb-4">
-        <h1 className="text-2xl font-semibold text-gray-900">{job.title}</h1>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-4">
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">{job.title}</h1>
       </div>
 
       {/* Two-column layout */}
-      <div className="max-w-6xl mx-auto px-6 pb-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          {/* Left sidebar - Job metadata */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <MetadataItem label="Location" value={job.location} />
-            <MetadataItem label="Employment Type" value={formatEmploymentType(job.employmentType)} />
-            <MetadataItem label="Location Type" value={formatLocationType(job.locationType)} />
-            <MetadataItem label="Department" value={job.department} />
-            <MetadataItem label="Compensation" value={formatCompensation(job)} />
+          {/* Left sidebar - Job metadata (shows after content on mobile) */}
+          <aside className="lg:w-64 flex-shrink-0 order-2 lg:order-1">
+            <div className="lg:sticky lg:top-8">
+              <MetadataItem label="Location" value={job.location} />
+              <MetadataItem label="Employment Type" value={formatEmploymentType(job.employmentType)} />
+              <MetadataItem label="Location Type" value={formatLocationType(job.locationType)} />
+              <MetadataItem label="Department" value={job.department} />
+              <MetadataItem label="Compensation" value={formatCompensation(job)} />
+            </div>
           </aside>
 
-          {/* Right content area */}
-          <div className="flex-1 min-w-0">
+          {/* Right content area (shows first on mobile) */}
+          <div className="flex-1 min-w-0 order-1 lg:order-2">
             {/* Tabs */}
             <div className="flex gap-8 border-b border-gray-200 mb-8">
               <button

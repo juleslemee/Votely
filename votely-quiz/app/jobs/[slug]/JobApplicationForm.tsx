@@ -84,6 +84,12 @@ export default function JobApplicationForm({ jobSlug, jobTitle }: Props) {
         throw new Error('Please upload your resume');
       }
 
+      // Validate phone has at least 9 digits
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length < 9) {
+        throw new Error('Please enter a valid phone number (at least 9 digits)');
+      }
+
       if (!formData.search_intensity || !formData.pipeline_scale || !formData.application_speed) {
         throw new Error('Please answer all required questions');
       }
@@ -154,9 +160,10 @@ export default function JobApplicationForm({ jobSlug, jobTitle }: Props) {
               name="first_name"
               autoComplete="given-name"
               required
+              placeholder="Jane"
               value={formData.first_name}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white placeholder:text-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
             />
           </div>
           <div>
@@ -169,9 +176,10 @@ export default function JobApplicationForm({ jobSlug, jobTitle }: Props) {
               name="last_name"
               autoComplete="family-name"
               required
+              placeholder="Doe"
               value={formData.last_name}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white placeholder:text-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
             />
           </div>
         </div>
@@ -186,9 +194,10 @@ export default function JobApplicationForm({ jobSlug, jobTitle }: Props) {
             name="email"
             autoComplete="email"
             required
+            placeholder="jane.doe@email.com"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white placeholder:text-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
           />
         </div>
 
@@ -202,9 +211,10 @@ export default function JobApplicationForm({ jobSlug, jobTitle }: Props) {
             name="phone"
             autoComplete="tel"
             required
+            placeholder="(555) 123-4567"
             value={formData.phone}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base font-noto bg-white placeholder:text-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
           />
         </div>
 

@@ -37,16 +37,16 @@ export default function JobsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-16">
+      <div className="max-w-3xl mx-auto px-4 py-10 sm:py-16">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-10 sm:mb-12">
           <Link
             href="/"
-            className="text-purple-600 hover:text-purple-700 font-medium mb-6 inline-block"
+            className="text-purple-600 hover:text-purple-700 font-medium mb-4 sm:mb-6 inline-block"
           >
             &larr; Back to Votely
           </Link>
-          <h1 className="text-4xl font-ubuntu font-bold text-foreground mb-6">
+          <h1 className="text-3xl sm:text-4xl font-ubuntu font-bold text-foreground mb-4 sm:mb-6">
             Careers at Votely
           </h1>
           <div className="space-y-4 text-gray-700 font-noto">

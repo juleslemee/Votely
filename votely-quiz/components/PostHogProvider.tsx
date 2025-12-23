@@ -3,6 +3,7 @@
 import posthog from "posthog-js"
 import { PostHogProvider as PHProvider } from "posthog-js/react"
 import { useEffect } from "react"
+import { usePathname } from "next/navigation"
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY
 const POSTHOG_HOST =
@@ -16,8 +17,13 @@ type PostHogWindow = typeof window & {
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
   useEffect(() => {
     if (typeof window === "undefined") return
+
+    // Skip PostHog on /jobs pages
+    if (pathname?.startsWith("/jobs")) return
 
     const posthogWindow = window as PostHogWindow
 
@@ -49,12 +55,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageleave: true,
       disable_session_recording: true,
       autocapture: false,
-      debug: process.env.NODE_ENV === "development",
+      debug: false,
       loaded: (client) => {
         posthogWindow.posthog = client
-        if (process.env.NODE_ENV === "development") {
-          console.log("[PostHog] Initialized successfully")
-        }
       }
     })
 

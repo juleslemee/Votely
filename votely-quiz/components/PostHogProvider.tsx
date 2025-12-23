@@ -48,7 +48,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageview: false,
       capture_pageleave: true,
       disable_session_recording: true,
-      autocapture: true,
+      autocapture: false,
       debug: process.env.NODE_ENV === "development",
       loaded: (client) => {
         posthogWindow.posthog = client

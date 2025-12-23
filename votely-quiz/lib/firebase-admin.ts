@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { debugLog, debugError } from './debug-logger';
 
 // Lazy initialization variables
@@ -102,3 +103,9 @@ export const adminDb = new Proxy({} as Firestore, {
     return (db as any).apply(thisArg, argArray);
   }
 });
+
+// Export a getter function for Firebase Storage
+export const getAdminStorage = () => {
+  ensureInitialized();
+  return getStorage();
+};
